@@ -1658,6 +1658,244 @@ function collectFactualClaims(dialogue: string): FactualClaim[] {
   return claims;
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Qualitative (NON-numeric) neighbourhood facts.                         */
+/*                                                                         */
+/*  Build-era decades, housing-stock styles, worded demographic           */
+/*  descriptors, and named-institution/amenity attributes are all         */
+/*  *verifiable specifics* about a place. Asserted as fact they must trace */
+/*  to the member's KB neighbourhood profile (or a cited fact) exactly     */
+/*  like a market number — otherwise they're invented.                     */
+/*                                                                         */
+/*  Stays ALLOWED (don't over-block): the creator's interpretation of the */
+/*  data ("buyers are being methodical"), framework mechanics (MOI         */
+/*  thresholds), and clearly-experiential framing ("I've seen this area    */
+/*  appeal to families"). Achieved via: a curated vocabulary (no generic   */
+/*  pricing words), an attribution-frame requirement for soft descriptors, */
+/*  and a first-person hedge exemption that applies ONLY to soft           */
+/*  descriptors (a hedge can't launder a hard specific like a build        */
+/*  decade, a named institution's rating, or an income comparative).       */
+/* ────────────────────────────────────────────────────────────────────── */
+
+type QualKind = "build_era" | "housing_style" | "demographic" | "institution";
+
+type QualitativeClaim = {
+  raw: string;
+  offset: number;
+  kind: QualKind;
+  /** Lowercase salient terms grouped by requirement: the claim is "sourced"
+   *  only when EVERY group has at least one term present in the profile /
+   *  cited-fact text. A single group => "any of these"; two groups => e.g.
+   *  the institution noun AND its attribute must both appear (so "top-rated
+   *  schools" isn't grounded by a profile that merely lists "schools"). */
+  termGroups: string[][];
+  /** Soft descriptors may be reframed as the creator's experience — a
+   *  first-person hedge exempts them. Hard specifics (decades, styles,
+   *  institutions, demographic comparatives) may NOT be laundered by a hedge. */
+  hedgeable: boolean;
+};
+
+const QUAL_LABEL: Record<QualKind, string> = {
+  build_era: "Build-era claim",
+  housing_style: "Housing-stock claim",
+  demographic: "Demographic claim",
+  institution: "Named institution/amenity claim",
+};
+
+/** Build/housing context — a decade only reads as a *housing-stock* fact when
+ *  one of these sits next to it (keeps "back in the 1990s I started…" out). */
+const BUILD_CONTEXT_RE =
+  /\b(?:built|build|building|constructed|construction|developed|development|erected|homes?|housing|houses|neighbou?rhood|subdivisions?|stock|dating\s+back|date[sd]?\s+back|put\s+up)\b/i;
+
+/** A decade reference: "1990s", "the 2010s", "mid-2010s", "early 2000s". */
+const DECADE_RE = /\b(?:early|mid|late)?[-\s]?((?:19|20)\d0)['’]?s\b/gi;
+
+/** Housing-stock STYLE descriptors. Deliberately excludes generic property
+ *  types (condo/townhouse/detached) that appear constantly in pricing prose. */
+const HOUSING_STYLE_RE =
+  /\b(?:single|two|three)[-\s]?stor(?:y|ey|ies)\b|\branch(?:es)?(?:[-\s]?(?:style[ds]?|home[s]?|house[s]?))\b|\bbungalows?\b|\bsplit[-\s]?levels?\b|\bcraftsman\b|\bvictorians?\b|\btudors?\b|\bcolonials?\b|\bcape\s+cods?\b|\bmid[-\s]?century\b|\bcharacter\s+homes?\b|\bheritage\s+homes?\b|\bcustom[-\s]?built\b|\bnewer\s+construction\b|\bnew\s+construction\b|\bnew(?:ly)?\s+built\b|\brecently\s+built\b|\bpost[-\s]?war\b|\bpre[-\s]?war\b|\bmodern\s+amenities\b/gi;
+
+/** Soft demographic descriptors — vague enough to be reframed as experience. */
+const DEMO_SOFT_RE =
+  /\bskews?\s+(?:much\s+|slightly\s+|noticeably\s+)?(?:older|younger|wealthier|more\s+affluent|affluent|blue[-\s]?collar|white[-\s]?collar)\b|\byoung\s+famil(?:y|ies)\b|\bgrowing\s+famil(?:y|ies)\b|\bfirst[-\s]?time\s+buyers?\b|\bempty[-\s]?nesters?\b|\bretirees?\b|\bmove[-\s]?up\s+buyers?\b/gi;
+
+/** Hard demographic comparative (no number needed): "median household income
+ *  runs higher than the regional average". */
+const DEMO_HARD_RE =
+  /\b((?:median|average)\s+(?:household\s+)?(?:income|age|home\s+values?|net\s+worth))\b[^.?!]{0,60}\b(?:higher|lower|above|below|outpaces?|exceeds?|trails?|tops?)\b[^.?!]{0,30}\b(?:average|regional|city|provincial|national|median)\b/gi;
+
+/** Soft descriptors only count as an area-fact inside an attribution frame —
+ *  "home to young families" (fact) vs "first-time buyers should watch rates"
+ *  (audience address, allowed). "skews …" is self-attributing and exempt. */
+const ATTRIBUTION_RE =
+  /\b(?:home\s+to|full\s+of|filled\s+with|lots\s+of|plenty\s+of|attracts?|drawing|draws?|drew|drawn|popular\s+with|dominated\s+by|made\s+up\s+of|magnet\s+for|favou?red\s+by|geared\s+(?:toward|towards|to)|catering\s+to|caters\s+to|known\s+for|packed\s+with|teeming\s+with|are\s+mostly|mostly|primarily)\b/i;
+
+/** School + a quality/rating attribute (either order). */
+const SCHOOL_RATING_RE =
+  /\bschools?\b[^.?!]{0,45}\b(?:rated|ranked|top[-\s]?rated|highly[-\s]?rated|ratings?|rankings?|scores?|test\s+scores?|best|award[-\s]?winning|blue[-\s]?ribbon|\d(?:\.\d)?\s*(?:out\s+of|\/)\s*10)\b|\b(?:rated|ranked|top[-\s]?rated|highly[-\s]?rated|ratings?|rankings?|award[-\s]?winning|blue[-\s]?ribbon)\b[^.?!]{0,25}\bschools?\b/gi;
+
+const HOA_FEES_RE = /\bHOA\s+(?:fees?|dues?|costs?)\b/gi;
+const ENERGY_EFFICIENT_RE = /\benergy[-\s]?efficient\b/gi;
+
+/** Curated, non-generic style roots used to ground a housing-stock claim.
+ *  Separators are normalized before matching, so "single stor" grounds both
+ *  "single-story" and "single storey". Deliberately omits bare tokens like
+ *  "single" or "story" that would let unrelated profile prose source a claim. */
+const STYLE_ROOTS = [
+  "single stor",
+  "two stor",
+  "three stor",
+  "ranch",
+  "bungalow",
+  "split level",
+  "craftsman",
+  "victorian",
+  "tudor",
+  "colonial",
+  "cape cod",
+  "mid century",
+  "character home",
+  "heritage home",
+  "custom built",
+  "newer construction",
+  "new construction",
+  "newly built",
+  "recently built",
+  "post war",
+  "pre war",
+  "modern amenities",
+];
+
+/** Rating/ranking attribute words that must appear in the profile/cited facts
+ *  alongside "school" before a "top-rated schools" claim is considered sourced. */
+const SCHOOL_RATING_GROUP = [
+  "rated",
+  "rating",
+  "ranked",
+  "ranking",
+  "score",
+  "best",
+  "award",
+  "ribbon",
+  "out of 10",
+];
+/** Community centre only flagged when paired with a specific attribute. */
+const COMMUNITY_CENTRE_RE =
+  /\bcommunity\s+cent(?:re|er)s?\b[^.?!]{0,40}\b(?:opened|built|hosts?|features?|named|brand[-\s]?new|new|state[-\s]?of[-\s]?the[-\s]?art|recently)\b|\b(?:brand[-\s]?new|new|state[-\s]?of[-\s]?the[-\s]?art)\b[^.?!]{0,20}\bcommunity\s+cent(?:re|er)s?\b/gi;
+
+/** First-person experiential / opinion hedges — exempt SOFT descriptors. */
+const QUAL_HEDGE_RE =
+  /\b(?:i'?ve\s+seen|i\s+have\s+seen|in\s+my\s+experience|from\s+what\s+i'?ve\s+seen|i'?ve\s+noticed|i'?ve\s+found|i\s+find|in\s+my\s+opinion|i'?d\s+say|i\s+feel|i\s+think|personally|anecdotally|tends?\s+to|tend\s+to)\b/i;
+
+/** Collapse hyphens/whitespace to a single space so separator variants match:
+ *  "single-story", "single story", "single  storey" all normalize alike. */
+function normalizeSeparators(s: string): string {
+  return s.replace(/[-\s]+/g, " ").trim();
+}
+
+function decadeTerms(decade: string): string[] {
+  // decade = "1990" → ["1990s", "1990", "90s"]
+  return [`${decade}s`.toLowerCase(), decade.toLowerCase(), `${decade.slice(2)}s`];
+}
+
+function collectQualitativeClaims(dialogue: string): QualitativeClaim[] {
+  const claims: QualitativeClaim[] = [];
+  const window = (idx: number, len: number, before = 40, after = 40) =>
+    dialogue.slice(Math.max(0, idx - before), idx + len + after);
+
+  // Build-era decades (only in a housing/build context).
+  DECADE_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = DECADE_RE.exec(dialogue)) !== null) {
+    if (!BUILD_CONTEXT_RE.test(window(m.index, m[0].length))) continue;
+    claims.push({
+      raw: m[0].trim(),
+      offset: m.index,
+      kind: "build_era",
+      termGroups: [decadeTerms(m[1])],
+      hedgeable: false,
+    });
+  }
+
+  // Housing-stock styles. Ground on the curated style root (e.g. "ranch") so a
+  // profile that says "ranch homes" sources a "ranch styles" claim, without the
+  // generic single-token fallback ("single"/"story") that lets unrelated prose
+  // source it. The full phrase is kept as a fallback term.
+  HOUSING_STYLE_RE.lastIndex = 0;
+  while ((m = HOUSING_STYLE_RE.exec(dialogue)) !== null) {
+    const full = normalizeSeparators(m[0].trim().toLowerCase());
+    const roots = STYLE_ROOTS.filter((r) => full.includes(r));
+    claims.push({
+      raw: m[0].trim(),
+      offset: m.index,
+      kind: "housing_style",
+      termGroups: [Array.from(new Set([full, ...roots]))],
+      hedgeable: false,
+    });
+  }
+
+  // Demographic descriptors — soft (require attribution frame).
+  DEMO_SOFT_RE.lastIndex = 0;
+  while ((m = DEMO_SOFT_RE.exec(dialogue)) !== null) {
+    const isSkew = /^skews?\b/i.test(m[0]);
+    if (!isSkew && !ATTRIBUTION_RE.test(window(m.index, m[0].length, 45, 0))) {
+      continue;
+    }
+    claims.push({
+      raw: m[0].trim(),
+      offset: m.index,
+      kind: "demographic",
+      termGroups: [[m[0].trim().toLowerCase()]],
+      hedgeable: true,
+    });
+  }
+
+  // Demographic comparative — hard (specific, not hedgeable). Source on the
+  // exact metric phrase OR its metric noun (income/age/home value/net worth) —
+  // so a "median income" comparative is NOT grounded by a profile that only
+  // mentions "median age".
+  DEMO_HARD_RE.lastIndex = 0;
+  while ((m = DEMO_HARD_RE.exec(dialogue)) !== null) {
+    const phrase = m[1].toLowerCase();
+    const nounMatch = phrase.match(
+      /\b(income|age|home\s+values?|net\s+worth)\b/,
+    );
+    const group = [phrase];
+    if (nounMatch) group.push(normalizeSeparators(nounMatch[1]));
+    claims.push({
+      raw: m[0].trim(),
+      offset: m.index,
+      kind: "demographic",
+      termGroups: [Array.from(new Set(group))],
+      hedgeable: false,
+    });
+  }
+
+  // Named institutions / amenities + attributes. School-rating claims require
+  // BOTH the institution noun AND a rating word in the source (so "schools and
+  // parks" doesn't ground "top-rated schools"); the rest source on a single
+  // group.
+  for (const [re, groups] of [
+    [SCHOOL_RATING_RE, [["school"], SCHOOL_RATING_GROUP]],
+    [HOA_FEES_RE, [["hoa"]]],
+    [ENERGY_EFFICIENT_RE, [["energy-efficient", "energy efficient"]]],
+    [COMMUNITY_CENTRE_RE, [["community centre", "community center"]]],
+  ] as [RegExp, string[][]][]) {
+    re.lastIndex = 0;
+    while ((m = re.exec(dialogue)) !== null) {
+      claims.push({
+        raw: m[0].trim().replace(/\s+/g, " "),
+        offset: m.index,
+        kind: "institution",
+        termGroups: groups,
+        hedgeable: false,
+      });
+    }
+  }
+
+  return claims;
+}
+
 export function checkUnsourcedFactualClaim(
   script: string,
   sourceOfTruth: SourceOfTruthValue[] | undefined,
@@ -1667,80 +1905,132 @@ export function checkUnsourcedFactualClaim(
   const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
   const hasCited = citedFacts && citedFacts.length > 0;
   const hasProfile = profileText.some((t) => t && t.trim().length > 0);
-  // Need at least one legitimate anchor source to judge against. With no
-  // sources at all we can't tell sourced from invented — stay silent (matches
-  // the defensive posture of the other grounding rules).
-  if (!hasSot && !hasCited && !hasProfile) return [];
-
-  // Build the anchor set: verbatim normalized digit strings + numeric values.
-  const verbatim = new Set<string>();
-  const numbers: number[] = [];
-  const addNumber = (n: number, norm: string) => {
-    if (Number.isFinite(n)) {
-      numbers.push(n);
-      verbatim.add(norm);
-    }
-  };
-  for (const t of profileText) {
-    for (const p of extractProfileNumbers(t)) addNumber(p.value, p.normalized);
-  }
-  if (hasCited) {
-    for (const c of citedFacts!) {
-      if (!c.raw) continue;
-      for (const t of extractStatTokens(c.raw)) {
-        addNumber(t.value, String(t.value));
-      }
-      // Also keep the raw cited digits verbatim (covers bare integers the
-      // stat extractor skips, e.g. a population count in a cited fact).
-      for (const m of c.raw.matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
-        const norm = m[0].replace(/,/g, "");
-        addNumber(Number(norm), norm);
-      }
-    }
-  }
-  if (hasSot) {
-    for (const sot of sourceOfTruth!) {
-      for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
-        addNumber(v, String(v));
-      }
-    }
-  }
 
   const { dialogue } = stripToDialogue(script);
-  const claims = collectFactualClaims(dialogue);
-  if (claims.length === 0) return [];
-
   const violations: ScriptViolation[] = [];
   const seen = new Set<string>();
-  for (const claim of claims) {
-    const anchored =
-      verbatim.has(claim.normalized) ||
-      (claim.kind === "demographic" &&
-        numbers.some((n) => withinTolerance(n, claim.value)));
-    if (anchored) continue;
 
-    const dedupeKey = `${claim.kind}|${claim.normalized}`;
-    if (seen.has(dedupeKey)) continue;
-    seen.add(dedupeKey);
+  // ── Qualitative claims ────────────────────────────────────────────────
+  // These run REGARDLESS of whether numeric anchor sources exist: a specific
+  // verifiable fact about a place that traces to no profile/fact is invented,
+  // even when the member has no profile stored at all (then nothing can ground
+  // it, so it must be cut or kept general).
+  const sourceBlob = normalizeSeparators(
+    [...profileText.filter(Boolean), ...(citedFacts ?? []).map((c) => c.raw || "")]
+      .join("\n")
+      .toLowerCase(),
+  );
+  for (const q of collectQualitativeClaims(dialogue)) {
+    if (
+      q.hedgeable &&
+      QUAL_HEDGE_RE.test(dialogue.slice(Math.max(0, q.offset - 70), q.offset))
+    ) {
+      continue;
+    }
+    // Sourced only when EVERY required group has at least one term present
+    // (separator-insensitive). Two groups => both the institution noun AND its
+    // attribute must appear, so a profile that merely lists "schools" can't
+    // ground a "top-rated schools" claim.
+    const sourced = q.termGroups.every(
+      (group) =>
+        group.length > 0 &&
+        group.some(
+          (t) => t.length > 0 && sourceBlob.includes(normalizeSeparators(t)),
+        ),
+    );
+    if (sourced) continue;
 
-    const what =
-      claim.kind === "year"
-        ? `Dated claim "${claim.raw}"`
-        : `Demographic figure "${claim.raw}"`;
+    const key = `q|${q.kind}|${q.raw.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
     violations.push({
       rule: "unsourced_factual_claim",
       severity: "error",
       message:
-        `${what} isn't backed by any cited fact, your source-of-truth, or your ` +
-        `Knowledge Base neighbourhood profile. Specific claims — demographics, ` +
-        `dates, named-institution attributes — must trace to a real source, the ` +
-        `same as market stats. Either ground it in your profile/data or cut the ` +
-        `specific (keep it general).`,
+        `${QUAL_LABEL[q.kind]} "${q.raw}" isn't backed by your Knowledge Base ` +
+        `neighbourhood profile or any cited fact. Specific verifiable facts about ` +
+        `a place — build era, housing style, demographics, named institutions/` +
+        `amenities — must trace to your profile or data (and be cited in ` +
+        `"## Sources"), exactly like a market stat. Either ground it in your ` +
+        `profile, cut the specific and keep it general (e.g. "a family ` +
+        `neighbourhood"), or reframe it as your own experience with no invented ` +
+        `detail.`,
       snippet: dialogue
-        .slice(Math.max(0, claim.offset - 60), claim.offset + claim.raw.length + 20)
+        .slice(Math.max(0, q.offset - 60), q.offset + q.raw.length + 20)
         .trim(),
     });
   }
+
+  // ── Numeric claims (need at least one anchor source to judge against) ───
+  // With no sources at all we can't tell a sourced number from an invented one,
+  // so stay silent (matches the defensive posture of the other grounding rules).
+  if (hasSot || hasCited || hasProfile) {
+    // Build the anchor set: verbatim normalized digit strings + numeric values.
+    const verbatim = new Set<string>();
+    const numbers: number[] = [];
+    const addNumber = (n: number, norm: string) => {
+      if (Number.isFinite(n)) {
+        numbers.push(n);
+        verbatim.add(norm);
+      }
+    };
+    for (const t of profileText) {
+      for (const p of extractProfileNumbers(t)) addNumber(p.value, p.normalized);
+    }
+    if (hasCited) {
+      for (const c of citedFacts!) {
+        if (!c.raw) continue;
+        for (const t of extractStatTokens(c.raw)) {
+          addNumber(t.value, String(t.value));
+        }
+        // Also keep the raw cited digits verbatim (covers bare integers the
+        // stat extractor skips, e.g. a population count in a cited fact).
+        for (const dm of c.raw.matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
+          const norm = dm[0].replace(/,/g, "");
+          addNumber(Number(norm), norm);
+        }
+      }
+    }
+    if (hasSot) {
+      for (const sot of sourceOfTruth!) {
+        for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+          addNumber(v, String(v));
+        }
+      }
+    }
+
+    for (const claim of collectFactualClaims(dialogue)) {
+      const anchored =
+        verbatim.has(claim.normalized) ||
+        (claim.kind === "demographic" &&
+          numbers.some((n) => withinTolerance(n, claim.value)));
+      if (anchored) continue;
+
+      const dedupeKey = `${claim.kind}|${claim.normalized}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      const what =
+        claim.kind === "year"
+          ? `Dated claim "${claim.raw}"`
+          : `Demographic figure "${claim.raw}"`;
+      violations.push({
+        rule: "unsourced_factual_claim",
+        severity: "error",
+        message:
+          `${what} isn't backed by any cited fact, your source-of-truth, or your ` +
+          `Knowledge Base neighbourhood profile. Specific claims — demographics, ` +
+          `dates, named-institution attributes — must trace to a real source, the ` +
+          `same as market stats. Either ground it in your profile/data or cut the ` +
+          `specific (keep it general).`,
+        snippet: dialogue
+          .slice(Math.max(0, claim.offset - 60), claim.offset + claim.raw.length + 20)
+          .trim(),
+      });
+    }
+  }
+
   return violations;
 }
 

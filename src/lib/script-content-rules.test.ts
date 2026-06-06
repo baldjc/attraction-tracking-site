@@ -411,6 +411,138 @@ test("unsourced_factual_claim — silent when no anchor sources are provided", (
   assert.equal(n, 0, "with no anchors the rule cannot judge and stays silent");
 });
 
+/* ── unsourced_factual_claim — QUALITATIVE neighbourhood facts ───────────── */
+
+test("qualitative — invented build-era + housing-style claim (no profile) is rejected", () => {
+  // The spec's required acceptance test: an invented "built in the 1990s,
+  // single-story ranch styles" claim with no profile must be caught — even
+  // with no anchor sources at all, because nothing can ground it.
+  const n = unsourcedClaimHits(
+    "Most homes here were built in the 1990s, single-story ranch styles all the way down the block.",
+    {},
+  );
+  assert.ok(n >= 1, "an unsourced build-era / housing-style claim must be rejected");
+});
+
+test("qualitative — a data interpretation ('buyers are being methodical') passes", () => {
+  const n = unsourcedClaimHits(
+    "What I'm seeing is buyers are being methodical right now, and sellers are learning to price realistically.",
+    {},
+  );
+  assert.equal(n, 0, "data interpretations must not be over-blocked");
+});
+
+test("qualitative — framework mechanics (MOI threshold) is not blocked", () => {
+  const n = unsourcedClaimHits(
+    "Remember, anything below 2.5 months of inventory is a sellers market, but low inventory doesn't equal seller control when behaviour shifts.",
+    {},
+  );
+  assert.equal(n, 0, "framework mechanics must stay allowed");
+});
+
+test("qualitative — clearly-experiential framing is not blocked", () => {
+  const n = unsourcedClaimHits(
+    "I've seen this area appeal to families over the years, and in my experience it tends to draw young families too.",
+    {},
+  );
+  assert.equal(n, 0, "experiential framing with no invented specific must pass");
+});
+
+test("qualitative — build era backed by the profile passes", () => {
+  const n = unsourcedClaimHits(
+    "Most homes here were built in the 1990s with single-story ranch styles.",
+    {
+      profileText: [
+        "Lakeview's housing stock was largely built in the 1990s, dominated by single-story ranch homes.",
+      ],
+    },
+  );
+  assert.equal(n, 0, "a build-era / housing-style claim that traces to the profile must pass");
+});
+
+test("qualitative — worded demographic comparative (no number) is rejected", () => {
+  const n = unsourcedClaimHits(
+    "The median household income here runs higher than the regional average.",
+    { profileText: ["Oliver is a walkable core anchored by the LRT line."] },
+  );
+  assert.ok(n >= 1, "an unsourced worded demographic comparative must be rejected");
+});
+
+test("qualitative — demographic descriptor in an attribution frame is rejected", () => {
+  const n = unsourcedClaimHits(
+    "This neighbourhood is home to young families and first-time buyers.",
+    { profileText: ["Oliver is a walkable core anchored by the LRT line."] },
+  );
+  assert.ok(n >= 1, "an unsourced demographic descriptor stated as fact must be rejected");
+});
+
+test("qualitative — addressing the audience ('first-time buyers should…') is not blocked", () => {
+  const n = unsourcedClaimHits(
+    "If you're a first-time buyer, you should watch inventory closely this spring.",
+    {},
+  );
+  assert.equal(n, 0, "audience address (not an area-demographic fact) must pass");
+});
+
+test("qualitative — named-institution attribute (school + rating) is rejected", () => {
+  const n = unsourcedClaimHits(
+    "The schools here are top-rated, and those school ratings drew families in droves.",
+    { profileText: ["Oliver is a walkable core anchored by the LRT line."] },
+  );
+  assert.ok(n >= 1, "an unsourced school-rating claim must be rejected");
+});
+
+test("qualitative — named institution backed by the profile passes", () => {
+  const n = unsourcedClaimHits(
+    "The schools here are highly rated, which keeps drawing families.",
+    {
+      profileText: [
+        "Lakeview is anchored by top-rated schools and a community centre.",
+      ],
+    },
+  );
+  assert.equal(n, 0, "a school claim that traces to the profile must pass");
+});
+
+test("qualitative — school RATING not grounded by a profile that only lists schools", () => {
+  // The profile mentions schools but says nothing about ratings: the invented
+  // "top-rated" attribute must still be rejected (institution noun present is
+  // not enough — the attribute has to trace to the source too).
+  const n = unsourcedClaimHits("The schools here are top-rated.", {
+    profileText: ["Lakeview has great parks and schools nearby."],
+  });
+  assert.ok(
+    n >= 1,
+    "a rating attribute must not be sourced by a bare mention of schools",
+  );
+});
+
+test("qualitative — income comparative not grounded by an unrelated median-age line", () => {
+  // The profile only carries a median AGE; it must not source a median INCOME
+  // comparative (different metric → still unsourced).
+  const n = unsourcedClaimHits(
+    "The median household income here runs higher than the regional average.",
+    { profileText: ["Oliver's median age here is 41."] },
+  );
+  assert.ok(
+    n >= 1,
+    "a median-income comparative must not be grounded by a median-age fact",
+  );
+});
+
+test("qualitative — housing style not grounded by an unrelated 'story'", () => {
+  // "single-story" must not be sourced just because the profile happens to use
+  // the word "story" in unrelated prose.
+  const n = unsourcedClaimHits(
+    "Most homes here are single-story ranch styles.",
+    { profileText: ["Oliver is quite a story of downtown growth and renewal."] },
+  );
+  assert.ok(
+    n >= 1,
+    "a housing-style claim must not be sourced by an unrelated 'story'",
+  );
+});
+
 /* ── Sources-footnote dialogue scoping (must not over-exclude) ───────────── */
 
 test("strip scope — exact '## Sources' footnote is excluded from dialogue", () => {
