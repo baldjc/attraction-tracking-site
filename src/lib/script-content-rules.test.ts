@@ -539,11 +539,34 @@ test("fabricated_credibility_stat — a coincidental neighbourhood number in pro
   );
 });
 
-test("fabricated_credibility_stat — non-numeric 'every few days' fallback never trips", () => {
+test("fabricated_credibility_stat — vague 'every few days' with NO stored cadence trips (Fix 3)", () => {
+  // The prompt used to RECOMMEND "every few days" as a fallback, so members with
+  // nothing on file (e.g. Phil) invented a soft frequency. With no stored cadence
+  // a vague personal cadence is now flagged exactly like an invented numeric one.
+  assert.ok(
+    fabricatedHits("Our team helps a family move every few days, and here's what we're seeing.") >= 1,
+    "a guessed vague cadence with nothing on the profile must trip",
+  );
+});
+
+test("fabricated_credibility_stat — vague 'every few days' is exempt when a real cadence is stored (Fix 3)", () => {
+  // Members WITH a stored cadence (e.g. Chris's 53h) keep working — the presence
+  // of any stored cadence on the profile means a vague phrasing isn't a guess.
   assert.equal(
-    fabricatedHits("Our team helps a family move every few days, and here's what we're seeing."),
+    fabricatedHits(
+      "Our team helps a family move every few days, and here's what we're seeing.",
+      { credentialsText: ["Team helps a family move every 53 hours on average."] },
+    ),
     0,
-    "a non-numeric fallback carries no number and must not trip",
+    "a member with a stored cadence isn't forced off a vague phrasing",
+  );
+});
+
+test("fabricated_credibility_stat — a market 'every few days' (inanimate subject) must NOT trip (Fix 3)", () => {
+  assert.equal(
+    fabricatedHits("Homes in this pocket are selling every few days right now."),
+    0,
+    "an inanimate-subject market cadence is not a personal credibility claim",
   );
 });
 
@@ -578,6 +601,63 @@ test("fabricated_credibility_stat — a market cadence ('homes are selling every
     ),
     0,
     "an inanimate-subject market cadence is not a personal credibility claim",
+  );
+});
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  unlisted_market_stat (Fix 2 — source EVERY number family)              */
+/* ────────────────────────────────────────────────────────────────────── */
+
+function unlistedHits(
+  script: string,
+  opts: Parameters<typeof validateScript>[1] = {},
+): number {
+  const { violations } = validateScript(script, opts);
+  return violations.filter((v) => v.rule === "unlisted_market_stat").length;
+}
+
+test("unlisted_market_stat — a real failure rate spoken but absent from '## Sources' trips (Fix 2)", () => {
+  // FAILURE_RATE is stored as a ratio (1.81); the body speaks "181%". The
+  // footnote lists only the median, so the failure rate is unsourced → error.
+  const body =
+    "The failure rate here is sitting at 181% right now.\n\n" +
+    "## Sources\n- $615,000 — Downtown median (fact: mf_price)";
+  assert.ok(
+    unlistedHits(body, { sourceOfTruth: [{ metricFamily: "FAILURE_RATE", metricValue: 1.81 }] }) >= 1,
+    "a real number missing from the Sources footnote must be flagged",
+  );
+});
+
+test("unlisted_market_stat — the SAME failure rate listed in '## Sources' passes (Fix 2)", () => {
+  const body =
+    "The failure rate here is sitting at 181% right now.\n\n" +
+    "## Sources\n- 181% — Downtown failure rate (fact: mf_fr)";
+  assert.equal(
+    unlistedHits(body, { sourceOfTruth: [{ metricFamily: "FAILURE_RATE", metricValue: 1.81 }] }),
+    0,
+    "a sourced number must not be flagged",
+  );
+});
+
+test("unlisted_market_stat — a real days-on-market number absent from '## Sources' trips (Fix 2)", () => {
+  const body =
+    "Properties are averaging 21 days on market here.\n\n" +
+    "## Sources\n- $615,000 — Downtown median (fact: mf_price)";
+  assert.ok(
+    unlistedHits(body, { sourceOfTruth: [{ metricFamily: "DOM", metricValue: 21 }] }) >= 1,
+    "DOM is a number family that must be sourced too, not just MOI + price",
+  );
+});
+
+test("unlisted_market_stat — a fabricated number (not in SoT) is NOT double-flagged here (Fix 2)", () => {
+  // $999,123 isn't in the SoT — that's unanchored_stat's job, not this rule.
+  const body =
+    "Inventory is 8.8 months, but homes cost $999,123 here.\n\n" +
+    "## Sources\n- 8.8 — Downtown MOI (fact: mf_moi)";
+  assert.equal(
+    unlistedHits(body, { sourceOfTruth: [{ metricFamily: "MOI", metricValue: 8.8 }] }),
+    0,
+    "fabrications belong to unanchored_stat; unlisted_market_stat only polices real numbers",
   );
 });
 

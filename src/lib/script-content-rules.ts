@@ -81,7 +81,11 @@ export type ScriptViolationRule =
   /** A spoken number agrees with a per-fact cited value but DISAGREES (beyond
    *  rounding) with the canonical aggregated source-of-truth for the same
    *  metric. Canonical = source-of-truth, so the per-fact number must yield. */
-  | "no_sot_disagreement";
+  | "no_sot_disagreement"
+  /** A real market number (any family: failure rate, SP/LP, DOM, PSF, …) is
+   *  spoken in the body but is missing from the "## Sources" footnote. Every
+   *  spoken number must trace to a fact id in Sources, not just MOI + price. */
+  | "unlisted_market_stat";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -193,6 +197,20 @@ export function stripToDialogue(script: string): {
     map.push(i + 1);
   }
   return { dialogue: out.join("\n"), dialogueLineMap: map };
+}
+
+/**
+ * Return the text of the `## Sources` footnote (everything AFTER the bare
+ * Sources heading), or "" when the script has no footnote. Mirror image of the
+ * `stripToDialogue` cut: that function keeps everything BEFORE the heading; this
+ * keeps everything after. Used by `checkUnlistedMarketStat` to confirm every
+ * real market number the body speaks is also listed in the audit footnote.
+ */
+export function extractSourcesFootnote(script: string): string {
+  const lines = script.split(/\r?\n/);
+  const idx = lines.findIndex((l) => SOURCES_FOOTNOTE_HEADING_RE.test(l));
+  if (idx === -1) return "";
+  return lines.slice(idx + 1).join("\n");
 }
 
 /** Trim a snippet to ≤120 chars with a couple of words of left/right context. */
@@ -1139,6 +1157,128 @@ export function checkNoMisattributedStats(
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  unlisted_market_stat — every REAL number must appear in ## Sources.   */
+/*                                                                        */
+/*  Fix 2 — source EVERY number family, not just MOI + price. The prompt  */
+/*  already asks for a complete "## Sources" footnote, but nothing        */
+/*  enforced it, so drafts shipped with failure-rate (181%, 72%), DOM     */
+/*  (21, 34, 36) and sale-to-list numbers spoken in the body but absent   */
+/*  from the footnote. `unanchored_stat` only catches FABRICATIONS        */
+/*  (numbers NOT in the data); a real number that's just unsourced slips   */
+/*  through. This rule closes that gap: for each body stat token that      */
+/*  matches a real SoT / cited-fact value (so it IS a market number),      */
+/*  require its value to also appear in the "## Sources" footnote. Missing */
+/*  → ERROR, so the re-prompt loop forces the writer to list it — exactly  */
+/*  the way an unsourced MOI is rejected. Ships drafts at 0 issues only    */
+/*  once every family is sourced.                                          */
+/* ────────────────────────────────────────────────────────────────────── */
+
+export function checkUnlistedMarketStat(
+  script: string,
+  sourceOfTruth: SourceOfTruthValue[] | undefined,
+  citedFacts: CitedFactValue[] | undefined = undefined,
+): ScriptViolation[] {
+  const hasSot = sourceOfTruth && sourceOfTruth.length > 0;
+  const hasCited = citedFacts && citedFacts.length > 0;
+  // Without any anchors we can't tell which body numbers are real market
+  // stats, so we stay silent (the same guard the other grounding rules use).
+  if (!hasSot && !hasCited) return [];
+
+  const { dialogue } = stripToDialogue(script);
+  const tokens = extractStatTokens(dialogue);
+  if (tokens.length === 0) return [];
+
+  // Build the set of real market values (with unit) the body could legitimately
+  // speak — direct SoT, member-cited facts, plus the SP/LP inverse derivation.
+  // `derivedOnly` marks anchors that only exist as an inverse phrasing ("3.3%
+  // below asking"): we do NOT force those into the footnote (the writer lists
+  // the ratio, not every inverse phrasing), to keep the rule false-positive-free.
+  const anchors: Array<{ unit: StatUnit; value: number; derivedOnly: boolean }> = [];
+  if (hasSot) {
+    for (const sot of sourceOfTruth!) {
+      const unit = unitForFamily(sot.metricFamily);
+      if (!unit) continue;
+      for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+        anchors.push({ unit, value: v, derivedOnly: false });
+      }
+      if (sot.metricFamily === "SP_LP") {
+        const ratio = sot.metricValue <= 2 ? sot.metricValue : sot.metricValue / 100;
+        const discount = (1 - ratio) * 100;
+        if (discount !== 0) {
+          anchors.push({ unit: "percent", value: Math.abs(discount), derivedOnly: true });
+        }
+      }
+    }
+  }
+  if (hasCited) {
+    for (const c of citedFacts!) {
+      if (!c.raw) continue;
+      for (const t of extractStatTokens(c.raw)) {
+        anchors.push({ unit: t.unit, value: t.value, derivedOnly: false });
+      }
+    }
+  }
+  if (anchors.length === 0) return [];
+
+  // Footnote numbers — parsed unit-agnostically (bare digits included) so a
+  // "21 — days on market" bullet counts even without a unit suffix. Presence in
+  // the footnote is matched on VALUE within tolerance; an audit bullet listing
+  // the number is enough proof it's sourced, regardless of how it's phrased.
+  const footnote = extractSourcesFootnote(script);
+  const footnoteValues = extractProfileNumbers(footnote).map((p) => p.value);
+
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (const tok of tokens) {
+    // Skip narrative time references ("over the next 90 days") — same filter
+    // unanchored_stat applies so we never treat a non-stat as a market number.
+    if (
+      (tok.unit === "months" || tok.unit === "days") &&
+      TIME_REFERENCE_PATTERN.test(tok.raw) &&
+      !isMarketTimeAnchored(dialogue, tok.offset)
+    ) {
+      continue;
+    }
+
+    const matched = anchors.filter(
+      (a) => a.unit === tok.unit && withinTolerance(a.value, tok.value),
+    );
+    // Not a real market number (fabrications are unanchored_stat's job), or it
+    // only matches an inverse SP/LP derivation we don't force into the footnote.
+    if (matched.length === 0) continue;
+    if (matched.every((a) => a.derivedOnly)) continue;
+
+    // Listed if the footnote carries a number within tolerance of the spoken
+    // token OR of the underlying anchor value it matched (covers footnote/body
+    // rounding differences — body "$615K", footnote "$615,000").
+    const listed = footnoteValues.some(
+      (v) =>
+        withinTolerance(v, tok.value) ||
+        matched.some((a) => withinTolerance(v, a.value)),
+    );
+    if (listed) continue;
+
+    const dedupeKey = `${tok.unit}|${tok.value}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    violations.push({
+      rule: "unlisted_market_stat",
+      severity: "error",
+      message:
+        `Stat "${tok.raw}" is a real number from your data but it is not listed ` +
+        `in the "## Sources" footnote. EVERY market number you speak — months of ` +
+        `inventory, price, price per square foot, sale-to-list, days on market, ` +
+        `failure rate, absorption — must appear in the footnote mapped to its fact ` +
+        `id. Add a "## Sources" bullet for this number, or remove it from the script.`,
+      snippet: dialogue
+        .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
+        .trim(),
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  no_sot_disagreement — canonical = Source-of-Truth (ERROR).            */
 /*                                                                        */
 /*  Extends grounding past "is this number real anywhere?" to "does this  */
@@ -1563,12 +1703,15 @@ export function checkNoAnnouncedCredibility(script: string): ScriptViolation[] {
       message:
         `Announced credibility detected: "${m[0]}". The Revelation beat in your ARC ` +
         `opening must drop credibility SIDEWAYS, not announce it. Use one of: ` +
-        `"Our team helps a family move every [X] hours" (use the real number from ` +
-        `MarketConfig.teamCredentials if available, else "every few days"), ` +
-        `"Weekly since June 2020", "What I've learned in helping thousands of ` +
-        `families through this market is...", or "After helping [X] families ` +
-        `move through this exact pattern, here's what I know...". Sideways = ` +
-        `woven into the explanation, never the first sentence, never a self-introduction.`,
+        `"Our team helps a family move every [X] hours" (ONLY the real number from ` +
+        `MarketConfig.teamCredentials; if none is on file, do NOT state any ` +
+        `frequency — not even a vague "every few days" — use a non-frequency ` +
+        `experience bridge like "after years of running this analysis for ` +
+        `families across the city..."), "Weekly since June 2020", "What I've ` +
+        `learned in helping thousands of families through this market is...", or ` +
+        `"After helping [X] families move through this exact pattern, here's what ` +
+        `I know...". Sideways = woven into the explanation, never the first ` +
+        `sentence, never a self-introduction.`,
       snippet: dialogue
         .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
         .trim(),
@@ -2215,11 +2358,28 @@ export function checkRecapClose(script: string): ScriptViolation[] {
 /*  member's profile/credentials. An invented cadence (the earlier draft's */
 /*  "every 53 hours") must be blocked. We flag an "every N hours/days"     */
 /*  cadence whose number doesn't appear in any provided anchor (profile    */
-/*  text, cited facts, source-of-truth). Non-numeric fallbacks ("every few */
-/*  days") carry no number and never trip.                                */
+/*  text, cited facts, source-of-truth). Vague frequencies ("every few     */
+/*  days") are ALSO flagged (Fix 3) — but only when the member has NO       */
+/*  stored cadence at all; a stored cadence exempts the vague phrasing.     */
 /* ────────────────────────────────────────────────────────────────────── */
 
 const CREDIBILITY_CADENCE_RE = /\bevery\s+(\d{1,4})\s+(?:hours?|days?)\b/gi;
+
+/**
+ * Fix 3 — a VAGUE personal cadence ("every few days", "every couple of days",
+ * "every other day", "every day"). When the member has NO cadence value on
+ * their credentials profile, the bridge must fall back to a NON-frequency
+ * experience line ("after years of running this analysis…") — never a guessed
+ * frequency, numeric OR vague. So this pattern is flagged exactly like an
+ * invented numeric cadence whenever the profile carries no stored cadence.
+ * Numeric "every N days" is intentionally NOT matched here (it has its own
+ * anchored-or-flagged path above).
+ */
+const QUALITATIVE_CADENCE_RE =
+  /\bevery\s+(?:(?:a\s+)?few|(?:a\s+)?couple(?:\s+of)?|several|other|single)\s+(?:hours?|days?|weeks?)\b|\bevery\s+(?:hour|day|week)\b/gi;
+
+/** Presence test: does the member's credentials prose carry a stored "every N hours/days" cadence? */
+const CADENCE_PRESENCE_RE = /\bevery\s+\d{1,4}\s+(?:hours?|days?)\b/i;
 
 /**
  * A first-person / team subject — the cadence rule only fires when the
@@ -2249,6 +2409,33 @@ export function checkFabricatedCredibilityStat(
   const anchorText = anchors.join(" \u0001 ");
   const violations: ScriptViolation[] = [];
   const seen = new Set<string>();
+
+  // Scope to a PERSONAL credibility claim: the cadence must sit in a sentence
+  // with a first-person/team subject AND a "help people" cue. This keeps the
+  // rule off market statistics ("homes are selling every 12 days"), which have
+  // an inanimate subject and no first-person cue. Evaluates the FULL containing
+  // sentence — both sides of the cadence token — so cadence-first phrasing
+  // ("Every 53 hours, our team helps a family…") scopes like cadence-last.
+  const personalCadenceSentence = (index: number, len: number): boolean => {
+    const before = dialogue.slice(0, index);
+    const sentenceStart = Math.max(
+      before.lastIndexOf("."),
+      before.lastIndexOf("!"),
+      before.lastIndexOf("?"),
+      before.lastIndexOf("\n"),
+    );
+    const token = dialogue.slice(index, index + len);
+    const after = dialogue.slice(index + len);
+    const afterEndRel = after.search(/[.!?\n]/);
+    const afterEnd = afterEndRel === -1 ? after.length : afterEndRel;
+    const sentence = before.slice(sentenceStart + 1) + token + after.slice(0, afterEnd);
+    return (
+      CREDIBILITY_SUBJECT_RE.test(sentence) && CREDIBILITY_ACTION_RE.test(sentence)
+    );
+  };
+  const lineOf = (index: number): number | undefined =>
+    dialogueLineMap[dialogue.slice(0, index).split("\n").length - 1];
+
   let m: RegExpExecArray | null;
   CREDIBILITY_CADENCE_RE.lastIndex = 0;
   while ((m = CREDIBILITY_CADENCE_RE.exec(dialogue)) !== null) {
@@ -2257,35 +2444,10 @@ export function checkFabricatedCredibilityStat(
     // the member's profile / credentials prose.
     const anchored = new RegExp(`(?<![\\d.])${num}(?![\\d.])`).test(anchorText);
     if (anchored) continue;
-    // Scope to a PERSONAL credibility claim: the cadence must sit in a sentence
-    // with a first-person/team subject AND a "help people" cue. This keeps the
-    // rule off market statistics ("homes are selling every 12 days"), which
-    // have an inanimate subject and no first-person cue.
-    const before = dialogue.slice(0, m.index);
-    const sentenceStart = Math.max(
-      before.lastIndexOf("."),
-      before.lastIndexOf("!"),
-      before.lastIndexOf("?"),
-      before.lastIndexOf("\n"),
-    );
-    // Evaluate the FULL containing sentence — both sides of the cadence token —
-    // so cadence-first phrasing ("Every 53 hours, our team helps a family...")
-    // is scoped the same as cadence-last phrasing.
-    const after = dialogue.slice(m.index + m[0].length);
-    const afterEndRel = after.search(/[.!?\n]/);
-    const afterEnd = afterEndRel === -1 ? after.length : afterEndRel;
-    const sentence =
-      before.slice(sentenceStart + 1) + m[0] + after.slice(0, afterEnd);
-    if (
-      !CREDIBILITY_SUBJECT_RE.test(sentence) ||
-      !CREDIBILITY_ACTION_RE.test(sentence)
-    ) {
-      continue;
-    }
+    if (!personalCadenceSentence(m.index, m[0].length)) continue;
     const key = m[0].toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    const dialogueLi = before.split("\n").length - 1;
     violations.push({
       rule: "fabricated_credibility_stat",
       severity: "error",
@@ -2294,14 +2456,48 @@ export function checkFabricatedCredibilityStat(
         `Bridge may only state a "a family every X hours/days" figure when ` +
         `that exact number is on the member's credentials profile. This ` +
         `number isn't — never invent a cadence. Use the member's REAL ` +
-        `credential (years in business, families helped, deals closed) or a ` +
-        `non-numeric fallback ("every few days"), or omit the cadence entirely.`,
+        `credential (years in business, families helped, deals closed), or ` +
+        `omit the cadence and use a non-frequency experience bridge ("after ` +
+        `years of running this analysis…").`,
       snippet: dialogue
         .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
         .replace(/\s+/g, " ")
         .trim(),
-      line: dialogueLineMap[dialogueLi],
+      line: lineOf(m.index),
     });
+  }
+
+  // Fix 3 — vague personal cadence ("every few days") with NO stored cadence.
+  // The earlier prompt RECOMMENDED "every few days" as the fallback, so drafts
+  // for members with nothing on file (e.g. Phil) invented a soft frequency.
+  // When the profile carries no stored cadence at all, a vague personal cadence
+  // is flagged exactly like an invented numeric one — the bridge must instead
+  // be a non-frequency experience line. (Members WITH a stored cadence, e.g.
+  // Chris's "every 53 hours", are exempt — they cite the real number.)
+  const hasStoredCadence = CADENCE_PRESENCE_RE.test(anchorText);
+  if (!hasStoredCadence) {
+    QUALITATIVE_CADENCE_RE.lastIndex = 0;
+    while ((m = QUALITATIVE_CADENCE_RE.exec(dialogue)) !== null) {
+      if (!personalCadenceSentence(m.index, m[0].length)) continue;
+      const key = m[0].toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      violations.push({
+        rule: "fabricated_credibility_stat",
+        severity: "error",
+        message:
+          `Guessed credibility cadence: "${m[0].trim()}". The member has NO ` +
+          `cadence value on their credentials profile, so the Expertise Bridge ` +
+          `must NOT state any frequency — not even a vague one like "every few ` +
+          `days". Drop the cadence and use a non-frequency experience bridge ` +
+          `("after years of running this analysis for families across the city…").`,
+        snippet: dialogue
+          .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
+          .replace(/\s+/g, " ")
+          .trim(),
+        line: lineOf(m.index),
+      });
+    }
   }
   return violations;
 }
@@ -2439,6 +2635,11 @@ export function validateScript(
       opts.citedFacts,
       opts.profileText,
     ),
+  );
+  // Fix 2 — every REAL market number (any family) must be listed in the
+  // "## Sources" footnote, not just MOI + price. Missing → error → re-prompt.
+  violations.push(
+    ...checkUnlistedMarketStat(script, opts.sourceOfTruth, opts.citedFacts),
   );
   // Wave 8 Fix 2 / Fix 3 / Fix 4 — ERROR severity, all gated through the
   // existing re-prompt loop.

@@ -22,10 +22,19 @@ fact with the WRONG canonical (e.g. apartment MOI shown for a detached fact, or 
 vs inclusive MOI). This caused a real over-override bug in Jarvis chat.
 
 **How to apply:**
-- Jarvis `reconcileLedgerToSourceOfTruth` (src/lib/jarvis/tools.ts) overrides ONLY when
-  `resolveUnambiguousSotValue` (src/lib/aggregated-metrics.ts) returns non-null — i.e.
-  EVERY SoT row for that (hood, family) agrees within rounding. Otherwise leave the raw
-  value untouched. Do NOT add a propertyType=="all" fallback (it arbitrarily picks one).
+- Two resolvers now exist and they are NOT interchangeable:
+  - `resolveUnambiguousSotValue` — returns non-null only when EVERY SoT value agrees
+    within rounding; used as the safe fallback when a family has no canonical pin.
+  - `resolveCanonicalSotValue(rows, family)` — for families with a `CANONICAL_METRIC_KEY`
+    pin (currently MOI → `moiInclusive`), DELIBERATELY picks that variant and prefers its
+    `propertyType=="All"` rollup, even when variants disagree. This is intentional: it is
+    what makes Jarvis chat and the script/Sources cite the SAME variant (the Downtown
+    6.71-strict vs 8.8-inclusive split). The old "never add an All fallback" rule applies
+    ONLY to the unpinned/unambiguous path — for a pinned family, the All preference is the
+    whole point. Falls back to `resolveUnambiguousSotValue` when the pinned variant is
+    absent for a hood.
+- Jarvis `reconcileLedgerToSourceOfTruth` (src/lib/jarvis/tools.ts) now reconciles via
+  the canonical resolver so chat matches the script's canonical variant.
 - The `no_sot_disagreement` validator (src/lib/script-content-rules.ts) must
   **neighbourhood-scope** its comparison: compare a spoken stat only against its own
   neighbourhood's SoT rows (+ "All Neighbourhoods" rollup), found via nearest preceding

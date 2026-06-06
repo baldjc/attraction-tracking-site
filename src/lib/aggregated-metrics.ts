@@ -386,6 +386,59 @@ export function resolveUnambiguousSotValue(
   return values.every((v) => sotValuesWithinRounding(v, first)) ? first : null;
 }
 
+/**
+ * Fix 1 — ONE canonical variant per family. Some families carry several
+ * metric-key variants (MOI = moiStrict / moiInclusive / rolling3; DOM =
+ * domMedian / domAverage) that legitimately DISAGREE. The script writer and the
+ * Jarvis chat summary must both cite the SAME one, or the chat says "Downtown
+ * 6.71" while the script/Sources say "8.8". This map names the board-aligned
+ * canonical metric-key for each multi-variant family — the single source of
+ * truth for "which variant do we cite". Families absent from the map have one
+ * variant (or no canonical winner) and fall back to `resolveUnambiguousSotValue`.
+ *
+ * MOI → `moiInclusive`: the CREB-aligned ((Active + Pending) ÷ Sold) view the
+ * script already cites (the "8.8 Downtown | All" number). Keep this in lockstep
+ * with the variant the SoT block marks ← CANONICAL and the reviewer checks.
+ */
+export const CANONICAL_METRIC_KEY: Partial<Record<MetricFamily, string>> = {
+  MOI: "moiInclusive",
+};
+
+/**
+ * Resolve the canonical source-of-truth value for one (neighbourhood, family)
+ * — the value BOTH the script and the chat summary must cite.
+ *
+ * 1. If the family has a CANONICAL_METRIC_KEY, restrict to rows of that variant
+ *    and prefer the propertyType="All" rollup (the scope the script cites, e.g.
+ *    "Downtown | All"); otherwise accept the keyed rows if they themselves agree.
+ * 2. Otherwise (single-variant family) fall back to `resolveUnambiguousSotValue`
+ *    across all rows so we never force a detached number onto an apartment fact.
+ *
+ * Returns `null` only when no canonical can be determined (empty set, or an
+ * ambiguous single-variant family).
+ */
+export function resolveCanonicalSotValue(
+  rows: ReadonlyArray<{ metricKey: string; propertyType: string; metricValue: number }>,
+  family: MetricFamily,
+): number | null {
+  if (rows.length === 0) return null;
+  const canonicalKey = CANONICAL_METRIC_KEY[family];
+  if (canonicalKey) {
+    const keyed = rows.filter((r) => r.metricKey === canonicalKey);
+    if (keyed.length > 0) {
+      // Prefer the "All" property-type rollup — the scope the script cites.
+      const all = keyed.find((r) => r.propertyType.toLowerCase() === "all");
+      if (all) return all.metricValue;
+      // No "All" rollup: accept the canonical variant only if its remaining
+      // property-type rows agree (else we can't know which type this fact is).
+      return resolveUnambiguousSotValue(keyed.map((r) => r.metricValue));
+    }
+    // Canonical variant not present for this hood — fall through to the
+    // unambiguous-across-everything path below.
+  }
+  return resolveUnambiguousSotValue(rows.map((r) => r.metricValue));
+}
+
 function formatDelta(value: number | null): string {
   // `yoyDelta` is persisted as a percentage already (csv-aggregate's
   // `pctDelta()` returns `(curr - prev) / prev * 100`), so a stored
@@ -425,11 +478,15 @@ export function renderSourceOfTruthBlock(
       `### ${neighbourhood} | ${propertyType} (month: ${monthYear})`,
     );
     for (const m of group) {
+      // Fix 1 — flag the canonical variant so the writer (and the reviewer)
+      // cite the SAME one the chat summary reconciles to. Only multi-variant
+      // families (MOI) carry a canonical key; single-variant rows are unmarked.
+      const isCanonical = CANONICAL_METRIC_KEY[m.metricFamily] === m.metricKey;
       const parts: string[] = [
         `- **${m.metricFamily}** (${m.metricKey}): ${formatValue(
           m.metricFamily,
           m.metricValue,
-        )} [n=${m.sampleSize}]`,
+        )} [n=${m.sampleSize}]${isCanonical ? " ← CANONICAL (cite this variant)" : ""}`,
       ];
       const yoy = formatDelta(m.yoyDelta);
       if (yoy) parts.push(`YoY ${yoy}`);

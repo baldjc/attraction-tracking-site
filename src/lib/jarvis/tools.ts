@@ -15,7 +15,7 @@ import {
   getSourceOfTruthMetrics,
   formatValue,
   sotValuesWithinRounding,
-  resolveUnambiguousSotValue,
+  resolveCanonicalSotValue,
   type MetricFamily,
 } from "@/lib/aggregated-metrics";
 import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
@@ -255,7 +255,12 @@ async function reconcileLedgerToSourceOfTruth(
   ): { value: number; family: MetricFamily } | null => {
     const list = groups.get(`${hood.toLowerCase()}|${family}`);
     if (!list || list.length === 0) return null;
-    const value = resolveUnambiguousSotValue(list.map((r) => r.metricValue));
+    // Fix 1 — pick the SAME canonical variant the script cites. For
+    // multi-variant families (MOI), resolveCanonicalSotValue selects the
+    // board-aligned variant (moiInclusive) at the "All" scope even when the
+    // strict/inclusive/rolling variants disagree — so chat shows 8.8, not the
+    // raw ledger 6.71. Single-variant families still require unambiguity.
+    const value = resolveCanonicalSotValue(list, family as MetricFamily);
     if (value === null) return null;
     return { value, family: list[0].metricFamily };
   };

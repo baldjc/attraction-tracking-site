@@ -783,8 +783,10 @@ function suggestRetryFix(v: ScriptViolation): string {
       "rewrite the Revelation beat so credibility lands SIDEWAYS, woven",
       "into the explanation. Replace this sentence with exactly one of the",
       "approved sideways drops:",
-      '"Our team helps a family move every [X] hours" (real number from',
-      'MarketConfig.teamCredentials if available, else "every few days"),',
+      '"Our team helps a family move every [X] hours" (ONLY the real number',
+      "from MarketConfig.teamCredentials; if none is on file do NOT state any",
+      'frequency — not even a vague "every few days" — pick a different drop',
+      'or use "after years of running this analysis for families…"),',
       '"Weekly since June 2020, every video, every Monday, no skips",',
       '"What I\'ve learned in helping thousands of families through this',
       'market is...", or "After helping [X] families move through this',
@@ -831,11 +833,13 @@ function suggestRetryFix(v: ScriptViolation): string {
     // Fix 1 — Expertise Bridge invented a cadence not on the profile.
     return [
       "this credibility cadence isn't on the member's credentials profile —",
-      "you invented it. Use ONLY the real number from the profile, or drop",
-      'the number for a non-numeric fallback ("every few days", "every',
-      'couple of days"), or use a qualitative bridge ("after years of',
-      'running this analysis for families across the city..."). Never invent',
-      "a precise cadence, deal count, or year span to sound authoritative.",
+      "you invented it. Use ONLY the real number from the profile. If no",
+      "cadence is on file, do NOT state any frequency — not even a vague",
+      '"every few days" / "every couple of days" (that is still a guessed',
+      'cadence). Drop the cadence and use a non-frequency experience bridge',
+      '("after years of running this analysis for families across the city..."),',
+      "or pick a different approved sideways drop. Never invent a precise OR",
+      "vague cadence, deal count, or year span to sound authoritative.",
     ].join(" ");
   }
   return v.message;
