@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { ToastProvider, useToast } from "@/components/ToastProvider";
+import KbMergeControl from "@/components/knowledge-base/KbMergeControl";
 import {
   renderResearchBrief,
   estimatedResearchMinutes,
@@ -471,6 +472,9 @@ function KnowledgeBaseInner({
           </div>
         )}
       </section>
+
+      {/* Clean up / merge fragmented areas */}
+      <KbMergeControl />
 
       {/* Section A — Research Brief */}
       <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">

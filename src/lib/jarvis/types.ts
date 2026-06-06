@@ -68,6 +68,16 @@ export interface SaveConfirmationContent {
   proposalMessageId: string;
 }
 
+/**
+ * Inserted by the KB-merge confirm action immediately before the shared gated
+ * apply runs. Its presence as the latest member message is the gate signal that
+ * lets `applyConfirmedMerge` (and the apply_merge tool) actually mutate the KB.
+ */
+export interface MergeConfirmationContent {
+  kind: "merge_confirmation";
+  mergeRunId: string;
+}
+
 export interface AssistantTextContent {
   kind: "text";
   text: string;

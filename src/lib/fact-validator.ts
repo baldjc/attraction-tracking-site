@@ -2122,6 +2122,32 @@ export async function runValidation(uploadId: string): Promise<void> {
       `[runValidation] step: persisted — facts=${totalFacts} leads=${storyLeads.length} cost=$${totalCost.toFixed(4)} wallMs=${wallMs}`,
       uploadId,
     );
+
+    // KB Merge & Clean — auto-on-upload (best-effort). The aggregation above
+    // already folded raw subdivisions into confirmed/deterministic canonical
+    // areas; this surfaces any NEW conservative fuzzy near-duplicates as a
+    // DRY_RUN for the member to review (never auto-applied). Failure here must
+    // not fail the validation — the data is already persisted.
+    try {
+      const { buildMergeRunReport } = await import("@/lib/kb-merge/merge-run");
+      const { mergeRunId } = await buildMergeRunReport(userId, {
+        source: "upload",
+        uploadId,
+        skipIfNoop: true,
+      });
+      if (mergeRunId) {
+        console.log(
+          `[runValidation] step: KB merge dry-run queued mergeRunId=${mergeRunId}`,
+          uploadId,
+        );
+      }
+    } catch (mergeErr) {
+      console.error(
+        "[runValidation] KB merge dry-run failed (non-fatal)",
+        uploadId,
+        mergeErr,
+      );
+    }
   } catch (err) {
     console.error('[runValidation] threw for', uploadId, err);
     await markUploadFailed(uploadId, err);

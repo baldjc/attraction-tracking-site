@@ -78,150 +78,154 @@ enum LeadStatus {
 }
 
 model User {
-  id                String      @id @default(uuid())
-  email             String      @unique
-  fullName          String?
-  passwordHash      String?
-  magicLinkEnabled  Boolean     @default(false)
-  emailVerified     Boolean     @default(false)
-  role              UserRole    @default(foundations_member)
-  ghlContactId        String?
-  phone               String?
-  youtubeChannelUrl   String?
-  youtubeHandle       String?
-  youtubeChannelName      String?
-  youtubeChannelThumbnail String?
-  serviceTier         ServiceTier @default(foundations)
+  id                        String      @id @default(uuid())
+  email                     String      @unique
+  fullName                  String?
+  passwordHash              String?
+  magicLinkEnabled          Boolean     @default(false)
+  emailVerified             Boolean     @default(false)
+  role                      UserRole    @default(foundations_member)
+  ghlContactId              String?
+  phone                     String?
+  youtubeChannelUrl         String?
+  youtubeHandle             String?
+  youtubeChannelName        String?
+  youtubeChannelThumbnail   String?
+  serviceTier               ServiceTier @default(foundations)
   // Edited videos/month the member is contracted for (2 or 4 on legacy
   // Production/Growth tiers; null for Foundations/Done-With-You). Internal —
   // tier-gating NEVER reads this; the canonical 4-value `serviceTier` does.
-  editedVideosPerMonth Int?
-  stripeCustomerId        String?   @unique
-  stripeSubscriptionId    String?
-  subscriptionStatus      String?
-  stripePlanName          String?
-  stripeCurrentPeriodEnd  DateTime?
-  stripePriceAmount       Int?
-  stripeCurrency          String?
-  stripeLineItems         Json?
+  editedVideosPerMonth      Int?
+  stripeCustomerId          String?     @unique
+  stripeSubscriptionId      String?
+  subscriptionStatus        String?
+  stripePlanName            String?
+  stripeCurrentPeriodEnd    DateTime?
+  stripePriceAmount         Int?
+  stripeCurrency            String?
+  stripeLineItems           Json?
   lastPaymentReminderSentAt DateTime?
-  slackUserId       String?
-  skoolProfile      String?
-  coachingNotes          String?
-  coachingNotesUpdatedAt DateTime?
-  invitedAt              DateTime?
-  lastLoginAt            DateTime?
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  slackUserId               String?
+  skoolProfile              String?
+  coachingNotes             String?
+  coachingNotesUpdatedAt    DateTime?
+  invitedAt                 DateTime?
+  lastLoginAt               DateTime?
+  createdAt                 DateTime    @default(now())
+  updatedAt                 DateTime    @updatedAt
 
-  allowedMemberIds  Json?
+  allowedMemberIds Json?
 
-  avatarProfile   Json?
-  videoThemes     String?
-  avatarName      String?
-  avatarSummary   String?
-  contentThemes   Json?
-  niche           Json?
-  city            String?
-  thankYouPageUrl     String?
-  creatorCredentials  String?
+  avatarProfile      Json?
+  videoThemes        String?
+  avatarName         String?
+  avatarSummary      String?
+  contentThemes      Json?
+  niche              Json?
+  city               String?
+  thankYouPageUrl    String?
+  creatorCredentials String?
 
-  aiToolsMonthlyCapOverride  Decimal? @db.Decimal(10, 2)
+  aiToolsMonthlyCapOverride Decimal? @db.Decimal(10, 2)
 
-  repurposeName     String?
-  repurposeBusiness String?
-  repurposeListSize String?
-  repurposeVoice    String?
-  savedLinks        Json?
+  repurposeName          String?
+  repurposeBusiness      String?
+  repurposeListSize      String?
+  repurposeVoice         String?
+  savedLinks             Json?
   descriptionBoilerplate String? @db.Text
 
   // Onboarding
-  onboardingComplete     Boolean   @default(false)
-  onboardingDismissedAt  DateTime?
+  onboardingComplete    Boolean   @default(false)
+  onboardingDismissedAt DateTime?
   // Onboarding Wizard (member/onboarding) — tracks linear progress through the
   // tier-aware multi-step setup flow. `onboardingStep` is the last COMPLETED
   // step (0 = not started). `onboardingCompletedAt` set when the member
   // finishes Step 9. `onboardingSkippedAt` set when they hit "Save and finish
   // later" — drives the dashboard nudge banner.
-  onboardingStep         Int       @default(0)
-  onboardingCompletedAt  DateTime?
-  onboardingSkippedAt    DateTime?
-  incomeGoal             String?
-  postingRhythm          Int?
-  biggestChallenge       String?
+  onboardingStep        Int       @default(0)
+  onboardingCompletedAt DateTime?
+  onboardingSkippedAt   DateTime?
+  incomeGoal            String?
+  postingRhythm         Int?
+  biggestChallenge      String?
 
   // Lead pipeline (only meaningful while role = audit_lead)
-  leadStatus             LeadStatus @default(New)
-  convertedFromLeadAt    DateTime?
+  leadStatus          LeadStatus @default(New)
+  convertedFromLeadAt DateTime?
 
-  lastYoutubeSyncAt    DateTime? @map("last_youtube_sync_at")
+  lastYoutubeSyncAt DateTime? @map("last_youtube_sync_at")
 
   assetsDriveLink  String?
-  clientHubEnabled Boolean  @default(true)
-  calendarToken    String?  @unique
+  clientHubEnabled Boolean @default(true)
+  calendarToken    String? @unique
 
   // Team access (delegated account access). When a team member switches into a
   // primary's account, this holds that primaryUserId (null = own account). The
   // membership is re-verified live on every request, so revocation is immediate.
-  activeAsTeamMemberOf  String?
+  activeAsTeamMemberOf String?
 
   // Admin test avatar state (mutually exclusive — only one set at a time)
-  activeTestAvatarId    String?   // Points to an AdminTestAvatar.id (custom avatar mode)
-  activeTestMemberId    String?   // Points to a User.id whose avatar to borrow (member avatar mode)
+  activeTestAvatarId String? // Points to an AdminTestAvatar.id (custom avatar mode)
+  activeTestMemberId String? // Points to a User.id whose avatar to borrow (member avatar mode)
 
-  adminTestAvatars      AdminTestAvatar[] @relation("adminTestAvatars")
+  adminTestAvatars AdminTestAvatar[] @relation("adminTestAvatars")
 
-  audits               Audit[]
-  auditJobs            AuditJob[]
-  campaigns            Campaign[]
-  scriptReviews        ScriptReview[]
-  savedScripts         SavedScript[]
-  savedTitles          SavedTitle[]
-  savedIdeas           SavedIdea[]
-  titleAnalyses        TitleAnalysis[]
-  aiToolConversations  AIToolConversation[]
-  aiToolUsage          AIToolUsage[]
-  repurposedContent    RepurposedContent[]
-  kbEntries            KnowledgeBaseEntry[]
-  savedItems           SavedItem[]
-  youtubeVideos        YouTubeVideo[]
-  channelSnapshots     YouTubeChannelSnapshot[]
-  workbookResponses    MemberWorkbookResponse[]
-  lessonProgress       MemberLessonProgress[]
-  homework             MemberHomework[]
-  waitlistEntries      ServiceWaitlistEntry[]
-  helpConversations    HelpConversation[]
-  contentPlans         ContentPlan[]
-  assignedPlans        ContentPlan[]    @relation("PlanAssignee")
-  clientCalls          ClientCall[]     @relation("ClientCalls")
-  createdCalls         ClientCall[]     @relation("CallCreator")
-  quickLinks           ClientQuickLink[]
-  scriptDrafts         ScriptDraft[]
-  contentEngineDrafts  ContentEngineDraft[]
+  audits                  Audit[]
+  auditJobs               AuditJob[]
+  campaigns               Campaign[]
+  scriptReviews           ScriptReview[]
+  savedScripts            SavedScript[]
+  savedTitles             SavedTitle[]
+  savedIdeas              SavedIdea[]
+  titleAnalyses           TitleAnalysis[]
+  aiToolConversations     AIToolConversation[]
+  aiToolUsage             AIToolUsage[]
+  repurposedContent       RepurposedContent[]
+  kbEntries               KnowledgeBaseEntry[]
+  savedItems              SavedItem[]
+  youtubeVideos           YouTubeVideo[]
+  channelSnapshots        YouTubeChannelSnapshot[]
+  workbookResponses       MemberWorkbookResponse[]
+  lessonProgress          MemberLessonProgress[]
+  homework                MemberHomework[]
+  waitlistEntries         ServiceWaitlistEntry[]
+  helpConversations       HelpConversation[]
+  contentPlans            ContentPlan[]
+  assignedPlans           ContentPlan[]            @relation("PlanAssignee")
+  clientCalls             ClientCall[]             @relation("ClientCalls")
+  createdCalls            ClientCall[]             @relation("CallCreator")
+  quickLinks              ClientQuickLink[]
+  scriptDrafts            ScriptDraft[]
+  contentEngineDrafts     ContentEngineDraft[]
   contentEngineChatDrafts ContentEngineChatDraft[]
-  changelogViews       ChangelogEntryView[]
-  upgradeModalDismissals UpgradeModalDismissal[]
-  planTeamNotes          PlanTeamNote[]      @relation("PlanTeamNoteAuthor")
-  planAssignments        PlanAssignmentLog[] @relation("PlanAssignmentActor")
+  changelogViews          ChangelogEntryView[]
+  upgradeModalDismissals  UpgradeModalDismissal[]
+  planTeamNotes           PlanTeamNote[]           @relation("PlanTeamNoteAuthor")
+  planAssignments         PlanAssignmentLog[]      @relation("PlanAssignmentActor")
 
   reviewerTrackedChannels      ReviewerTrackedChannel[] @relation("ReviewerTrackedChannelMember")
   reviewerTrackedChannelsAdded ReviewerTrackedChannel[] @relation("ReviewerTrackedChannelAddedBy")
 
   // Wave 0 (data-first rebuild) — additive relations only
-  marketConfig      MarketConfig?
-  marketDataUploads MarketDataUpload[]
-  marketFacts       MarketFact[]
-  aggregatedMetrics AggregatedMetric[]
-  marketStoryLeads  MarketStoryLead[]
-  memberMetricSettings MemberMetricSettings?
+  marketConfig           MarketConfig?
+  marketDataUploads      MarketDataUpload[]
+  marketFacts            MarketFact[]
+  aggregatedMetrics      AggregatedMetric[]
+  marketStoryLeads       MarketStoryLead[]
+  memberMetricSettings   MemberMetricSettings?
   onDemandExtractionLogs OnDemandExtractionLog[]
+  // Knowledge-Base Merge & Clean — additive relations only
+  canonicalAreas         CanonicalArea[]
+  areaAliases            AreaAlias[]
+  mergeRuns              MergeRun[]
 
   // Wave 1.5 (data-first rebuild) — additive relations only
   neighbourhoodProfiles        NeighbourhoodProfile[]
   neighbourhoodResearchUploads NeighbourhoodResearchUpload[]
 
   // Jarvis (AI Content Manager) — additive relation only
-  contentManagerThreads        ContentManagerThread[]
+  contentManagerThreads ContentManagerThread[]
 
   // Team access (delegated account access)
   teamMembershipsOwned   TeamMember[]      @relation("TeamMemberPrimary")
@@ -251,14 +255,14 @@ model ReviewerTrackedChannel {
 }
 
 model ResourceLesson {
-  id            String   @id @default(uuid())
-  title         String
-  lessonNumber  String
-  sessionNumber Int
-  skoolUrl      String   @default("")
-  fullTranscript String  @db.Text
-  principles    String[]
-  createdAt     DateTime @default(now())
+  id             String   @id @default(uuid())
+  title          String
+  lessonNumber   String
+  sessionNumber  Int
+  skoolUrl       String   @default("")
+  fullTranscript String   @db.Text
+  principles     String[]
+  createdAt      DateTime @default(now())
 
   @@map("course_lessons")
 }
@@ -356,18 +360,18 @@ model Audit {
 }
 
 model AuditJob {
-  id              String    @id @default(uuid())
-  auditType       AuditType
-  userId          String?
-  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status          JobStatus @default(queued)
-  errorMessage    String?
-  auditId         String?   @unique
-  audit           Audit?    @relation(fields: [auditId], references: [id])
-  auditRequestId  String?
-  auditRequest    AuditRequest? @relation(fields: [auditRequestId], references: [id], onDelete: SetNull)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String        @id @default(uuid())
+  auditType      AuditType
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         JobStatus     @default(queued)
+  errorMessage   String?
+  auditId        String?       @unique
+  audit          Audit?        @relation(fields: [auditId], references: [id])
+  auditRequestId String?
+  auditRequest   AuditRequest? @relation(fields: [auditRequestId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([auditRequestId])
   @@map("audit_jobs")
@@ -392,7 +396,7 @@ model Campaign {
   updatedAt      DateTime   @updatedAt
 
   links        TrackingLink[]
-  contentPlans ContentPlan[] @relation("PlanCampaign")
+  contentPlans ContentPlan[]  @relation("PlanCampaign")
 
   @@index([userId])
   @@map("campaigns")
@@ -488,7 +492,7 @@ model ContentManagerThread {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  messages  ContentManagerMessage[]
+  messages ContentManagerMessage[]
 
   @@index([userId])
   @@map("content_manager_threads")
@@ -606,16 +610,16 @@ model AIToolUsage {
 }
 
 model AIToolConversation {
-  id            String      @id @default(uuid())
+  id            String     @id @default(uuid())
   userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   toolType      AIToolType
   title         String
   messages      Json
   metadata      Json?
-  downloadCount Int         @default(0)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  downloadCount Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([userId])
   @@index([toolType])
@@ -798,61 +802,61 @@ model MemberHomework {
 }
 
 model ServiceCategory {
-  id                String   @id @default(uuid())
+  id                String           @id @default(uuid())
   name              String
-  slug              String   @unique
+  slug              String           @unique
   description       String?
-  icon              String   @default("PuzzlePieceIcon")
-  accentColour      String   @default("blue")
-  sortOrder         Int      @default(0)
-  published         Boolean  @default(true)
+  icon              String           @default("PuzzlePieceIcon")
+  accentColour      String           @default("blue")
+  sortOrder         Int              @default(0)
+  published         Boolean          @default(true)
   emoji             String?
   tagline           String?
-  highlighted       Boolean  @default(false)
+  highlighted       Boolean          @default(false)
   includesRef       String?
   cardExtras        Json?
   addonLabel        String?
   addonPriceNote    String?
   footerNote        String?
   jaredIncludedNote String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
   packages          ServicePackage[]
 
   @@map("service_categories")
 }
 
 model ServicePackage {
-  id                String   @id @default(uuid())
+  id                String                 @id @default(uuid())
   categoryId        String
   name              String
   price             String
   priceNote         String?
   badge             String?
   subtitle          String?
-  features          Json     @default("[]")
+  features          Json                   @default("[]")
   highlightFeatures Json?
   stripeUrl         String?
-  waitlist          Boolean  @default(false)
-  sortOrder         Int      @default(0)
-  published         Boolean  @default(true)
+  waitlist          Boolean                @default(false)
+  sortOrder         Int                    @default(0)
+  published         Boolean                @default(true)
   videoCount        Int?
-  isAddonVariant    Boolean  @default(false)
+  isAddonVariant    Boolean                @default(false)
   priceAmount       Int?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  category          ServiceCategory @relation(fields: [categoryId], references: [id])
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  category          ServiceCategory        @relation(fields: [categoryId], references: [id])
   waitlistEntries   ServiceWaitlistEntry[]
 
   @@map("service_packages")
 }
 
 model ServiceWaitlistEntry {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   packageId String
   userId    String
   message   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime       @default(now())
   package   ServicePackage @relation(fields: [packageId], references: [id])
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -947,33 +951,33 @@ model WebhookLog {
 }
 
 model ContentPlan {
-  id              String    @id @default(uuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  title           String
-  status          String    @default("Idea")
-  theme           String?
-  shootDate       DateTime?
-  shootLocation   String?
-  publishDate     DateTime?
-  editDueDate     DateTime?
-  priority        String?
-  notes           String?   @db.Text
-  script          String?   @db.Text
-  youtubeDescription String? @db.Text
-  researchNotes   String?   @db.Text
+  title              String
+  status             String    @default("Idea")
+  theme              String?
+  shootDate          DateTime?
+  shootLocation      String?
+  publishDate        DateTime?
+  editDueDate        DateTime?
+  priority           String?
+  notes              String?   @db.Text
+  script             String?   @db.Text
+  youtubeDescription String?   @db.Text
+  researchNotes      String?   @db.Text
   // Free-form scratchpad for the member's own notes & thoughts about this
   // video — separate from `notes` (talking points / outline) and
   // `researchNotes` (sourced facts) so the structured fields stay clean.
-  thoughts        String?   @db.Text
+  thoughts           String?   @db.Text
   // Manual progress-track overrides — array of step keys ("idea","script",
   // "review","title","description","repurpose","ready") the user has ticked
   // by hand. Combined with auto-detection (OR) when rendering ProgressTrack.
-  manualSteps     Json?
-  thumbnailWords  String?
-  footageLink     String?
-  driveFolderLink String?
+  manualSteps        Json?
+  thumbnailWords     String?
+  footageLink        String?
+  driveFolderLink    String?
 
   // Drive-file pick used as the video's thumbnail in planner views. Stored as
   // the raw Drive file id (+ friendly name for display fallback) so we can
@@ -988,24 +992,24 @@ model ContentPlan {
   thumbnailWinnerId String?
 
   // Pinned first comment drafted for this video — posts ~60s after publish.
-  pinnedComment   String?   @db.Text
+  pinnedComment String? @db.Text
 
-  linkedIdeaId    String?
-  linkedScriptId  String?
-  youtubeVideoId  String?
+  linkedIdeaId   String?
+  linkedScriptId String?
+  youtubeVideoId String?
 
   linkedCampaignId String?
   campaign         Campaign? @relation("PlanCampaign", fields: [linkedCampaignId], references: [id], onDelete: SetNull)
   assignedUserId   String?
   assignedUser     User?     @relation("PlanAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
-  bingeVideoId     String?
-  bingeVideo       ContentPlan?  @relation("BingeChain", fields: [bingeVideoId], references: [id], onDelete: SetNull)
-  bingedFromList   ContentPlan[] @relation("BingeChain")
+  bingeVideoId   String?
+  bingeVideo     ContentPlan?  @relation("BingeChain", fields: [bingeVideoId], references: [id], onDelete: SetNull)
+  bingedFromList ContentPlan[] @relation("BingeChain")
 
-  artifacts        PlanArtifact[]
-  teamNotes        PlanTeamNote[]
-  assignmentLog    PlanAssignmentLog[]
+  artifacts     PlanArtifact[]
+  teamNotes     PlanTeamNote[]
+  assignmentLog PlanAssignmentLog[]
 
   // Wave 0 (data-first rebuild) — all nullable, backward compatible
   shootType         ShootType?
@@ -1033,7 +1037,7 @@ model ContentPlan {
   //   "unresolved"            — no facts resolved; auto-enrichment will retry
   // Null for plans not originating from a Story Lead. Drives the wizard's
   // unresolved-facts banner vs. the auto-link review panel.
-  factsResolutionState String?
+  factsResolutionState      String?
   // Aggregate (weakest) confidence of the textual resolver's matches:
   // "exact" | "close" | "fuzzy". Only set when factsResolutionState is
   // "from_textual_resolver"; null otherwise.
@@ -1043,10 +1047,10 @@ model ContentPlan {
   // every member-facing read, retained for admin restore). Replaced the old
   // "Archived" status string, which only hid plans from a few views and left
   // them leaking into dashboards, the calendar feed, binge selectors, etc.
-  deletedAt       DateTime?
+  deletedAt DateTime?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, status])
@@ -1059,21 +1063,21 @@ model ContentPlan {
 }
 
 model ClientCall {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation("ClientCalls", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("ClientCalls", fields: [userId], references: [id], onDelete: Cascade)
 
-  fathomUrl   String?
-  loomUrl     String?
-  callDate    DateTime
-  topic       String?
-  notes       String?  @db.Text
+  fathomUrl String?
+  loomUrl   String?
+  callDate  DateTime
+  topic     String?
+  notes     String?  @db.Text
 
   createdById String
-  createdBy   User     @relation("CallCreator", fields: [createdById], references: [id])
+  createdBy   User   @relation("CallCreator", fields: [createdById], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, callDate])
@@ -1081,9 +1085,9 @@ model ClientCall {
 }
 
 model ClientQuickLink {
-  id        String @id @default(uuid())
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   label     String
   url       String
@@ -1126,25 +1130,25 @@ model ScriptDraft {
 // Multi-Family — Calgary data has no Multi-Family rows). `pickedKey` is the
 // sessionStorage key for the picked idea card (Step 4 only).
 model ContentEngineDraft {
-  id                 String   @id @default(uuid())
+  id                     String   @id @default(uuid())
   // Wave 4 beta — userId is NOT unique. A member can have several in-flight
   // wizard drafts at once (different tabs, different ideas in parallel).
   // Multi-draft surfaces (My Work, WizardDraftShell) order by updatedAt desc.
-  userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currentStep             String
-  propertyTypeFocus       String?
-  storyLeadId             String?
-  leadSpansMultipleTypes  Boolean  @default(false)
-  rotationSlot       String?
-  validatedIdea      String?  @db.Text
-  storyLeadFactIds   Json?
-  generatedIdeaCards Json?
-  validationContext  Json?
-  pickedKey          String?
-  expiresAt          DateTime
-  updatedAt          DateTime @updatedAt
-  createdAt          DateTime @default(now())
+  userId                 String
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStep            String
+  propertyTypeFocus      String?
+  storyLeadId            String?
+  leadSpansMultipleTypes Boolean  @default(false)
+  rotationSlot           String?
+  validatedIdea          String?  @db.Text
+  storyLeadFactIds       Json?
+  generatedIdeaCards     Json?
+  validationContext      Json?
+  pickedKey              String?
+  expiresAt              DateTime
+  updatedAt              DateTime @updatedAt
+  createdAt              DateTime @default(now())
 
   // Compound index covers both "most recent draft for user" (singleton GET)
   // and "list user's drafts, newest first" (My Work) without a separate
@@ -1408,16 +1412,16 @@ model ThumbnailPattern {
 }
 
 model TopicTrend {
-  id                  String        @id @default(uuid())
-  topic               String
-  audience            Audience?
-  theme               StressTheme?
-  angle               ContentAngle?
-  city                String?
+  id                   String        @id @default(uuid())
+  topic                String
+  audience             Audience?
+  theme                StressTheme?
+  angle                ContentAngle?
+  city                 String?
   monthlyOutlierCounts Json
-  trendDirection      String?
-  trendingScore       Float?
-  updatedAt           DateTime      @updatedAt
+  trendDirection       String?
+  trendingScore        Float?
+  updatedAt            DateTime      @updatedAt
 
   @@map("intel_topic_trends")
 }
@@ -1439,13 +1443,13 @@ model SwipeFileEntry {
 }
 
 model SeoSearch {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   clientId    String
-  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   source      String
   seedKeyword String
   rawResponse Json
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
   keywords SeoKeyword[]
 
@@ -1594,18 +1598,18 @@ model ChangelogEntry {
   createdAt DateTime @default(now())
   published Boolean  @default(true)
 
-  views     ChangelogEntryView[]
+  views ChangelogEntryView[]
 
   @@map("changelog_entries")
 }
 
 model ChangelogEntryView {
-  id      String   @id @default(cuid())
+  id      String         @id @default(cuid())
   entryId String
   entry   ChangelogEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   userId  String
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  seenAt  DateTime @default(now())
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seenAt  DateTime       @default(now())
 
   @@unique([entryId, userId])
   @@index([userId])
@@ -1613,33 +1617,33 @@ model ChangelogEntryView {
 }
 
 model AdminAction {
-  id          String   @id @default(cuid())
-  actorId     String
-  actorEmail  String
-  action      String
-  targetType  String
-  targetId    String?
-  details     Json?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String
+  action     String
+  targetType String
+  targetId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
 
   @@index([createdAt])
   @@index([targetType, targetId])
 }
 
 model AdminTestAvatar {
-  id              String   @id @default(cuid())
-  adminUserId     String
-  admin           User     @relation("adminTestAvatars", fields: [adminUserId], references: [id], onDelete: Cascade)
-  slotNumber      Int
-  label           String
-  avatarName      String?
-  avatarSummary   String?
-  avatarProfile   Json?
-  contentThemes   Json?
-  niche           Json?
-  city            String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  adminUserId   String
+  admin         User     @relation("adminTestAvatars", fields: [adminUserId], references: [id], onDelete: Cascade)
+  slotNumber    Int
+  label         String
+  avatarName    String?
+  avatarSummary String?
+  avatarProfile Json?
+  contentThemes Json?
+  niche         Json?
+  city          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([adminUserId, slotNumber])
   @@map("admin_test_avatars")
@@ -1694,14 +1698,14 @@ model PlanTeamNote {
 }
 
 model PlanAssignmentLog {
-  id              String      @id @default(uuid())
-  planId          String
-  plan            ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  actorId         String
-  actor           User        @relation("PlanAssignmentActor", fields: [actorId], references: [id])
-  fromAssigneeId  String?
-  toAssigneeId    String?
-  createdAt       DateTime    @default(now())
+  id             String      @id @default(uuid())
+  planId         String
+  plan           ContentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  actorId        String
+  actor          User        @relation("PlanAssignmentActor", fields: [actorId], references: [id])
+  fromAssigneeId String?
+  toAssigneeId   String?
+  createdAt      DateTime    @default(now())
 
   @@index([planId])
   @@map("plan_assignment_logs")
@@ -1902,16 +1906,16 @@ enum UploadStatus {
 }
 
 model MarketConfig {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  marketName         String
-  mlsSource          String?
-  columnMapping      Json?
-  priceTiers         Json?
-  moiThresholds      Json?
-  neighbourhoodVocab Json?
-  highEndException   Json?
+  id                         String    @id @default(cuid())
+  userId                     String    @unique
+  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketName                 String
+  mlsSource                  String?
+  columnMapping              Json?
+  priceTiers                 Json?
+  moiThresholds              Json?
+  neighbourhoodVocab         Json?
+  highEndException           Json?
   // Market-agnostic parameterization (replaces hardcoded Calgary/CREB knowledge
   // in the Fact Validator prompt). Null = fall back to per-source seed defaults
   // resolved from mlsSource (see MARKET_SOURCE_DEFAULTS in market-config.ts).
@@ -1919,10 +1923,10 @@ model MarketConfig {
   //   propertyTypeVocab:        { types: string[]; mergeRule?: string }
   //   sourceAuthority:          published-board display name (e.g. "CREB", "NTREIS")
   //   moiHighEndExceptionFloor: { detached: number; condo: number }
-  statusCodes              Json?
-  propertyTypeVocab        Json?
-  sourceAuthority          String?
-  moiHighEndExceptionFloor Json?
+  statusCodes                Json?
+  propertyTypeVocab          Json?
+  sourceAuthority            String?
+  moiHighEndExceptionFloor   Json?
   // OPTIONAL explicit override for status-bucketing. Source of truth is
   // `statusCodes` (+ MARKET_SOURCE_DEFAULTS resolved from mlsSource); this field
   // only exists to let an admin force the sold/offMarket/active/pending buckets
@@ -1930,17 +1934,17 @@ model MarketConfig {
   // Shape: { sold: string[]; offMarket: string[]; active: string[]; pending: string[] }
   // Resolution precedence (see resolveStatusMapping in market-status-buckets.ts):
   //   statusMapping (this field) -> derived from statusCodes -> MARKET_SOURCE_DEFAULTS.
-  statusMapping            Json?
-  keywordKit         Json?
-  primaryAvatar      Json?
-  subPersonas        Json?
+  statusMapping              Json?
+  keywordKit                 Json?
+  primaryAvatar              Json?
+  subPersonas                Json?
   // Ship B — Done-With-You member voice guide. Layer-2 override on top of the
   // default voice register baked into script-builder-mode-prompt.ts. Gated by
   // the `tool_member_voice_guide` feature flag — Foundations tier members do
   // not see the upload UI and these fields stay null for them.
-  voiceGuide            String?   @db.Text
-  voiceGuideUploadedAt  DateTime?
-  voiceGuideSourceFile  String?
+  voiceGuide                 String?   @db.Text
+  voiceGuideUploadedAt       DateTime?
+  voiceGuideSourceFile       String?
   // Onboarding Wizard Step 5 — Team credibility numbers. Used by Script Builder
   // for credibility-moment lines so it never has to invent stats like
   // "after helping 4,000 families". Auto-fill formula on the wizard:
@@ -1950,31 +1954,31 @@ model MarketConfig {
   teamAnnualTransactionCount Int?
   teamSize                   Int?
   teamCredibilityNotes       String?   @db.Text
-  configuredAt       DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  configuredAt               DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   @@map("market_configs")
 }
 
 model MarketDataUpload {
-  id                String           @id @default(cuid())
-  userId            String
-  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  configSnapshot    Json?
-  label             String
-  monthYear         String
-  csvFileName       String
-  csvStorageUrl     String?
-  rowCount          Int
-  status            UploadStatus     @default(pending)
-  uploadedAt        DateTime         @default(now())
-  validatedAt       DateTime?
-  validationCostUsd Float?
-  factYieldPct      Float?
-  validationError   String?          @db.Text
-  rawValidatorOutput String?         @db.Text
-  retryCount        Int              @default(0)
-  backfillEmailedAt DateTime?
+  id                 String       @id @default(cuid())
+  userId             String
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  configSnapshot     Json?
+  label              String
+  monthYear          String
+  csvFileName        String
+  csvStorageUrl      String?
+  rowCount           Int
+  status             UploadStatus @default(pending)
+  uploadedAt         DateTime     @default(now())
+  validatedAt        DateTime?
+  validationCostUsd  Float?
+  factYieldPct       Float?
+  validationError    String?      @db.Text
+  rawValidatorOutput String?      @db.Text
+  retryCount         Int          @default(0)
+  backfillEmailedAt  DateTime?
 
   facts             MarketFact[]
   storyLeads        MarketStoryLead[]
@@ -1989,98 +1993,106 @@ model MarketDataUpload {
 // into Claude as "source of truth" so it can't fabricate or misattribute
 // stats. Backfilled for historical uploads via `scripts/backfill-aggregated-metrics.ts`.
 model AggregatedMetric {
-  id                   String           @id @default(cuid())
-  userId               String
-  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  uploadId             String
-  upload               MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  id       String           @id @default(cuid())
+  userId   String
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId String
+  upload   MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
-  neighbourhood        String
+  neighbourhood   String
+  /// Knowledge-Base Merge & Clean: stable link to the canonical area this row's
+  /// (raw) neighbourhood was folded into. Null on rows written before a merge
+  /// run applied, or when no alias exists. `neighbourhood` already stores the
+  /// canonical display name after a merge re-aggregation; this is the durable id.
+  canonicalAreaId String?
   /// "All" when the AggregatedGroup had propertyType=null (city-wide rollup).
-  propertyType         String           @default("All")
+  propertyType    String       @default("All")
   /// Always null for Wave 1 — tiered subgroups are intentionally NOT persisted
   /// because the script writer queries on (neighbourhood, propertyType) only.
-  priceTier            String?
-  metricFamily         MetricFamily
+  priceTier       String?
+  metricFamily    MetricFamily
   /// AggregatedGroup field name this row was sourced from, e.g. "medianPrice",
   /// "moiStrict", "domMedian", "spLpRatio", "psf", "failureRate", "activeCount".
   /// Disambiguates rows within the same family if we add variants later.
-  metricKey            String
-  metricValue          Float
-  sampleSize           Int
-  monthYear            String
+  metricKey       String
+  metricValue     Float
+  sampleSize      Int
+  monthYear       String
 
   yoyDelta             Float?
   rolling90dValue      Float?
-  compositionShiftFlag Boolean          @default(false)
+  compositionShiftFlag Boolean @default(false)
 
-  createdAt            DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, uploadId, neighbourhood, propertyType, metricFamily, metricKey])
   @@index([userId, neighbourhood, propertyType])
+  @@index([userId, canonicalAreaId])
   @@index([uploadId])
   @@map("aggregated_metrics")
 }
 
 model MarketFact {
-  id                   String           @id @default(cuid())
-  userId               String
-  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  uploadId             String
-  upload               MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  id       String           @id @default(cuid())
+  userId   String
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId String
+  upload   MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
-  neighbourhood        String
-  propertyType         String?
-  priceTier            String?
+  neighbourhood   String
+  /// KB Merge & Clean — durable link to the canonical area (see AggregatedMetric).
+  canonicalAreaId String?
+  propertyType    String?
+  priceTier       String?
 
-  metricName           String
-  metricFamily         MetricFamily
-  metricValue          Float?
-  metricValueString    String?
+  metricName        String
+  metricFamily      MetricFamily
+  metricValue       Float?
+  metricValueString String?
 
-  sampleSize           Int?
-  timeWindow           String?
-  dateContext          DateTime?
+  sampleSize  Int?
+  timeWindow  String?
+  dateContext DateTime?
 
-  sourceUrl            String?
-  sourceTitle          String?
-  notes                String?          @db.Text
+  sourceUrl   String?
+  sourceTitle String?
+  notes       String? @db.Text
 
-  marketType           MarketType?
-  trajectory           Trajectory?
-  usageClass           FactUsageClass
+  marketType MarketType?
+  trajectory Trajectory?
+  usageClass FactUsageClass
 
-  compositionShiftFlag Boolean          @default(false)
+  compositionShiftFlag Boolean  @default(false)
   triangulationStatus  String?
   yoyValue             Float?
   rolling90dValue      Float?
   crebAligned          Boolean?
-  viewerCaveat         String?          @db.Text
+  viewerCaveat         String?  @db.Text
 
   // Wave 1 Phase 2A — CREB-alignment + usage notes (all nullable, additive only)
   moiStrict            Float?
   moiInclusive         Float?
   domMedian            Float?
   domAverage           Float?
-  crebDeltaEstimate    String?          @db.Text
+  crebDeltaEstimate    String? @db.Text
   inventoryGapWithCreb Float?
-  failureRateFormula   String?          @db.Text
-  usageNotes           String?          @db.Text
+  failureRateFormula   String? @db.Text
+  usageNotes           String? @db.Text
 
   // Three-layer data fallback — provenance of the fact row.
   //   "validator"            — produced by the market-data validator (default for all pre-existing rows)
   //   "on_demand_extraction" — Layer 2 paid CSV→Claude extraction (carries extractedAtCost)
   //   "member_provided"      — manually entered by the member via "Tell me what's missing" (texture-only, NOT validator-verified)
-  sourceType           String?          @default("validator")
-  extractedAtCost      Decimal?         @db.Decimal(10, 4)
-  extractedAtRequest   String?
+  sourceType         String?  @default("validator")
+  extractedAtCost    Decimal? @db.Decimal(10, 4)
+  extractedAtRequest String?
 
   // Methodology version for derived-metric facts (primarily FAILURE_RATE).
   //   "legacy_v1" — failure_rate computed as offMarket/(sold+offMarket) (WRONG denominator).
   //   "v2"        — failure_rate computed as offMarket/sold (broker-honest ratio, can exceed 1).
   // Card/script citation queries filter out legacy_v1 failure_rate rows so the
   // wrong methodology can't be surfaced until the upload is re-validated.
-  methodologyVersion   String?          @default("v2")
+  methodologyVersion String? @default("v2")
 
   // Snapshot of the member's chosen metric methodology variants active at the
   // moment this prose fact was validated. Lets the re-validate endpoint detect
@@ -2088,15 +2100,102 @@ model MarketFact {
   // trail. Shape mirrors MemberMetricSettings:
   //   { moi, dom, failureRate, salePrice, sampleSize }
   // Null on rows written before this shipped (treat as the Default preset).
-  methodologyVariant   Json?
+  methodologyVariant Json?
 
-  createdAt            DateTime         @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, neighbourhood])
+  @@index([userId, canonicalAreaId])
   @@index([uploadId])
   @@index([metricFamily, usageClass])
   @@index([userId, sourceType])
   @@map("market_facts")
+}
+
+// ── Knowledge-Base Merge & Clean ─────────────────────────────────────────────
+// Neighbourhood subdivision names fragment badly in raw MLS exports (e.g. 40
+// "Woodbridge Ph 5B" / "Woodbridge 1" variants for one real place), which
+// shatters per-area samples below the statistical floor. These three models are
+// the ONLY mutation path for the per-member neighbourhood Knowledge Base —
+// members never hand-edit it. A merge run normalizes raw names to a small set of
+// CanonicalAreas (deterministic regex + a conservative fuzzy pass), records the
+// raw→canonical mapping as AreaAliases, and re-aggregates facts on the canonical
+// key so merged samples count together. See src/lib/kb-merge/.
+
+enum MergeRunStatus {
+  DRY_RUN // computed but not applied — the report the member reviews
+  APPLYING // claimed by an in-progress apply; not yet fully re-aggregated
+  APPLIED // confirmed and re-aggregated onto canonical areas
+  DISCARDED // member rejected the proposed merges
+}
+
+// One real neighbourhood, after de-fragmentation. `name` is the canonical
+// display form surfaced to the member and written into MarketFact.neighbourhood
+// / AggregatedMetric.neighbourhood on re-aggregation.
+model CanonicalArea {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  // Deterministic normalization key (see normalizeAreaName). Lets a new upload's
+  // raw subdivision resolve to an existing canonical area without a fuzzy call.
+  normKey   String
+  aliases   AreaAlias[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, normKey])
+  @@map("canonical_areas")
+}
+
+// A raw subdivision string seen in a member's MLS data and the canonical area it
+// folds into. The permanent, non-destructive record of every merge decision —
+// nothing is lost even though facts are re-aggregated.
+model AreaAlias {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawName         String
+  normKey         String
+  canonicalAreaId String
+  canonicalArea   CanonicalArea @relation(fields: [canonicalAreaId], references: [id], onDelete: Cascade)
+  // How this alias was decided: "deterministic" (regex), "fuzzy" (Haiku >=0.9),
+  // or "manual". Fuzzy aliases carry the model's confidence.
+  source          String        @default("deterministic")
+  confidence      Float?
+  createdAt       DateTime      @default(now())
+
+  @@unique([userId, rawName])
+  @@index([userId, normKey])
+  @@index([canonicalAreaId])
+  @@map("area_aliases")
+}
+
+// An audit record + reviewable report for one merge/clean pass. Created as
+// DRY_RUN (the "7,000 → ~400" summary the member confirms), flipped to APPLIED
+// once re-aggregation runs, or DISCARDED if rejected. `report` holds the full
+// before/after breakdown, proposed fuzzy merges, and the review queue.
+model MergeRun {
+  id                 String         @id @default(cuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             MergeRunStatus @default(DRY_RUN)
+  // "upload" | "manual" | "jarvis" — what triggered this run.
+  source             String         @default("manual")
+  uploadId           String?
+  rawCount           Int            @default(0)
+  canonicalCount     Int            @default(0)
+  fuzzyProposedCount Int            @default(0)
+  reviewQueueCount   Int            @default(0)
+  report             Json
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  appliedAt          DateTime?
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("merge_runs")
 }
 
 // Per-member metric methodology settings — "How we calculate your stats".
@@ -2119,16 +2218,16 @@ model MemberMetricSettings {
 }
 
 model MarketStoryLead {
-  id                    String           @id @default(cuid())
-  userId                String
-  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  uploadId              String
-  upload                MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  id       String           @id @default(cuid())
+  userId   String
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadId String
+  upload   MarketDataUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
 
-  scanType              Int
-  pattern               String           @db.Text
-  dataThreads           Json
-  whyItMatters          String           @db.Text
+  scanType     Int
+  pattern      String @db.Text
+  dataThreads  Json
+  whyItMatters String @db.Text
 
   suggestedRotationSlot RotationSlot?
   suggestedSubPersonas  Json?
@@ -2136,20 +2235,20 @@ model MarketStoryLead {
   tactileType           String?
 
   // Wave 1 Phase 2A — additive only
-  label                 String?
-  isThesisLead          Boolean          @default(false)
-  displayOrder          Int              @default(0)
+  label        String?
+  isThesisLead Boolean @default(false)
+  displayOrder Int     @default(0)
 
-  claimedByIdeaId       String?
-  createdAt             DateTime         @default(now())
+  claimedByIdeaId String?
+  createdAt       DateTime @default(now())
 
   // Story Lead → Video fact carry-over. Persisted at generation time so a lead
   // minted into a ContentPlan can hand over real MarketFact PKs instead of
   // re-deriving them from the display `dataThreads` strings. Old leads created
   // before this shipped leave these null/empty and route through the textual
   // resolver (`src/lib/story-lead-fact-resolver.ts`) at "Use as Video" time.
-  anchorFactId          String?
-  supportingFactIds     String[]         @default([])
+  anchorFactId      String?
+  supportingFactIds String[] @default([])
 
   @@index([userId])
   @@index([uploadId])
@@ -2161,16 +2260,16 @@ model MarketStoryLead {
 // member's preferred AI research tool, then parsed back into per-neighbourhood
 // profiles. Consumed by Wave 3 Script Builder for hyper-local content.
 model NeighbourhoodProfile {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  neighbourhood   String
-  content         String   @db.Text
-  summary         String?  @db.Text
-  sourceFile      String?
-  uploadBatchId   String?
-  lastUpdatedAt   DateTime @updatedAt
-  createdAt       DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  neighbourhood String
+  content       String   @db.Text
+  summary       String?  @db.Text
+  sourceFile    String?
+  uploadBatchId String?
+  lastUpdatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
 
   @@unique([userId, neighbourhood])
   @@index([userId])
@@ -2179,16 +2278,16 @@ model NeighbourhoodProfile {
 }
 
 model NeighbourhoodResearchUpload {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rawContent        String   @db.Text
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawContent        String    @db.Text
   sourceFileName    String?
   toolUsed          String?
   parsedAt          DateTime?
-  profileCount      Int      @default(0)
+  profileCount      Int       @default(0)
   parseCostUsd      Float?
-  uploadedAt        DateTime @default(now())
+  uploadedAt        DateTime  @default(now())
   unmatchedSections Json?
 
   @@index([userId])

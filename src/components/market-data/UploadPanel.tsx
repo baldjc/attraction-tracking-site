@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { type ColumnMapping } from "@/lib/market-config";
@@ -180,6 +181,10 @@ export default function UploadPanel({
   // Mapping last sent to doFinalUpload — captured so the Replace UX can
   // auto-retry the same POST after the conflicting upload is deleted.
   const [lastMapping, setLastMapping] = useState<ColumnMapping | null>(null);
+  // After a successful async upload we surface a calm note: once validation
+  // finishes, fragmented area names are auto-detected and can be collapsed on
+  // the Knowledge Base page (the only KB mutation path — no hand-editing).
+  const [justUploadedCount, setJustUploadedCount] = useState(0);
 
   const thinking = useAiThinking({
     mode: "phase",
@@ -424,6 +429,7 @@ export default function UploadPanel({
         throw new Error(j.error || "Upload failed.");
       }
       // Reset + refresh history
+      setJustUploadedCount(selected.length);
       setSelected([]);
       setStage("picking");
       setMapper(null);
@@ -833,6 +839,36 @@ export default function UploadPanel({
             toolName="Market Data"
             currentPhase={uploadThinking.phaseLabel}
           />
+        </div>
+      )}
+
+      {justUploadedCount > 0 && conflicts.length === 0 && stage === "picking" && (
+        <div className="mt-4 rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200">
+          <div className="font-medium">
+            Uploaded {justUploadedCount} file
+            {justUploadedCount === 1 ? "" : "s"} — validating now.
+          </div>
+          <p className="mt-1 text-xs">
+            MLS exports often shatter one neighbourhood across dozens of
+            subdivision names. Once validation finishes, we automatically flag
+            fragmented areas so you can collapse them into single areas — that's
+            what lifts more areas over the sample floor for scripts. Review and
+            confirm any cleanup on your{" "}
+            <Link
+              href="/member/knowledge-base"
+              className="font-medium underline hover:no-underline"
+            >
+              Knowledge Base
+            </Link>{" "}
+            page (nothing changes until you confirm).
+          </p>
+          <button
+            type="button"
+            onClick={() => setJustUploadedCount(0)}
+            className="mt-2 text-xs underline hover:no-underline"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 

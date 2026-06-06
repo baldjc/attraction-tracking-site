@@ -531,6 +531,14 @@ export interface AggregateOptions {
   csvFileName: string;
   csvBuffer: Buffer;
   config: MarketConfigShape;
+  /**
+   * Knowledge-Base Merge & Clean: optional raw→canonical neighbourhood mapping.
+   * When provided, every row's raw subdivision name is folded to its canonical
+   * area BEFORE grouping, so fragmented variants (e.g. "Woodbridge Ph 5B",
+   * "Woodbridge 1") aggregate together and clear the sample floor. Applied to
+   * the per-row neighbourhood only; the "All Neighbourhoods" rollup is untouched.
+   */
+  canonicalize?: (raw: string) => string;
 }
 
 /**
@@ -541,7 +549,7 @@ export interface AggregateOptions {
 export async function aggregateUpload(
   opts: AggregateOptions,
 ): Promise<AggregatedTable> {
-  const { uploadId, userId, monthYear, csvFileName, csvBuffer, config } = opts;
+  const { uploadId, userId, monthYear, csvFileName, csvBuffer, config, canonicalize } = opts;
   const mapping: ColumnMapping = config.columnMapping ?? {};
   const tiers = config.priceTiers ?? [];
 
@@ -586,7 +594,12 @@ export async function aggregateUpload(
 
     const neighbourhoodRaw =
       readMappedCell(raw, headerLookup, mapping.neighbourhood) ?? "";
-    const neighbourhood = neighbourhoodRaw.toString().trim() || "Unknown";
+    const neighbourhoodClean = neighbourhoodRaw.toString().trim() || "Unknown";
+    // KB Merge & Clean: fold the raw subdivision into its canonical area so
+    // fragmented variants tally together. No-op when no mapping is supplied.
+    const neighbourhood = canonicalize
+      ? canonicalize(neighbourhoodClean) || neighbourhoodClean
+      : neighbourhoodClean;
 
     const ptRaw = readMappedCell(raw, headerLookup, mapping.propertyType);
     const { type: propertyType, isDuplexMerge } = normalizePropertyType(ptRaw);
@@ -926,6 +939,14 @@ export async function aggregateUploadFromDb(
 
   const { readUploadFile } = await import("@/lib/market-csv");
   const csvBuffer = await readUploadFile(upload.csvStorageUrl);
+
+  // KB Merge & Clean: fold raw subdivisions into the member's canonical areas.
+  // The resolver reflects already-confirmed merge decisions (AreaAlias /
+  // CanonicalArea) plus the free deterministic collapse. Fuzzy near-dups are
+  // NOT invented here — those require a reviewed merge run.
+  const { loadCanonicalResolver } = await import("@/lib/kb-merge/canonical");
+  const resolver = await loadCanonicalResolver(upload.userId);
+
   const table = await aggregateUpload({
     uploadId: upload.id,
     userId: upload.userId,
@@ -933,6 +954,7 @@ export async function aggregateUploadFromDb(
     csvFileName: upload.csvFileName,
     csvBuffer,
     config,
+    canonicalize: (raw) => resolver.resolve(raw),
   });
   return { table, userId: upload.userId, configSnapshot: config };
 }

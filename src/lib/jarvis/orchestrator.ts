@@ -7,6 +7,7 @@ import type { MarketConfigSummary } from "@/lib/content-engine-context";
 import {
   JARVIS_TOOLS,
   executeGetFacts,
+  executeCleanKnowledgeBase,
   runBuildScript,
   groundAssistantText,
 } from "@/lib/jarvis/tools";
@@ -15,6 +16,7 @@ import {
   buildJarvisDynamicContext,
 } from "@/lib/jarvis/system-prompt";
 import { saveConfirmedScript } from "@/lib/jarvis/save";
+import { applyConfirmedMerge } from "@/lib/jarvis/merge";
 import {
   JARVIS_MODEL,
   type LedgerFact,
@@ -287,6 +289,59 @@ async function runTool(ctx: {
       record("error", "Save not allowed yet.");
       return result(
         `save_script refused (${saved.code}): ${saved.message} Direct the member to the Approve & save button instead.`,
+        true,
+      );
+    }
+
+    if (tu.name === "clean_knowledge_base") {
+      emit("tool", {
+        name: "clean_knowledge_base",
+        status: "running",
+        summary: "Planning a Knowledge Base cleanup…",
+      });
+      const res = await executeCleanKnowledgeBase(userId);
+      if (!res.mergeRunId) {
+        record("ok", "Knowledge Base already clean.");
+        return result(JSON.stringify(res));
+      }
+      record(
+        "ok",
+        `Proposed cleanup: ${res.rawCount} → ${res.canonicalCount} areas.`,
+      );
+      return result(
+        JSON.stringify({
+          ...res,
+          instruction:
+            "This is a DRY-RUN. Summarise the impact (names collapsed, areas " +
+            "clearing the floor, anything queued for review) and tell the " +
+            "member to apply it with the Review merges → Yes, clean it up " +
+            "buttons. Do NOT call apply_merge yourself.",
+        }),
+      );
+    }
+
+    if (tu.name === "apply_merge") {
+      // Gated. Only succeeds when a prior confirm action recorded an explicit
+      // merge_confirmation as the latest member message. Otherwise we refuse
+      // and tell the model to direct the member to the Review merges button.
+      const mergeRunId = String(input.mergeRunId ?? "");
+      const applied = await applyConfirmedMerge({ userId, threadId, mergeRunId });
+      if (applied.ok) {
+        record("ok", "Knowledge Base cleaned up.");
+        const r = applied.result;
+        return result(
+          applied.alreadyApplied
+            ? "That cleanup was already applied — nothing more to do."
+            : `Cleanup applied: re-aggregated ${r.uploadsReaggregated} upload(s), ` +
+                `relabelled ${r.factsRelabelled} fact(s), ${r.canonicalCount} ` +
+                `canonical areas. Areas clearing the floor: ` +
+                `${r.floorClearing.before} → ${r.floorClearing.after}.`,
+        );
+      }
+      record("error", "Cleanup not allowed yet.");
+      return result(
+        `apply_merge refused (${applied.code}): ${applied.message} Direct the ` +
+          "member to the Review merges → Yes, clean it up buttons instead.",
         true,
       );
     }

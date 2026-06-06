@@ -119,6 +119,44 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       required: ["proposalMessageId"],
     },
   },
+  {
+    name: "clean_knowledge_base",
+    description:
+      "Propose a Knowledge Base cleanup (a 'merge run') that collapses " +
+      "fragmented neighbourhood/subdivision names (e.g. dozens of " +
+      "'Woodbridge Ph 5B', 'Woodbridge 1' variants → one 'Woodbridge') so " +
+      "more areas clear the statistical sample floor and the member's facts " +
+      "stop being shattered across near-duplicate names. This is the ONLY way " +
+      "the Knowledge Base is ever edited — members never hand-edit it. " +
+      "Calling this runs a DRY-RUN only: it computes a before/after report " +
+      "(names collapsed, areas that would clear the floor, a review queue of " +
+      "lower-confidence near-duplicates that are NEVER auto-applied) and " +
+      "returns a mergeRunId. It changes NOTHING. Present the report to the " +
+      "member and let them apply it with the Review merges → Yes, clean it up " +
+      "buttons. Use when the member asks to clean up / merge / de-duplicate " +
+      "their areas, or complains that a neighbourhood has too few sales.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "apply_merge",
+    description:
+      "Apply a previously proposed Knowledge Base cleanup (merge run). " +
+      "GATED: this only works after the member has explicitly approved the " +
+      "exact run using the Review merges → Yes, clean it up buttons. Do NOT " +
+      "call this on your own initiative or because the member said 'sounds " +
+      "good' — direct them to the Review merges button instead.",
+    input_schema: {
+      type: "object",
+      properties: {
+        mergeRunId: {
+          type: "string",
+          description:
+            "Id of the dry-run merge run (from clean_knowledge_base) to apply.",
+        },
+      },
+      required: ["mergeRunId"],
+    },
+  },
 ];
 
 // ── get_facts executor ──────────────────────────────────────────────────────
@@ -389,6 +427,74 @@ export async function executeGetFacts(
     monthYear: upload.monthYear,
     state: "none",
     note,
+  };
+}
+
+// ── clean_knowledge_base executor (propose / dry-run only) ──────────────────
+
+export interface CleanKnowledgeBaseResult {
+  mergeRunId: string | null;
+  rawCount: number;
+  canonicalCount: number;
+  collapsed: number;
+  fuzzyAppliedCount: number;
+  reviewQueueCount: number;
+  floorClearing: { before: number; after: number };
+  topMerges: { canonical: string; variantCount: number }[];
+  note: string;
+}
+
+/**
+ * Propose (dry-run) a Knowledge Base cleanup for the member. Computes the
+ * deterministic + conservative fuzzy merge plan and persists it as a DRY_RUN
+ * merge run — it mutates NOTHING in the KB. Returns a compact summary the
+ * orchestrator can relay so the member can apply it via the gated confirm tap.
+ */
+export async function executeCleanKnowledgeBase(
+  userId: string,
+): Promise<CleanKnowledgeBaseResult> {
+  const { buildMergeRunReport } = await import("@/lib/kb-merge/merge-run");
+  const { mergeRunId, report } = await buildMergeRunReport(userId, {
+    source: "jarvis",
+    applyFuzzy: true,
+    skipIfNoop: true,
+  });
+  if (!mergeRunId) {
+    return {
+      mergeRunId: null,
+      rawCount: report.rawCount,
+      canonicalCount: report.canonicalCount,
+      collapsed: 0,
+      fuzzyAppliedCount: 0,
+      reviewQueueCount: 0,
+      floorClearing: {
+        before: report.floorClearing.before,
+        after: report.floorClearing.after,
+      },
+      topMerges: [],
+      note:
+        "The Knowledge Base is already clean — no fragmented names to collapse " +
+        "and nothing to review. Nothing to apply.",
+    };
+  }
+  return {
+    mergeRunId,
+    rawCount: report.rawCount,
+    canonicalCount: report.canonicalCount,
+    collapsed: report.collapsed,
+    fuzzyAppliedCount: report.fuzzyAppliedCount,
+    reviewQueueCount: report.reviewQueueCount,
+    floorClearing: {
+      before: report.floorClearing.before,
+      after: report.floorClearing.after,
+    },
+    topMerges: report.topMerges.slice(0, 10).map((m) => ({
+      canonical: m.canonical,
+      variantCount: m.variantCount,
+    })),
+    note:
+      "Dry-run only — nothing changed yet. The member must approve it with " +
+      "Review merges → Yes, clean it up before anything is applied.",
   };
 }
 
