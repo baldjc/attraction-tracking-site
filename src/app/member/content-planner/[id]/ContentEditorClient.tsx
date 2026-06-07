@@ -9,6 +9,7 @@ import type { ContentPlan } from "@/components/content-planner/ContentPlanEditMo
 import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS, getPlanThumbnailUrl } from "@/lib/content-plan-utils";
 import { hasDriveFolderAccess } from "@/lib/service-tier";
 import { useToast } from "@/components/ToastProvider";
+import { buildMlsVerifyLine, formatMlsPeriod } from "@/lib/mls-verify-reminder";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -540,6 +541,16 @@ export default function ContentEditorClient({
   const [researchPromptCopied, setResearchPromptCopied] = useState(false);
   const [researchPromptError, setResearchPromptError] = useState("");
   const [now, setNow] = useState(Date.now());
+
+  // Humanised data period of the facts this plan's script is grounded on (the
+  // latest cited upload month), for the standing "verify against your live MLS"
+  // line near the script's Sources block. Null → period-less fallback.
+  const groundedPeriod = useMemo(() => {
+    const months = (lineage?.facts ?? []).map((f) => f.monthYear).filter(Boolean);
+    if (months.length === 0) return null;
+    months.sort();
+    return formatMlsPeriod(months[months.length - 1]);
+  }, [lineage]);
 
   const statusOptions = useMemo(() => getStatusOptions(serviceTier), [serviceTier]);
   const isFoundations = FOUNDATIONS_TIERS.includes(serviceTier);
@@ -1128,6 +1139,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             textareaRef={scriptTextareaRef}
             onExport={handleExport}
             onRegenerate={handleRegenerate}
+            dataPeriod={groundedPeriod}
           />
 
           {/* RIGHT: sidebar */}
@@ -1209,7 +1221,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function ScriptPane({
-  value, onChange, onBlur, onBuildV2, planId, title, textareaRef, onExport, onRegenerate,
+  value, onChange, onBlur, onBuildV2, planId, title, textareaRef, onExport, onRegenerate, dataPeriod,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -1220,8 +1232,13 @@ function ScriptPane({
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   onExport: () => void;
   onRegenerate: () => void;
+  dataPeriod?: string | null;
 }) {
   const words = wordCount(value);
+  // Data-grounded scripts carry a "## Sources" footnote (the engine appends it,
+  // never read aloud). Show the standing "verify against your live MLS" line as
+  // a UI element only when that footnote is present — not on hand-written drafts.
+  const isGrounded = /(^|\n)\s*(#{1,6}\s*Sources|\*\*Sources:?\*\*)\s*(\n|$)/i.test(value);
   const minutes = Math.max(1, Math.round(words / 175));
   const cameraSec = Math.round(words / 150 * 60);
   const cm = Math.floor(cameraSec / 60);
@@ -1357,6 +1374,22 @@ function ScriptPane({
           <span>~ <b style={{ color: "var(--abv-text)" }}>{cm}:{cs}</b> on camera</span>
         </div>
       </div>
+
+      {/* Standing accuracy line — rendered as a UI element near the Sources
+          block, NOT baked into the script text (so it can't be edited away and
+          doesn't eat the word count). Only on data-grounded scripts. */}
+      {isGrounded && (
+        <div style={{
+          background: "var(--abv-azure-tint, #E0F2FE)",
+          border: "1px solid rgba(59,130,246,0.2)",
+          borderRadius: 10,
+          padding: "10px 14px",
+          fontSize: 12, lineHeight: 1.6,
+          color: "var(--abv-text-secondary, #475569)",
+        }}>
+          {buildMlsVerifyLine(dataPeriod)}
+        </div>
+      )}
     </section>
   );
 }

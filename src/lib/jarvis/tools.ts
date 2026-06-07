@@ -43,6 +43,7 @@ import {
   PUBLISHED_PLAN_STATUSES,
 } from "@/lib/binge-target";
 import type { LedgerFact } from "@/lib/jarvis/types";
+import { formatMlsPeriod } from "@/lib/mls-verify-reminder";
 
 // ── Tool schemas (Anthropic tool-use) ───────────────────────────────────────
 
@@ -572,6 +573,13 @@ export type RunBuildScriptResult =
        */
       campaignId: string | null;
       bingeVideoId: string | null;
+      /**
+       * Humanised data period of the facts this draft is grounded on (e.g.
+       * "June 2026" — the latest cited upload month). Carried onto the proposal
+       * so the standing "verify against your live MLS" UI line can name the
+       * member's actual export period. Null when no period could be resolved.
+       */
+      dataPeriod: string | null;
     };
 
 /**
@@ -934,6 +942,7 @@ export async function runBuildScript(args: {
     bingeTargetConfigured,
     campaignId: resolvedCampaignId,
     bingeVideoId: resolvedBingeVideoId,
+    dataPeriod: formatMlsPeriod(anchorUpload?.monthYear ?? null),
   };
 }
 

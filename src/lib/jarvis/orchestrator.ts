@@ -306,6 +306,7 @@ async function runTool(ctx: {
         metrics: built.result.metrics ?? undefined,
         campaignId: built.campaignId,
         bingeVideoId: built.bingeVideoId,
+        dataPeriod: built.dataPeriod,
       };
       onProposal(proposalState);
       record("ok", `Drafted "${built.title}".`);

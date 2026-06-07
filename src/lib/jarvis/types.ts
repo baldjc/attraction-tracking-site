@@ -72,6 +72,13 @@ export interface ProposalState {
    */
   bingeVideoId?: string | null;
   /**
+   * Humanised data period of the facts this draft is grounded on (e.g. "June
+   * 2026"). Used only to render the standing "verify against your live MLS" UI
+   * line near the proposal's source count — it is NOT baked into the script
+   * text. Null/absent → the line falls back to period-less phrasing.
+   */
+  dataPeriod?: string | null;
+  /**
    * On `created`, the id of the ContentPlan this approved draft was routed into
    * (the Content Planner is the single home for member content). Optional for
    * proposals saved before this routing existed, or when plan routing failed

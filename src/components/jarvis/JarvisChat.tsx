@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useToast } from "@/components/ToastProvider";
 import type { ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
+import { buildMlsVerifyLine } from "@/lib/mls-verify-reminder";
 
 // Markdown rendering for assistant turns + draft-script cards. react-markdown
 // does NOT render raw HTML by default (no rehype-raw), so embedded HTML is
@@ -549,6 +550,12 @@ function ProposalCard({
         {labelForSlot(proposal.rotationSlot)} · {sourceCount} source
         {sourceCount === 1 ? "" : "s"} cited
       </p>
+
+      {sourceCount > 0 && (
+        <p className="mt-2 rounded-lg border border-abv-border bg-abv-bg-warm px-3 py-2 text-xs leading-relaxed text-abv-text-secondary">
+          {buildMlsVerifyLine(proposal.dataPeriod)}
+        </p>
+      )}
 
       {proposal.status === "proposed" && (
         <div className="mt-3 flex flex-wrap gap-2">

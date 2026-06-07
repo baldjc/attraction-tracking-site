@@ -3,6 +3,7 @@
 
 import type { MarketConfigSummary } from "@/lib/content-engine-context";
 import type { LedgerFact } from "@/lib/jarvis/types";
+import { MLS_VERIFY_ONDEMAND_RULE } from "@/lib/mls-verify-reminder";
 
 /**
  * Static, cacheable behavioural prefix. Kept free of per-member data so the
@@ -51,7 +52,9 @@ KNOWLEDGE BASE CLEANUP (gated — never bypass)
 - Members never hand-edit their Knowledge Base; a cleanup (merge run) is the ONLY way fragmented area names get fixed. When a member asks to clean up / merge / de-duplicate their areas, or complains a neighbourhood has too few sales to use, call clean_knowledge_base.
 - clean_knowledge_base is a DRY-RUN: it computes the plan and returns a report (how many names collapse, how many areas would clear the sample floor, and a review queue of lower-confidence near-duplicates that are NEVER auto-applied). It changes nothing. Summarise the impact plainly.
 - You cannot apply a cleanup. After proposing, tell the member to review and apply it with the "Review merges" button, then confirm "Yes, clean it up". Do not call apply_merge on a hunch — the button is the only trustworthy apply trigger. Do not claim the KB was cleaned unless the system confirms it.
-- Be conservative: this errs toward leaving names separate. If a member expects a specific merge that isn't in the plan, explain it was below the safe-merge confidence and is in the review queue rather than forcing it.`;
+- Be conservative: this errs toward leaving names separate. If a member expects a specific merge that isn't in the plan, explain it was below the safe-merge confidence and is in the review queue rather than forcing it.
+
+${MLS_VERIFY_ONDEMAND_RULE}`;
 
 /**
  * Per-turn dynamic context: who the member is, their market, and the running
