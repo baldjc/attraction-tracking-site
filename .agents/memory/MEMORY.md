@@ -1,4 +1,5 @@
 - [Dev vs prod database](dev-vs-prod-database.md) — the dev DATABASE_URL is a separate dev DB, not production; confirm which DB you're on before trusting reads/writes of real user data.
+- [Deploy + GitHub topology](deploy-and-github-topology.md) — prod is a Replit VM publish (members.attractionbyvideo.com); GitHub main is source-of-record only (no auto-deploy); non-force push works despite a local tracking-ref lock; 404→307 proves a member route shipped.
 - [Dark-mode token remapping](dark-mode-token-remap.md) — `--abv-text` flips for dark but `--abv-ink` does NOT; using `--abv-ink` as foreground over a remapped surface = dark-on-dark.
 - [Fact validator market lock-in](fact-validator-market-lockin.md) — the validator prompt hardcodes one market's schema, so wide off-market uploads extract far fewer facts.
 - [Validator 200K-context overflow](market-validator-overflow.md) — the unsplittable SUMMARY+LEADS call overflows on ultra-wide markets; its rollups must be hard-bounded to the char budget.
