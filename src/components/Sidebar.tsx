@@ -102,18 +102,22 @@ const editorLinks = [
 
 const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
 
-// Sprint 9 + partial revert: Dashboard sits above four semantic groups
-// (CREATE / IMPROVE / GROW / WORKSPACE). Help + Notifications stay in the
-// footer; Settings moved back into WORKSPACE per iteration brief. Market
-// Data and Knowledge Base restored under CREATE. Live Calls remains an
-// Academy sub-tab and is intentionally not in the primary nav.
+// IA: Dashboard sits above semantic groups (CREATE / IMPROVE / GROW /
+// ADVANCED / WORKSPACE). The two primary homes lead CREATE: the Content
+// Manager (Jarvis chat — "doing") and the Content Planner (the home base
+// where the month's content lives). The standalone tool grid is demoted to
+// a secondary "Advanced Tools" entry — most of it is reachable by chatting
+// with the Content Manager. Help + Notifications stay in the footer; Live
+// Calls remains an Academy sub-tab and is intentionally not in the primary nav.
 const memberLinks = [
   // Home
   { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,                 featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 
-  // CREATE
+  // CREATE — the two homes lead: Content Manager (chat) + Content Planner (home base)
+  { href: "/member/jarvis",          label: "Content Manager", icon: ChatBubbleLeftRightIcon,  featureKey: "tool_jarvis", colour: "var(--abv-ai-tools)", tierRequired: null,          section: "CREATE" },
+  // Content Planner also carries section: "CREATE" so the header survives when
+  // the (flag-gated) Content Manager link above is filtered out for a member.
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS, section: "CREATE" },
-  { href: "/member/content-tools",        label: "Content Tools",        icon: SparklesIcon,             featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           badgeKey: "unread_tools" },
   { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: "tool_market_data",            colour: "var(--abv-azure)",   tierRequired: null },
   { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)",   tierRequired: null },
 
@@ -126,9 +130,11 @@ const memberLinks = [
   { href: "/member/generate-leads",  label: "Generate Leads",  icon: RocketLaunchIcon,         featureKey: "campaigns", colour: "var(--abv-leads)",   tierRequired: null,           section: "GROW",      featureColour: "var(--abv-leads)" },
   { href: "/member/hire",            label: "Hire a Human",    icon: UserGroupIcon,            featureKey: null,        colour: "var(--abv-hire)",    tierRequired: null,                                 featureColour: "var(--abv-hire)" },
 
+  // ADVANCED — power-user tool grid; most of this is reachable via the Content Manager chat
+  { href: "/member/content-tools",   label: "Advanced Tools",  icon: WrenchScrewdriverIcon,    featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "ADVANCED",  badgeKey: "unread_tools" },
+
   // WORKSPACE
-  { href: "/member/jarvis",          label: "AI Content Manager", icon: SparklesIcon,          featureKey: "tool_jarvis", colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
-  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,               featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null },
+  { href: "/member/my-work",         label: "My Work",         icon: FolderIcon,               featureKey: "ai_tools",  colour: "var(--abv-ai-tools)", tierRequired: null,           section: "WORKSPACE" },
   { href: "/member/client-hub",      label: "Client Hub",      icon: Squares2X2Icon,           featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS },
   { href: "/member/settings",        label: "Settings",        icon: Cog6ToothIcon,            featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 ];

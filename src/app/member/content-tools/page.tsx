@@ -28,13 +28,13 @@ export default async function AIToolsHubPage() {
         <div>
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[11px] font-bold uppercase tracking-[0.12em]">
             <span className="w-[5px] h-[5px] rounded-full bg-[var(--abv-azure)]" />
-            Members tools
+            Advanced · Tools
           </span>
           <h1 className="font-display text-[48px] font-black tracking-[-0.03em] leading-[1.05] mt-3.5 mb-3 max-w-[720px]">
-            Build, write, <span className="text-[var(--abv-azure)]">review</span>.
+            Advanced <span className="text-[var(--abv-azure)]">tools</span>.
           </h1>
           <p className="text-[15.5px] text-[var(--abv-text-muted)] m-0 max-w-[620px] leading-[1.55]">
-            Five tools that turn your channel into a system. Use them in this order until they become muscle memory.
+            The full manual toolset for power users. Most of this you can simply ask your Content Manager to do — these standalone tools are here for when you want to drive them by hand.
           </p>
         </div>
         <AIToolsUsageLink basePath="/member/content-tools" />

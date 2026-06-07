@@ -238,12 +238,11 @@ interface TopVideo {
 // LEFT replaces the previous emoji-only header. Background is the feature
 // colour at ~10% opacity (`${colour}1A` suffix when colour is a hex).
 const NAV_CARDS = [
-  { title: "Content Tools",        tagline: "Build, write, review.",         href: "/member/content-tools",        emoji: "✨", colour: "var(--abv-ai-tools)" },
   { title: "My Scores",       tagline: "See where you stand.",          href: "/member/scores",          emoji: "🏆", colour: "var(--abv-scores)" },
   { title: "Academy",         tagline: "Watch a lesson.",               href: "/member/academy",         emoji: "🎓", colour: "var(--abv-academy)" },
-  { title: "Content Planner", tagline: "Plan next week.",               href: "/member/content-planner", emoji: "📅", colour: "var(--abv-azure)" },
   { title: "Generate Leads",  tagline: "Run a campaign.",               href: "/member/generate-leads",  emoji: "🚀", colour: "var(--abv-leads)" },
   { title: "My Calls",        tagline: "Watch your recordings.",        href: "/member/my-calls",        emoji: "📹", colour: "var(--abv-azure)" },
+  { title: "Advanced Tools",  tagline: "The full manual toolset.",      href: "/member/content-tools",   emoji: "🛠️", colour: "var(--abv-ai-tools)" },
 ];
 
 // Done-for-you service tiers teased on the full-width Hire a Human card.
@@ -274,6 +273,14 @@ export default function MemberDashboard() {
   const [videosLoading, setVideosLoading] = useState(true);
   const [noUploadsIn30Days, setNoUploadsIn30Days] = useState(false);
   const [changelog, setChangelog] = useState<Array<{ id: string; title: string; body: string; emoji: string; createdAt: string }>>([]);
+  const [jarvisEnabled, setJarvisEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/member/feature-flags")
+      .then((r) => r.json())
+      .then((d) => { if (d?.flags?.tool_jarvis) setJarvisEnabled(true); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/member/dashboard")
@@ -333,10 +340,63 @@ export default function MemberDashboard() {
               Welcome back{firstName ? `, ${firstName}` : ""}. Let&apos;s make something that <span className="text-[var(--abv-azure)]">converts</span>.
             </h1>
             <p className="mt-3 text-lg text-[var(--abv-text-secondary)]">
-              Pick where to spend your hour today.
+              {jarvisEnabled
+                ? "Chat with your Content Manager to make it — your Planner is where it all lives."
+                : "Your Planner is where every video lives — from idea through to live."}
             </p>
           </>
         )}
+      </div>
+
+      {/* ── The two homes: Content Manager (doing) + Content Planner (home base) ── */}
+      <div className={`grid grid-cols-1 gap-4 ${jarvisEnabled ? "sm:grid-cols-2" : ""}`}>
+        {/* Content Manager — talk to Jarvis (only when the member has Jarvis access) */}
+        {jarvisEnabled && (
+        <Link
+          href="/member/jarvis"
+          className="group p-6 sm:p-7 bg-[var(--abv-card)] border border-[var(--abv-border)] rounded-2xl hover:shadow-[var(--shadow-abv-md)] hover:border-[var(--abv-border-strong)] transition-all flex flex-col"
+        >
+          <span
+            className="inline-flex items-center justify-center w-14 h-14 rounded-xl text-2xl shrink-0 mb-4"
+            style={{ backgroundColor: "color-mix(in srgb, var(--abv-ai-tools) 12%, transparent)" }}
+          >
+            💬
+          </span>
+          <h3 className="font-display text-2xl text-[var(--abv-text)]">Content Manager</h3>
+          <p className="text-sm text-[var(--abv-text-secondary)] mt-1.5 flex-1">
+            Tell Jarvis what you want to make — it drafts scripts straight from your market data.
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-5 px-5 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm self-start group-hover:bg-black/90 transition-colors">
+            Talk to Jarvis →
+          </span>
+        </Link>
+        )}
+
+        {/* Content Planner — home base */}
+        <Link
+          href="/member/content-planner"
+          className="group p-6 sm:p-7 bg-[var(--abv-card)] border border-[var(--abv-border)] rounded-2xl hover:shadow-[var(--shadow-abv-md)] hover:border-[var(--abv-border-strong)] transition-all flex flex-col"
+        >
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <span
+              className="inline-flex items-center justify-center w-14 h-14 rounded-xl text-2xl shrink-0"
+              style={{ backgroundColor: "color-mix(in srgb, var(--abv-azure) 12%, transparent)" }}
+            >
+              📅
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)] text-[10px] font-bold uppercase tracking-[0.12em]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--abv-azure)]" />
+              Home base
+            </span>
+          </div>
+          <h3 className="font-display text-2xl text-[var(--abv-text)]">Content Planner</h3>
+          <p className="text-sm text-[var(--abv-text-secondary)] mt-1.5 flex-1">
+            Every video for the month lives here — from idea through to live on YouTube.
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-5 px-5 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm self-start group-hover:bg-black/90 transition-colors">
+            Open your plan →
+          </span>
+        </Link>
       </div>
 
       {/* ── This week's focus ── */}

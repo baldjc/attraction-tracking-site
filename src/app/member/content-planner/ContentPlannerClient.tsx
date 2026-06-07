@@ -13,6 +13,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowsUpDownIcon,
   SparklesIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
 import CalendarView from "@/components/content-planner/CalendarView";
@@ -46,6 +47,7 @@ export default function ContentPlannerClient({
   const [showPipelineTab, setShowPipelineTab] = useState(false);
   const [scriptBuilderV2Enabled, setScriptBuilderV2Enabled] = useState(false);
   const [aiWizardEnabled, setAiWizardEnabled] = useState(false);
+  const [thumbScoreEnabled, setThumbScoreEnabled] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -71,6 +73,7 @@ export default function ContentPlannerClient({
         if (d?.flags?.planner_pipeline_view) setShowPipelineTab(true);
         if (d?.flags?.tool_script_builder_v2) setScriptBuilderV2Enabled(true);
         if (d?.flags?.tool_content_engine_v2) setAiWizardEnabled(true);
+        if (d?.flags?.tool_title_analyzer !== false) setThumbScoreEnabled(true);
       })
       .catch(() => {});
   }, []);
@@ -209,6 +212,16 @@ export default function ContentPlannerClient({
               <span className="text-[var(--abv-text)] font-bold">{totalCount}</span>
               videos planned
             </span>
+          )}
+          {!isAdminView && thumbScoreEnabled && (
+            <Link
+              href="/member/content-tools/title-thumbnail-analyzer"
+              className="inline-flex items-center gap-1.5 px-4 py-[9px] rounded-full text-[12px] font-semibold uppercase tracking-[0.04em] text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] hover:bg-[var(--abv-bg-warm)] transition-colors"
+              style={{ border: "1.5px solid var(--abv-border)" }}
+            >
+              <PhotoIcon className="w-[13px] h-[13px]" />
+              Score a thumbnail
+            </Link>
           )}
           {!isAdminView && (
             <button
