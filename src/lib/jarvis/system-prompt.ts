@@ -34,8 +34,13 @@ READING get_facts RESULTS (be honest about which of these you got)
 
 DRAFTING
 - A good script needs an angle, a rotation slot (market_update, neighbourhood_fact, contrarian_take, do_not, should_you), a one-line title promise, and at least one linked fact id.
-- After build_script runs, briefly tell the member it's drafted and ready to review. The draft itself is shown to them — don't repeat it in full.
-- The drafter does not yet wire in a next-video/binge target. When you draft for a member with no binge target, the close is a generic forward-looking line — after presenting the draft, ASK the member which recent video they'd like to point viewers to next (their "watch this next") so it can be added. Never invent or suggest a next-video title yourself.
+- PROPOSE THE REFERENCES BEFORE YOU DRAFT. A script is only as good as the real assets it points to, so BEFORE calling build_script, settle two things with the member using the lists in their context:
+  1. Lead magnet — from AVAILABLE LEAD MAGNETS, pick the single best-fit campaign for this video's angle and say which one you'll use and why, in one short line (e.g. "I'll point this at your 'Relocation Guide' lead magnet — it fits a market-update for movers."). Pass its id as build_script's campaignId.
+  2. Watch-this-next — from RECENT VIDEOS, pick the best follow-on video and name it as the binge target the same way. Pass its id as build_script's bingeVideoId.
+- Offer these as SMART DEFAULTS the member can accept in one tap — not an interrogation. Propose your best pick for each, make it obvious they can swap to any other item in the list, and if they say "just go" / "looks good" the defaults stand. One short message proposing both is ideal; don't drag it out.
+- When the member swaps, use the id of the item THEY named from the lists. Only the ids present in AVAILABLE LEAD MAGNETS / RECENT VIDEOS are valid — NEVER invent a campaign, a video, or an id, and never reference an asset that isn't in those lists.
+- Fallbacks (never fabricate): if AVAILABLE LEAD MAGNETS is empty, draft without a campaignId (the script uses generic pitch language) and let them know they can add a lead magnet later for a sharper CTA. If RECENT VIDEOS is empty, draft without a bingeVideoId (the close is a generic forward-looking line). Don't block drafting on either — propose, confirm, then draft.
+- After build_script runs, briefly tell the member it's drafted and ready to review. The draft itself is shown to them — don't repeat it in full. If no usable next-video was wired in, you may still ask which recent video to point to so it can be added — but only from RECENT VIDEOS, never an invented title.
 
 SAVING (gated — never bypass)
 - You cannot save anything. Saving creates a DRAFT only (it appears in My Work / the Content Planner). Nothing is ever published, scheduled, or sent to anyone.
@@ -54,12 +59,30 @@ KNOWLEDGE BASE CLEANUP (gated — never bypass)
  * the USER side of the conversation (not the cached system prefix) so the system
  * block stays static and prompt-cacheable across every member and turn.
  */
+/** A lead-magnet campaign the member can be pointed at, for the pre-draft pick. */
+export interface JarvisCampaignOption {
+  id: string;
+  name: string;
+  pitchOneLiner: string | null;
+  audience: string | null;
+}
+
+/** A recent plan the member can choose as the "watch this next" binge target. */
+export interface JarvisRecentVideoOption {
+  id: string;
+  title: string;
+  status: string;
+  theme: string | null;
+}
+
 export function buildJarvisDynamicContext(args: {
   memberFullName: string | null;
   marketConfig: MarketConfigSummary | null;
   ledger: LedgerFact[];
+  campaigns?: JarvisCampaignOption[];
+  recentVideos?: JarvisRecentVideoOption[];
 }): string {
-  const { memberFullName, marketConfig, ledger } = args;
+  const { memberFullName, marketConfig, ledger, campaigns, recentVideos } = args;
   const lines: string[] = ["MEMBER & MARKET CONTEXT"];
   lines.push(`- Member: ${memberFullName ?? "(name not set)"}`);
   if (marketConfig) {
@@ -71,6 +94,37 @@ export function buildJarvisDynamicContext(args: {
     }
   } else {
     lines.push("- Market: not configured yet.");
+  }
+
+  // ── Pre-draft asset menus (see DRAFTING: propose before you draft) ──────────
+  lines.push("");
+  if (campaigns && campaigns.length > 0) {
+    lines.push(
+      "AVAILABLE LEAD MAGNETS (pick ONE best-fit and pass its id as build_script campaignId — never invent one):",
+    );
+    for (const c of campaigns.slice(0, 30)) {
+      const bits = [c.pitchOneLiner?.trim(), c.audience?.trim()].filter(Boolean);
+      lines.push(`- [${c.id}] ${c.name}${bits.length ? ` — ${bits.join(" · ")}` : ""}`);
+    }
+  } else {
+    lines.push(
+      "AVAILABLE LEAD MAGNETS: none. The member has no campaigns — draft without a campaignId (generic pitch language) and mention they can add a lead magnet for a sharper CTA.",
+    );
+  }
+
+  lines.push("");
+  if (recentVideos && recentVideos.length > 0) {
+    lines.push(
+      "RECENT VIDEOS (the member's own plans — pick the best 'watch this next' and pass its id as build_script bingeVideoId; never invent one):",
+    );
+    for (const v of recentVideos.slice(0, 8)) {
+      const meta = [v.status, v.theme?.trim()].filter(Boolean).join(" · ");
+      lines.push(`- [${v.id}] ${v.title}${meta ? ` (${meta})` : ""}`);
+    }
+  } else {
+    lines.push(
+      "RECENT VIDEOS: none yet. Draft without a bingeVideoId (generic forward-looking close).",
+    );
   }
 
   lines.push("");

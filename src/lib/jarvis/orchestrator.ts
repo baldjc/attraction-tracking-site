@@ -14,6 +14,8 @@ import {
 import {
   JARVIS_SYSTEM_PREFIX,
   buildJarvisDynamicContext,
+  type JarvisCampaignOption,
+  type JarvisRecentVideoOption,
 } from "@/lib/jarvis/system-prompt";
 import { saveConfirmedScript } from "@/lib/jarvis/save";
 import { applyConfirmedMerge } from "@/lib/jarvis/merge";
@@ -59,14 +61,29 @@ export async function runJarvisTurn(args: {
   priorLedger: LedgerFact[];
   memberFullName: string | null;
   marketConfig: MarketConfigSummary | null;
+  /** Pre-draft asset menus so Jarvis can PROPOSE a lead magnet + binge target
+   *  before drafting (the member confirms/swaps). Loaded by the route. */
+  campaigns?: JarvisCampaignOption[];
+  recentVideos?: JarvisRecentVideoOption[];
   emit: JarvisEmit;
   signal?: AbortSignal;
   /** Mutated in place as tokens accrue, so the caller can bill usage even if
    *  this throws partway through the tool loop. */
   usage: { inputTokens: number; outputTokens: number };
 }): Promise<JarvisTurnResult> {
-  const { userId, threadId, history, priorLedger, memberFullName, marketConfig, emit, signal, usage } =
-    args;
+  const {
+    userId,
+    threadId,
+    history,
+    priorLedger,
+    memberFullName,
+    marketConfig,
+    campaigns,
+    recentVideos,
+    emit,
+    signal,
+    usage,
+  } = args;
 
   const newLedgerFacts: LedgerFact[] = [];
   const toolCalls: ToolCallRecord[] = [];
@@ -101,7 +118,13 @@ export async function runJarvisTurn(args: {
     const messages: Anthropic.MessageParam[] = [
       {
         role: "user",
-        content: buildJarvisDynamicContext({ memberFullName, marketConfig, ledger: ledger() }),
+        content: buildJarvisDynamicContext({
+          memberFullName,
+          marketConfig,
+          ledger: ledger(),
+          campaigns,
+          recentVideos,
+        }),
       },
       { role: "assistant", content: "Understood — I'll use only these facts and my tools." },
       ...convo,
@@ -251,6 +274,8 @@ async function runTool(ctx: {
             ? (input.linkedFactIds as unknown[]).filter((x): x is string => typeof x === "string")
             : [],
           clarityPremise: typeof input.clarityPremise === "string" ? input.clarityPremise : undefined,
+          campaignId: typeof input.campaignId === "string" ? input.campaignId : undefined,
+          bingeVideoId: typeof input.bingeVideoId === "string" ? input.bingeVideoId : undefined,
         },
         onToken: (text) => emit("script_token", { text }),
         signal,
@@ -279,14 +304,19 @@ async function runTool(ctx: {
         linkedFactIds: built.linkedFactIds,
         citedSourceCount: countCitedSources(built.result.script),
         metrics: built.result.metrics ?? undefined,
+        campaignId: built.campaignId,
+        bingeVideoId: built.bingeVideoId,
       };
       onProposal(proposalState);
       record("ok", `Drafted "${built.title}".`);
       emit("script_done", {});
       const words = built.result.metrics?.dialogueWordCount ?? null;
+      // Only nudge when no USABLE binge target was wired (member had none, chose
+      // none, or picked an idea-stage video that can't be teased yet). If they
+      // confirmed a real next video, the close already teases it — stay quiet.
       const bingeNudge = built.bingeTargetConfigured
         ? ""
-        : " This member has no next-video/binge target configured, so the close is a generic forward-looking line. After telling them it's ready, ASK which recent video of theirs you should point viewers to as the \"watch this next\" — do NOT invent or suggest a title yourself.";
+        : " No usable next-video/binge target was wired in, so the close is a generic forward-looking line. After telling them it's ready, ASK which of their recent videos to point viewers to as the \"watch this next\" — offer it as a one-tap pick from their RECENT VIDEOS, and do NOT invent or suggest a title that isn't in that list.";
       return result(
         `Script drafted successfully${words ? ` (~${words} dialogue words)` : ""}. It is shown to the member with an Approve & save button. Tell them it's ready to review; do NOT save it yourself.${bingeNudge}`,
       );

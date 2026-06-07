@@ -122,11 +122,39 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const [memberRecord, marketConfig] = await Promise.all([
+  // Pre-draft asset menus so Jarvis can PROPOSE a lead magnet + binge target
+  // before drafting (the member confirms or swaps). Both ownership-scoped, the
+  // same queries that back the planner's lead-magnet linker (/api/campaigns)
+  // and binge selector (/api/member/content-plans/list-for-binge-selector).
+  const [memberRecord, marketConfig, campaignRows, recentVideoRows] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } }),
     loadMarketConfigSummary(userId),
+    prisma.campaign.findMany({
+      where: { userId, deletedAt: null, name: { not: "__test_installation__" } },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+      select: { id: true, name: true, pitchOneLiner: true, audience: true },
+    }),
+    prisma.contentPlan.findMany({
+      where: { userId, deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { id: true, title: true, status: true, theme: true },
+    }),
   ]);
   const memberFullName = memberRecord?.fullName?.trim() || null;
+  const campaigns = campaignRows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    pitchOneLiner: c.pitchOneLiner ?? null,
+    audience: c.audience ?? null,
+  }));
+  const recentVideos = recentVideoRows.map((v) => ({
+    id: v.id,
+    title: v.title,
+    status: v.status,
+    theme: v.theme ?? null,
+  }));
 
   // ── Open the SSE stream ───────────────────────────────────────────────────
   const encoder = new TextEncoder();
@@ -176,6 +204,8 @@ export async function POST(req: NextRequest) {
           priorLedger,
           memberFullName,
           marketConfig,
+          campaigns,
+          recentVideos,
           emit,
           signal: internalAbort.signal,
           usage,

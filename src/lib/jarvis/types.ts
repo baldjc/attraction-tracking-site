@@ -59,6 +59,19 @@ export interface ProposalState {
   metrics?: unknown;
   savedScriptId?: string;
   /**
+   * Member-confirmed lead-magnet Campaign this draft was built against (chosen
+   * BEFORE drafting, not a generic placeholder). Persisted onto the created
+   * ContentPlan's `linkedCampaignId` on Approve & save. Null/absent → the member
+   * had no campaign to assign, so the draft used generic pitch language.
+   */
+  campaignId?: string | null;
+  /**
+   * Member-confirmed binge / "watch this next" ContentPlan this draft points to.
+   * Persisted onto the created ContentPlan's `bingeVideoId` on Approve & save.
+   * Null/absent → no next-video chosen, so the close is a generic forward line.
+   */
+  bingeVideoId?: string | null;
+  /**
    * On `created`, the id of the ContentPlan this approved draft was routed into
    * (the Content Planner is the single home for member content). Optional for
    * proposals saved before this routing existed, or when plan routing failed

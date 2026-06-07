@@ -184,6 +184,13 @@ export async function saveConfirmedScript(args: {
         script: proposal.script,
         linkedScriptId: saved.id,
         linkedFactIds: proposal.linkedFactIds ?? [],
+        // The member-confirmed references the draft was actually built against
+        // (chosen before drafting via Jarvis). Persisting them keeps the plan's
+        // assigned assets in sync with the script and lets later regenerations
+        // (e.g. script-builder-v2) reuse the same lead magnet + binge target.
+        // onDelete:SetNull on both relations means a stale id self-heals.
+        linkedCampaignId: proposal.campaignId ?? null,
+        bingeVideoId: proposal.bingeVideoId ?? null,
       },
       select: { id: true },
     });

@@ -35,7 +35,13 @@ import {
   type CitedFact,
   type PlanContext,
   type BuildScriptResult,
+  type AssignedCampaign,
+  type AssignedBingeVideo,
 } from "@/lib/tools/scriptBuilder";
+import {
+  EARLY_PLAN_STATUSES,
+  PUBLISHED_PLAN_STATUSES,
+} from "@/lib/binge-target";
 import type { LedgerFact } from "@/lib/jarvis/types";
 
 // ── Tool schemas (Anthropic tool-use) ───────────────────────────────────────
@@ -99,6 +105,26 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         clarityPremise: {
           type: "string",
           description: "Optional. The CLARITY beat's core takeaway.",
+        },
+        campaignId: {
+          type: "string",
+          description:
+            "Optional but STRONGLY preferred. The id of the lead-magnet " +
+            "Campaign (from the AVAILABLE LEAD MAGNETS context list) the member " +
+            "confirmed for this video. The script weaves this real lead magnet's " +
+            "pitch into the body and close. Omit ONLY if the member has no " +
+            "campaigns or explicitly declined one (the script then uses generic " +
+            "pitch language). NEVER invent an id.",
+        },
+        bingeVideoId: {
+          type: "string",
+          description:
+            "Optional but STRONGLY preferred. The id of the 'watch this next' " +
+            "ContentPlan (from the RECENT VIDEOS context list) the member " +
+            "confirmed as the binge target. The script's close teases this real " +
+            "next video. Omit ONLY if the member has no recent videos or declined " +
+            "one (the close is then a generic forward-looking line). NEVER invent " +
+            "an id.",
         },
       },
       required: ["title", "rotationSlot", "titlePromise", "linkedFactIds"],
@@ -510,6 +536,18 @@ export interface BuildScriptArgs {
   titlePromise: string;
   linkedFactIds: string[];
   clarityPremise?: string;
+  /**
+   * Member-confirmed lead-magnet Campaign id (chosen BEFORE drafting). Resolved
+   * + ownership-checked here; an unknown/foreign id is treated as "none" (the
+   * draft falls back to generic pitch language — never fabricated).
+   */
+  campaignId?: string | null;
+  /**
+   * Member-confirmed binge / "watch this next" ContentPlan id (chosen BEFORE
+   * drafting). Resolved + ownership-checked here; an idea-stage target is linked
+   * but NOT teased (no promising a video that doesn't exist yet).
+   */
+  bingeVideoId?: string | null;
 }
 
 export type RunBuildScriptResult =
@@ -521,20 +559,28 @@ export type RunBuildScriptResult =
       rotationSlot: RotationSlotKey;
       linkedFactIds: string[];
       /**
-       * Whether a binge/next-video target was wired into this draft. The
-       * lightweight Jarvis drafter never assigns one (interim until full binge
-       * support lands), so the orchestrator uses this to nudge Jarvis to ASK the
-       * member which recent video to point viewers to instead of shipping a
-       * generic forward-looking close.
+       * Whether a usable binge/next-video target was wired into this draft (the
+       * member confirmed an existing, non-idea-stage video). The orchestrator
+       * uses this to decide whether to nudge Jarvis to point viewers at a recent
+       * video instead of shipping a generic forward-looking close.
        */
       bingeTargetConfigured: boolean;
+      /**
+       * The member's confirmed choices, resolved + ownership-checked, so the
+       * orchestrator can carry them onto the proposal and persist them onto the
+       * ContentPlan on Approve & save. Null when the member had/chose none.
+       */
+      campaignId: string | null;
+      bingeVideoId: string | null;
     };
 
 /**
  * Construct BuildScriptParams from the LLM's ideaCard + the member's live
  * context (mirrors the script-builder-v2 route's loaders) and run the shared
- * buildScript() core. Streams draft tokens via `onToken`. Talking-head only;
- * no campaign / binge-target assignment (Jarvis is a lightweight drafter).
+ * buildScript() core. Streams draft tokens via `onToken`. Talking-head only.
+ * The lead-magnet Campaign and binge ("watch this next") target are the
+ * member's pre-draft choices (ideaCard.campaignId / .bingeVideoId), loaded and
+ * fed into the engine exactly like the script-builder-v2 route does.
  */
 export async function runBuildScript(args: {
   userId: string;
@@ -780,6 +826,72 @@ export async function runBuildScript(args: {
     .map((u) => (u.fullName ?? "").trim())
     .filter((n) => n.length > 0 && n.split(/\s+/).length >= 2);
 
+  // ── Resolve the member's pre-draft asset choices (parity with the
+  // script-builder-v2 route's ASSIGNED ASSETS loaders) ─────────────────────
+  // The lead magnet + binge target are CHOSEN by the member in chat before this
+  // runs (Jarvis proposes, the member confirms/swaps). We load them here so the
+  // engine builds against the real references instead of generic placeholders.
+  // Every lookup is ownership-filtered; an unknown/foreign id resolves to "none"
+  // (generic fallback) rather than fabricating anything.
+  let assignedCampaign: AssignedCampaign | null = null;
+  let resolvedCampaignId: string | null = null;
+  if (ideaCard.campaignId) {
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: ideaCard.campaignId, userId, deletedAt: null },
+      select: {
+        name: true,
+        destinationUrl: true,
+        leadMagnetUrl: true,
+        description: true,
+        pitchOneLiner: true,
+        audience: true,
+      },
+    });
+    if (campaign) {
+      assignedCampaign = {
+        name: campaign.name,
+        destinationUrl: campaign.destinationUrl,
+        leadMagnetUrl: campaign.leadMagnetUrl,
+        description: campaign.description,
+        pitchOneLiner: campaign.pitchOneLiner,
+        audience: campaign.audience,
+      };
+      resolvedCampaignId = ideaCard.campaignId;
+    }
+  }
+
+  // Binge target: the chosen plan is LINKED (persisted on save) whenever it
+  // exists and is owned — even at idea stage, mirroring the planner's selector.
+  // But it is only TEASED (configured) when it's past the idea stage, so the
+  // script never promises a next video the member hasn't committed to make.
+  let assignedBingeVideo: AssignedBingeVideo | null = null;
+  let resolvedBingeVideoId: string | null = null;
+  if (ideaCard.bingeVideoId) {
+    const binge = await prisma.contentPlan.findFirst({
+      where: { id: ideaCard.bingeVideoId, userId, deletedAt: null },
+      select: { title: true, theme: true, status: true, youtubeVideoId: true },
+    });
+    if (binge) {
+      resolvedBingeVideoId = ideaCard.bingeVideoId;
+      const statusKey = (binge.status ?? "").trim().toLowerCase();
+      if (!EARLY_PLAN_STATUSES.has(statusKey)) {
+        assignedBingeVideo = {
+          title: binge.title,
+          theme: binge.theme,
+          status: binge.status,
+          youtubeVideoId: PUBLISHED_PLAN_STATUSES.has(statusKey)
+            ? binge.youtubeVideoId
+            : null,
+        };
+      }
+    }
+  }
+  // `configured` is true ONLY when a usable (existing, non-idea-stage) target
+  // resolved — the prompt's BINGE TARGET block + the `binge_target_match`
+  // validator key off this exactly as the route does.
+  const bingeTargetConfigured = assignedBingeVideo !== null;
+  const bingeTargetTitle = assignedBingeVideo?.title ?? null;
+
   const planContext: PlanContext = {
     id: `jarvis-${Date.now()}`,
     title: ideaCard.title,
@@ -802,13 +914,13 @@ export async function runBuildScript(args: {
     sourceOfTruthMetrics,
     propertyTypeByHood,
     shootType: "talking_head",
-    assignedCampaign: null,
-    assignedBingeVideo: null,
+    assignedCampaign,
+    assignedBingeVideo,
     regenerationBrief: null,
     memberFullName,
     forbiddenIdentities,
-    bingeTargetConfigured: false,
-    bingeTargetTitle: null,
+    bingeTargetConfigured,
+    bingeTargetTitle,
     signal,
     callbacks: { onToken },
   });
@@ -819,7 +931,9 @@ export async function runBuildScript(args: {
     title: ideaCard.title,
     rotationSlot,
     linkedFactIds: factRows.map((f) => f.id),
-    bingeTargetConfigured: false,
+    bingeTargetConfigured,
+    campaignId: resolvedCampaignId,
+    bingeVideoId: resolvedBingeVideoId,
   };
 }
 
