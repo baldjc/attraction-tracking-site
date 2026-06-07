@@ -1009,7 +1009,7 @@ test("recap_close — body 'closing costs' must NOT move the close boundary and 
 /*  Profile-aware min_dialogue_length floor (lean vs full).                */
 /* ────────────────────────────────────────────────────────────────────── */
 
-/** A grounded body whose dialogue word count is between 1,200 and 2,200. */
+/** A grounded body whose dialogue word count is between 1,600 and 2,200. */
 function leanGroundedScript(): string {
   const paragraph =
     "In Saddle Ridge the typical detached home is trading around $612,000 right now, " +
@@ -1017,7 +1017,7 @@ function leanGroundedScript(): string {
     "That pairing of a $612,000 price level against a 49.4% absorption read is the single " +
     "clearest signal of how balanced this corner of the market has become through the season, " +
     "and it is the kind of grounded read that helps a household plan the next move with confidence.";
-  const body = Array.from({ length: 17 }, () => paragraph).join("\n\n");
+  const body = Array.from({ length: 21 }, () => paragraph).join("\n\n");
   return `# Title: The Saddle Ridge Market Read\n\n[VISUAL: drone]\n\n${body}\n`;
 }
 
@@ -1030,12 +1030,12 @@ function dialogueFloorHits(
   ).length;
 }
 
-test("min_dialogue_length — lean floor (1,200) applies when no profile is present", () => {
+test("min_dialogue_length — lean floor (1,600) applies when no profile is present", () => {
   const script = leanGroundedScript();
   assert.equal(
     dialogueFloorHits(script, { neighbourhoods: ["Saddle Ridge"] }),
     0,
-    "a ~1,360-word grounded draft must clear the lean floor with no profile",
+    "a ~1,680-word grounded draft must clear the lean floor with no profile",
   );
 });
 
@@ -1047,5 +1047,66 @@ test("min_dialogue_length — full floor (2,200) applies when hasNeighbourhoodPr
       hasNeighbourhoodProfile: true,
     }) >= 1,
     "the same lean draft must trip the full 2,200 floor once a profile is signalled",
+  );
+});
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  PART C — data_window_claim (data-window honesty).                      */
+/* ────────────────────────────────────────────────────────────────────── */
+
+function dataWindowHits(script: string): number {
+  return validateScript(script).violations.filter(
+    (v) => v.rule === "data_window_claim",
+  ).length;
+}
+
+test("data_window_claim — flags 'a year of data' over-claim", () => {
+  const script =
+    "# Title: The Read\n\n" +
+    "A year of data shows us the average sitting time is 66 days right now.\n";
+  assert.ok(
+    dataWindowHits(script) >= 1,
+    "claiming 'a year of data' must trip data_window_claim even with a real value",
+  );
+});
+
+test("data_window_claim — flags 'years of tracking' and '12 months of numbers'", () => {
+  const a = "# Title\n\nYears of tracking this market tells the same story.\n";
+  const b = "# Title\n\nWe have 12 months of numbers backing this up.\n";
+  assert.ok(dataWindowHits(a) >= 1, "'years of tracking' must be flagged");
+  assert.ok(dataWindowHits(b) >= 1, "'12 months of numbers' must be flagged");
+});
+
+test("data_window_claim — does NOT flag a two-endpoint year-ago comparison", () => {
+  const script =
+    "# Title\n\n" +
+    "A year ago the median sat at $612,000, and right now it is $641,000.\n";
+  assert.equal(
+    dataWindowHits(script),
+    0,
+    "stating both endpoints of a year-ago comparison is legitimate",
+  );
+});
+
+test("data_window_claim — does NOT flag agent-experience / tenure framing", () => {
+  const script =
+    "# Title\n\n" +
+    "After years of running this analysis for families across the city, " +
+    "and with years of experience in this market, here is what I see.\n";
+  assert.equal(
+    dataWindowHits(script),
+    0,
+    "agent-tenure framing ('years of running this analysis', 'years of experience') is exempt",
+  );
+});
+
+test("data_window_claim — does NOT flag bare neighbourhood-history framing", () => {
+  const script =
+    "# Title\n\n" +
+    "This community has years of history, and decades of history give it real character.\n";
+  assert.equal(
+    dataWindowHits(script),
+    0,
+    "bare 'years of history' (neighbourhood history) is not a data-window claim",
   );
 });

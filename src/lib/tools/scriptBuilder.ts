@@ -639,7 +639,7 @@ function buildInitialUserMessage(args: {
     const url =
       assignedCampaign.leadMagnetUrl ?? assignedCampaign.destinationUrl;
     lines.push(
-      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (INSIDE the first body insight — one casual sentence with GIFT framing, NOT in the opening), `[LEAD MAGNET 2/3]` (at ~40-45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (a HALF-SENTENCE riding the forward/binge hook at the very end — this IS the LM 3/3 placement, no additional LM mention; one casual half-sentence anchored to what the video just delivered, NOT a standalone closing CTA). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
+      "**Lead magnet** — this is the SPECIFIC asset the member assigned to this video. The script has THREE lead-magnet placements: `[LEAD MAGNET 1/3]` (INSIDE the first body insight — ONE natural sentence woven into that insight's specific point, gap→tool→identity, avatar-anchored, a bolted-on gift block is BANNED, NOT in the opening), `[LEAD MAGNET 2/3]` (at ~40-45% — the DEEP pitch using the fields below), `[LEAD MAGNET 3/3]` (a HALF-SENTENCE riding the forward/binge hook at the very end — this IS the LM 3/3 placement, no additional LM mention; one casual half-sentence anchored to what the video just delivered, NOT a standalone closing CTA). The `pitchOneLiner` and `description` fields below are the source material for the DEEP pitch at LM 2/3. For LM 1/3 and LM 3/3, write short casual references to the asset by name — do NOT replay the full pitch. Do NOT invent a generic budget-calculator, report, or guide pitch from the name alone — the fields below tell you what this asset actually is and how the member pitches it.",
     );
     lines.push("");
     lines.push(`- **Name:** ${assignedCampaign.name}`);
@@ -658,7 +658,7 @@ function buildInitialUserMessage(args: {
     lines.push("");
     if (assignedCampaign.pitchOneLiner) {
       lines.push(
-        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~40-45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (INSIDE the first body insight, with GIFT framing — NOT in the opening) and `[LEAD MAGNET 3/3]` (a HALF-SENTENCE riding the forward/binge hook at the very end — this is the only LM placement in the closing, no additional LM mention, NOT a standalone closing CTA), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
+        "The **one-line pitch** above is the member's calibrated pitch language for THIS asset. Use it verbatim (or with minimal rewording) as the spine of the DEEP pitch at `[LEAD MAGNET 2/3]` (~40-45% through). For the casual mentions at `[LEAD MAGNET 1/3]` (INSIDE the first body insight, woven naturally into that section's specific point — NOT a bolted-on gift block, NOT in the opening) and `[LEAD MAGNET 3/3]` (a HALF-SENTENCE riding the forward/binge hook at the very end — this is the only LM placement in the closing, no additional LM mention, NOT a standalone closing CTA), reference the asset by name in one sentence anchored to the surrounding content — do NOT replay the full pitch. Do NOT substitute generic pitch language about budget calculators, reports, or guides based on the name.",
       );
     } else if (assignedCampaign.description) {
       lines.push(
@@ -729,10 +729,10 @@ function buildInitialUserMessage(args: {
   lines.push("## OUTPUT");
   lines.push("");
   lines.push(
-    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` inside the FIRST body insight as a gift, `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). " +
+    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` woven naturally into the FIRST body insight as one context-anchored sentence (a bolted-on gift block is BANNED), `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). " +
       (hasProfile
         ? "Body must be ≥ 2,200 dialogue words. "
-        : "There is NO neighbourhood profile loaded, so a lean, fully-grounded body is correct — do NOT pad toward any word target with invented demographic/build-era/income/amenity colour or unsourced numbers; cover every cited fact thoroughly and stop. ") +
+        : "There is NO neighbourhood profile loaded, so the body must be lean and fully grounded — but it must STILL run a full 10-12 minutes (≥ 1,600 dialogue words). Reach that length through grounded DEPTH, NOT padding: segment every metric by property type, compare neighbourhoods, interpret each number and its viewer implication, and add sub-persona guidance — never invent demographic/build-era/income/amenity colour or unsourced numbers, and state each point only once. ") +
       "Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
@@ -821,17 +821,19 @@ function suggestRetryFix(v: ScriptViolation, hasProfile = true): string {
   if (v.rule === "min_dialogue_length") {
     // Wave 8 Fix 2 — body fell below the word floor. With a profile, force
     // expansion using real profile content. LEAN GROUNDED MODE: with NO profile
-    // there is nothing legitimate to expand from, so do NOT push toward 2,200 or
-    // invent colour — just cover every cited fact and source-of-truth metric
-    // thoroughly (the lean floor is 1,200) and stop.
+    // there is no colour to invent, so do NOT push toward 2,200 or fabricate —
+    // but the lean floor is 1,600 (PART D: scripts run a full 10-12 min), so
+    // reach it through grounded DEPTH (segment, compare, interpret), not padding.
     if (!hasProfile) {
       return [
         "the body is too thin. There is NO neighbourhood profile loaded, so do",
-        "NOT pad toward any word target and do NOT invent demographic,",
-        "build-era, income, amenity, or any unsourced colour. Instead, work",
-        "EVERY cited fact and Source-of-truth metric in fully — add the data",
-        "interpretation, viewer implication, and a back-half synthesis grounded",
-        "ONLY in those numbers. A lean, fully-grounded script is correct.",
+        "NOT invent demographic, build-era, income, amenity, or any unsourced",
+        "colour. The script must still run a full 10-12 minutes (≥ 1,600 dialogue",
+        "words): reach that length through grounded DEPTH, not padding — work",
+        "EVERY cited fact and Source-of-truth metric in fully, segment by property",
+        "type, compare neighbourhoods, and add data interpretation, viewer",
+        "implication, and a back-half synthesis grounded ONLY in those numbers.",
+        "State each point only once — add depth, never repeat the thesis.",
       ].join(" ");
     }
     return [

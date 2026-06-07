@@ -72,6 +72,11 @@ export type ScriptViolationRule =
    *  ("a family every 53 hours") whose number isn't backed by the member's
    *  profile/credentials. */
   | "fabricated_credibility_stat"
+  /** PART C — the script claimed a continuous data WINDOW the member never
+   *  validated ("a year of data", "years of tracking", "12 months of
+   *  numbers"). Two-endpoint year-ago comparisons and agent-tenure framing
+   *  are NOT flagged. */
+  | "data_window_claim"
   /** A SPECIFIC factual claim — demographic figure (median income/age,
    *  population), or a dated event ("opened in 2019") — that doesn't trace to a
    *  cited fact, the source-of-truth, or the member's Knowledge Base
@@ -2141,14 +2146,19 @@ export const MIN_DIALOGUE_WORDS = 2200;
  * Lean floor applied when NO neighbourhood profile is loaded for the script.
  * The full 2,200-word floor assumes the model has FULL profile prose
  * (demographics, housing stock, lifestyle) to expand into. Without a profile,
- * demanding 2,200 words forces the model to invent demographic colour and
- * round-number stats — which the grounding gates (unsourced_factual_claim,
- * unanchored_stat) then reject, looping the script into a hard-fail. A lean,
- * fully-data-grounded market update is legitimately shorter, so we hold it to
- * a lower floor that's reachable from cited facts + the source-of-truth block
- * alone.
+ * demanding the full floor would force the model to invent demographic colour
+ * and round-number stats — which the grounding gates (unsourced_factual_claim,
+ * unanchored_stat) then reject, looping the script into a hard-fail.
+ *
+ * A lean script must still run a FULL 10-12 minutes, though: a data-rich market
+ * update reaches this floor from cited facts + the source-of-truth block alone
+ * (every neighbourhood × property-type segment × MOI / DOM / SP-LP / price /
+ * per-sq-ft / failure-rate, plus any trend window and named sub-persona). Lean
+ * does NOT mean short — the floor is set so a market update is never thin, while
+ * staying below the profile floor that would force invented colour. (Raised from
+ * 1,200 → 1,600 per the PART D length spec: market updates go long and rich.)
  */
-export const LEAN_DIALOGUE_WORDS = 1200;
+export const LEAN_DIALOGUE_WORDS = 1600;
 
 export function checkMinDialogueLength(
   script: string,
@@ -2231,6 +2241,76 @@ export function checkNoAnnouncedCredibility(script: string): ScriptViolation[] {
         .trim(),
       line: originalLine,
     });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  data_window_claim (ERROR).                                             */
+/*                                                                        */
+/*  The member's validated data covers only the months present on the     */
+/*  Source-of-Truth block: the current month, plus an optional 90-day     */
+/*  pool and/or a year-ago endpoint. The script may NOT claim a           */
+/*  continuous long dataset that doesn't exist ("a year of data", "years  */
+/*  of tracking", "12 months of numbers"). Even when the stated value is  */
+/*  real, the WINDOW claim is a fabrication. A two-endpoint year-ago      */
+/*  comparison ("a year ago it was X, now it's Y") is legitimate and is   */
+/*  NOT matched here. Agent-tenure / experience framing ("after years of  */
+/*  running this analysis", "years of experience") is also exempt — the   */
+/*  patterns fire ONLY on data/numbers/figures/tracking and sales/price-  */
+/*  history nouns. Bare "history" (e.g. "this neighbourhood has years of  */
+/*  history") is NOT matched — it is not a data-window claim.             */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const DATA_WINDOW_NOUN =
+  "(?:data|numbers|figures|sales\\s+data|market\\s+data|sales\\s+history|price\\s+history|tracking)";
+const DATA_WINDOW_OVERCLAIM_PATTERNS: RegExp[] = [
+  // "a year of data" / "a full year of numbers" / "the past year of sales data"
+  new RegExp(
+    `\\b(?:a|one|the\\s+past|the\\s+last|this\\s+past|a\\s+full|an\\s+entire)\\s+years?(?:['’]s)?\\s+of\\s+${DATA_WINDOW_NOUN}\\b`,
+    "gi",
+  ),
+  // "a year's worth of data"
+  new RegExp(
+    `\\b(?:a|one)\\s+years?['’]?s?\\s+worth\\s+of\\s+${DATA_WINDOW_NOUN}\\b`,
+    "gi",
+  ),
+  // "years of data" / "decades of tracking" (NOT "years of experience/running…")
+  new RegExp(`\\b(?:years|decades)\\s+of\\s+${DATA_WINDOW_NOUN}\\b`, "gi"),
+  // "twelve / 12 months of data"
+  new RegExp(`\\b(?:twelve|12)\\s+months?\\s+of\\s+${DATA_WINDOW_NOUN}\\b`, "gi"),
+];
+
+export function checkDataWindowClaim(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<number>();
+  for (const re of DATA_WINDOW_OVERCLAIM_PATTERNS) {
+    for (const m of dialogue.matchAll(re)) {
+      if (m.index === undefined) continue;
+      if (seen.has(m.index)) continue;
+      seen.add(m.index);
+      const before = dialogue.slice(0, m.index);
+      const dialogueLi = before.split("\n").length - 1;
+      const originalLine = dialogueLineMap[dialogueLi];
+      violations.push({
+        rule: "data_window_claim",
+        severity: "error",
+        message:
+          `Data-window over-claim detected: "${m[0]}". The validated data covers ` +
+          `only the months on the Source-of-Truth block (the current month, plus a ` +
+          `90-day pool and/or a year-ago endpoint when those rows are present) — NOT a ` +
+          `continuous long dataset. Even if the value is real, asserting a window like ` +
+          `"a year of data" the member never validated is a fabrication. Cite the real ` +
+          `period instead ("this month", "across the last 90 days", or "a year ago it ` +
+          `was X, now it's Y" using both endpoints). Agent-experience framing ("after ` +
+          `years of running this analysis") is fine — just don't pin it to a data window.`,
+        snippet: dialogue
+          .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
+          .trim(),
+        line: originalLine,
+      });
+    }
   }
   return violations;
 }
@@ -3172,6 +3252,9 @@ export function validateScript(
   violations.push(
     ...checkUnlistedMarketStat(script, opts.sourceOfTruth, opts.citedFacts),
   );
+  // PART C — data-window honesty: reject claims of a continuous data window
+  // ("a year of data") beyond the months actually validated on the SoT block.
+  violations.push(...checkDataWindowClaim(script));
   // Wave 8 Fix 2 / Fix 3 / Fix 4 — ERROR severity, all gated through the
   // existing re-prompt loop.
   // Floor-only: explicit `hasNeighbourhoodProfile` wins (save route uses it
