@@ -13,9 +13,9 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowsUpDownIcon,
   SparklesIcon,
-  PhotoIcon,
 } from "@heroicons/react/24/outline";
 import ContentPlanTable from "@/components/content-planner/ContentPlanTable";
+import MyWorkLibrary from "@/components/my-work/MyWorkLibrary";
 import CalendarView from "@/components/content-planner/CalendarView";
 import BoardView from "@/components/content-planner/BoardView";
 import PipelineView, { type PipelineSortKey } from "@/components/content-planner/PipelineView";
@@ -25,7 +25,7 @@ import { getStatusOptions, filterPlans } from "@/lib/content-plan-utils";
 import { getStatusDotColor } from "@/lib/content-plan-style";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
-type ViewId = "publish_cal" | "table" | "by_theme" | "pipeline";
+type ViewId = "publish_cal" | "table" | "by_theme" | "pipeline" | "library";
 
 interface Props {
   serviceTier: string;
@@ -47,7 +47,6 @@ export default function ContentPlannerClient({
   const [showPipelineTab, setShowPipelineTab] = useState(false);
   const [scriptBuilderV2Enabled, setScriptBuilderV2Enabled] = useState(false);
   const [aiWizardEnabled, setAiWizardEnabled] = useState(false);
-  const [thumbScoreEnabled, setThumbScoreEnabled] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -73,7 +72,6 @@ export default function ContentPlannerClient({
         if (d?.flags?.planner_pipeline_view) setShowPipelineTab(true);
         if (d?.flags?.tool_script_builder_v2) setScriptBuilderV2Enabled(true);
         if (d?.flags?.tool_content_engine_v2) setAiWizardEnabled(true);
-        if (d?.flags?.tool_title_analyzer !== false) setThumbScoreEnabled(true);
       })
       .catch(() => {});
   }, []);
@@ -97,6 +95,7 @@ export default function ContentPlannerClient({
     { id: "publish_cal", label: "Calendar", restricted: false },
     { id: "pipeline",    label: "Pipeline", restricted: !showPipelineTab },
     { id: "by_theme",    label: "Themes",   restricted: false },
+    { id: "library",     label: "Library",  restricted: false },
   ];
   const TABS = ALL_TABS.filter((t) => !t.restricted);
 
@@ -167,16 +166,45 @@ export default function ContentPlannerClient({
   const sortVisible = view === "pipeline" || view === "by_theme";
 
   if (isMobile) {
+    const mobileLibrary = view === "library";
     return (
-      <div>
-        <MobileCardFeed
-          plans={allPlans}
-          statusOptions={statusOptions}
-          onSelectPlan={(p) => router.push(`/member/content-planner/${p.id}`)}
-          onAddPlan={handleQuickAdd}
-          addingPlan={addingPlan}
-          isAdminView={isAdminView}
-        />
+      <div className="px-1 pb-16">
+        {/* Mobile Pipeline ⇄ Library switch — keeps the Planner the single home
+            for content on small screens (the desktop tab row is hidden here). */}
+        <div className="flex gap-1 bg-[#111]/5 dark:bg-white/5 rounded-lg p-1 mb-4">
+          <button
+            onClick={() => setView("table")}
+            className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              !mobileLibrary
+                ? "bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white shadow-sm"
+                : "text-[var(--abv-text)]/50 dark:text-white/40"
+            }`}
+          >
+            Pipeline
+          </button>
+          <button
+            onClick={() => setView("library")}
+            className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              mobileLibrary
+                ? "bg-white dark:bg-[#1a1a1a] text-[var(--abv-text)] dark:text-white shadow-sm"
+                : "text-[var(--abv-text)]/50 dark:text-white/40"
+            }`}
+          >
+            Library
+          </button>
+        </div>
+        {mobileLibrary ? (
+          <MyWorkLibrary />
+        ) : (
+          <MobileCardFeed
+            plans={allPlans}
+            statusOptions={statusOptions}
+            onSelectPlan={(p) => router.push(`/member/content-planner/${p.id}`)}
+            onAddPlan={handleQuickAdd}
+            addingPlan={addingPlan}
+            isAdminView={isAdminView}
+          />
+        )}
       </div>
     );
   }
@@ -213,16 +241,6 @@ export default function ContentPlannerClient({
               videos planned
             </span>
           )}
-          {!isAdminView && thumbScoreEnabled && (
-            <Link
-              href="/member/content-tools/title-thumbnail-analyzer"
-              className="inline-flex items-center gap-1.5 px-4 py-[9px] rounded-full text-[12px] font-semibold uppercase tracking-[0.04em] text-[var(--abv-text-muted)] hover:text-[var(--abv-text)] hover:bg-[var(--abv-bg-warm)] transition-colors"
-              style={{ border: "1.5px solid var(--abv-border)" }}
-            >
-              <PhotoIcon className="w-[13px] h-[13px]" />
-              Score a thumbnail
-            </Link>
-          )}
           {!isAdminView && (
             <button
               onClick={handleQuickAdd}
@@ -231,7 +249,7 @@ export default function ContentPlannerClient({
               style={{ border: "1.5px solid var(--abv-ink)" }}
             >
               <PlusIcon className="w-[13px] h-[13px]" />
-              {addingPlan ? "Adding…" : "Add Video"}
+              {addingPlan ? "Adding…" : "Add Blank Video"}
             </button>
           )}
           {!isAdminView && aiWizardEnabled && (
@@ -243,14 +261,14 @@ export default function ContentPlannerClient({
               onMouseLeave={(e) => (e.currentTarget.style.background = "var(--abv-azure)")}
             >
               <SparklesIcon className="w-[14px] h-[14px]" />
-              New Content (AI)
+              Browse Content Ideas
             </Link>
           )}
         </div>
       </header>
 
       {/* Status filter bar — card surface, dot + count per pill, ink-fill active */}
-      {showStatusBar && (
+      {showStatusBar && view !== "library" && (
         <div
           className="flex gap-1.5 p-1 mb-3.5 overflow-x-auto"
           style={{
@@ -317,7 +335,7 @@ export default function ContentPlannerClient({
                 }}
               >
                 {tab.label}
-                {isOn && allPlans && (
+                {isOn && allPlans && tab.id !== "library" && (
                   <span className="font-mono text-[10.5px] text-[var(--abv-text-dim)] ml-1.5 font-medium">
                     {filteredCount}
                   </span>
@@ -327,6 +345,8 @@ export default function ContentPlannerClient({
           })}
         </div>
 
+        {view !== "library" && (
+        <>
         <div
           className="inline-flex items-center gap-2 bg-white px-[14px] py-[7px] rounded-full text-[12.5px] text-[var(--abv-text-dim)] w-[220px]"
           style={{ border: "1px solid var(--abv-border-strong)" }}
@@ -407,6 +427,8 @@ export default function ContentPlannerClient({
             <CalendarDaysIcon className="w-3.5 h-3.5" />
           </button>
         )}
+        </>
+        )}
       </div>
 
       {view === "table" && (
@@ -458,6 +480,11 @@ export default function ContentPlannerClient({
           scriptBuilderV2Enabled={scriptBuilderV2Enabled}
         />
       )}
+
+      {/* Library — the member's saved-asset library, folded in so the Planner is
+          the single home for all content (pipeline views show ContentPlan rows;
+          this aliases scripts/drafts/ideas/reviews from /api/member/my-work). */}
+      {view === "library" && <MyWorkLibrary />}
 
       {/* Workflow help block */}
       <section

@@ -62,11 +62,12 @@ export async function POST(req: NextRequest) {
 
   // ── save: gated draft creation ────────────────────────────────────────────
   if (action === "save") {
-    // Idempotent: already saved → return the existing draft.
+    // Idempotent: already saved → return the existing draft (+ its plan).
     if (proposal.status === "created" && proposal.savedScriptId) {
       return NextResponse.json({
         ok: true,
         savedScriptId: proposal.savedScriptId,
+        contentPlanId: proposal.contentPlanId ?? null,
         alreadySaved: true,
         proposalState: proposal,
       });
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       savedScriptId: saved.savedScriptId,
+      contentPlanId: saved.contentPlanId ?? null,
       alreadySaved: saved.alreadySaved,
       proposalState: updated?.proposalState ?? null,
     });

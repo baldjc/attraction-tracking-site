@@ -58,6 +58,13 @@ export interface ProposalState {
   citedSourceCount?: number;
   metrics?: unknown;
   savedScriptId?: string;
+  /**
+   * On `created`, the id of the ContentPlan this approved draft was routed into
+   * (the Content Planner is the single home for member content). Optional for
+   * proposals saved before this routing existed, or when plan routing failed
+   * (the SavedScript draft is still created — routing is best-effort).
+   */
+  contentPlanId?: string;
 }
 
 // ── Persisted ContentManagerMessage.content shapes ──────────────────────────

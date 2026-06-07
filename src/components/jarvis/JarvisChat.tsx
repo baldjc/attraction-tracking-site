@@ -330,7 +330,9 @@ export default function JarvisChat({
         );
         if (action === "save" && j.ok) {
           toast.success(
-            j.alreadySaved ? "Already saved to My Work." : "Saved to My Work as a draft.",
+            j.alreadySaved
+              ? "Already in your Content Planner."
+              : "Added to your Content Planner as a planned video.",
           );
         }
       } catch {
@@ -349,8 +351,8 @@ export default function JarvisChat({
       <header className="border-b border-abv-border px-6 py-4">
         <h1 className="text-lg font-semibold text-abv-text">AI Content Manager</h1>
         <p className="text-sm text-abv-text-secondary">
-          Plan and draft a video from your real market numbers. Drafts save to My Work — nothing is
-          ever published.
+          Plan and draft a video from your real market numbers. Approved drafts land in your Content
+          Planner — nothing is ever published.
         </p>
       </header>
 
@@ -518,7 +520,7 @@ function ProposalCard({
   if (proposal.status === "created") {
     return (
       <div className="max-w-[90%] rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-abv-text">
-        ✓ Saved to My Work as a draft. You can refine and schedule it in the Content Planner.
+        ✓ Added to your Content Planner as a planned video. Refine and schedule it whenever you’re ready.
       </div>
     );
   }
@@ -571,7 +573,7 @@ function ProposalCard({
         <div className="mt-3">
           <p className="text-sm text-abv-text">Save this as a draft?</p>
           <p className="mt-1 text-xs text-abv-text-secondary">
-            It’ll be saved as a draft in My Work and the Content Planner — nothing is published or
+            It’ll be added to your Content Planner as a planned video — nothing is published or
             scheduled, and you can edit it anytime.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">

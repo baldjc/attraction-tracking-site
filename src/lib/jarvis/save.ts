@@ -10,6 +10,8 @@
 
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { getStatusOptions } from "@/lib/content-plan-utils";
+import { rotationSlotToTheme } from "@/lib/content-engine-validation";
 import type {
   MessageContent,
   ProposalState,
@@ -17,7 +19,12 @@ import type {
 } from "@/lib/jarvis/types";
 
 export type SaveResult =
-  | { ok: true; savedScriptId: string; alreadySaved: boolean }
+  | {
+      ok: true;
+      savedScriptId: string;
+      alreadySaved: boolean;
+      contentPlanId?: string;
+    }
   | { ok: false; code: "not_found" | "forbidden" | "not_gated" | "bad_state"; message: string };
 
 /**
@@ -59,9 +66,14 @@ export async function saveConfirmedScript(args: {
     return { ok: false, code: "bad_state", message: "This message has no script to save." };
   }
 
-  // Idempotent: already saved → return the existing draft.
+  // Idempotent: already saved → return the existing draft (+ its plan).
   if (proposal.status === "created" && proposal.savedScriptId) {
-    return { ok: true, savedScriptId: proposal.savedScriptId, alreadySaved: true };
+    return {
+      ok: true,
+      savedScriptId: proposal.savedScriptId,
+      alreadySaved: true,
+      contentPlanId: proposal.contentPlanId,
+    };
   }
 
   // ── GATE: latest member message must be an explicit confirmation ──────────
@@ -132,7 +144,12 @@ export async function saveConfirmedScript(args: {
     });
     const fp = fresh?.proposalState as ProposalState | null;
     if (fp?.status === "created" && fp.savedScriptId) {
-      return { ok: true, savedScriptId: fp.savedScriptId, alreadySaved: true };
+      return {
+        ok: true,
+        savedScriptId: fp.savedScriptId,
+        alreadySaved: true,
+        contentPlanId: fp.contentPlanId,
+      };
     }
     return {
       ok: false,
@@ -142,5 +159,53 @@ export async function saveConfirmedScript(args: {
     };
   }
 
-  return { ok: true, savedScriptId: saved.id, alreadySaved: false };
+  // ── Route the approved draft INTO the Content Planner ────────────────────
+  // The Planner is the single home for member content: an approved script must
+  // land there as a planned future video (leftmost backlog status, unscheduled)
+  // with the full script attached (its "## Sources" footnote and 3 title options
+  // ride along inside the script text). We only reach here on the WINNING claim,
+  // so exactly one ContentPlan is ever created per proposal. Best-effort: if the
+  // plan write fails the SavedScript draft is still saved (nothing is lost) —
+  // routing is non-fatal so an approved draft never silently vanishes.
+  let contentPlanId: string | undefined;
+  try {
+    const planUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { serviceTier: true },
+    });
+    const startingStatus = getStatusOptions(planUser?.serviceTier ?? "foundations")[0];
+    const plan = await prisma.contentPlan.create({
+      data: {
+        userId,
+        title: proposal.title,
+        status: startingStatus,
+        theme: rotationSlotToTheme(proposal.rotationSlot),
+        rotationSlot: proposal.rotationSlot,
+        script: proposal.script,
+        linkedScriptId: saved.id,
+        linkedFactIds: proposal.linkedFactIds ?? [],
+      },
+      select: { id: true },
+    });
+    contentPlanId = plan.id;
+    // Stamp the plan id onto the (already-claimed) proposal so re-saves are
+    // idempotent and the chat can deep-link to the planner item.
+    await prisma.contentManagerMessage.update({
+      where: { id: proposalMessageId },
+      data: {
+        proposalState: {
+          ...proposal,
+          status: "created",
+          savedScriptId: saved.id,
+          contentPlanId,
+        } as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (err) {
+    // Non-fatal: the draft is saved; planner routing can be retried by editing
+    // the saved script into a plan manually. Log for observability.
+    console.error("[jarvis/save] Content Planner routing failed", err);
+  }
+
+  return { ok: true, savedScriptId: saved.id, alreadySaved: false, contentPlanId };
 }
