@@ -26,8 +26,14 @@ family; `pooled90dToSourceOfTruth` emits no MEDIAN/SP_LP because `g.medianPrice`
 has nothing to emit). With no anchorable price fact, any price the writer states trips
 `unanchored_stat`, so the market-update slot can never pass.
 
-**Why:** a mapped-but-absent column fails open (silent null), not loud. There is no guard
-that a mapped price column actually resolves to a real header before aggregation.
+**Why:** a mapped-but-absent column USED to fail open (silent null), not loud.
+
+**Now guarded:** `buildBuckets` (the shared monthly+pooled-90d normalization path) THROWS
+if a mapped `salePrice`/`listPrice` header doesn't resolve to a real CSV header (same
+`normalizeHeader`/`headerLookup` semantics as the cell reads, so no false-positive on
+case/whitespace variants); missing `saleToListRatio` is warn-only. So this defect now
+fails loud at validation/aggregation time instead of producing a price-less dataset.
+A bad mapping must still be corrected per-member, then the affected uploads re-validated.
 
 **How to apply:** when a market-update script won't generate or a member's median
 price / SP-LP / price-per-sqft is missing or "–", FIRST dump the member's CSV header row

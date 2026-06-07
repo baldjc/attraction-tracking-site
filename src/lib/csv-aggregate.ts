@@ -573,6 +573,46 @@ function buildBuckets(
   const { headers, rows } = parseAllRows(csvBuffer);
   const headerLookup = buildHeaderLookup(headers);
 
+  // Loud guard: a PRICE column mapped to a header that is ABSENT from this CSV
+  // silently reads null for every row, so median price + sale-to-list never
+  // compute and the member's market-update scripts dead-end on "missing price
+  // facts" that merely look like a lean dataset. This is exactly the NTREIS
+  // "Sale Price" (non-existent) vs "Close Price" (real) mismatch. Fail here —
+  // validation marks the upload failed with a fixable message — rather than
+  // persisting a price-less fact set. Resolution mirrors readMappedCell
+  // (case/whitespace-insensitive via the normalized header lookup).
+  const resolvesHeader = (h: string | undefined): boolean =>
+    !!h && headerLookup.has(normalizeHeader(h));
+  const missingPriceCols: string[] = [];
+  if (mapping.salePrice && !resolvesHeader(mapping.salePrice))
+    missingPriceCols.push(`salePrice → "${mapping.salePrice}"`);
+  if (mapping.listPrice && !resolvesHeader(mapping.listPrice))
+    missingPriceCols.push(`listPrice → "${mapping.listPrice}"`);
+  if (missingPriceCols.length > 0) {
+    const shown = headers.slice(0, 40).join(", ");
+    const extra = headers.length > 40 ? ` …(+${headers.length - 40} more)` : "";
+    throw new Error(
+      `Column mapping references price column(s) not present in the uploaded CSV: ${missingPriceCols.join("; ")}. ` +
+        `Available headers: ${shown}${extra}. ` +
+        `Fix the column mapping in Market Settings (e.g. NTREIS sold price is "Close Price", not "Sale Price").`,
+    );
+  }
+  // The precomputed sale-to-list ratio is optional (SP/LP can fall back to
+  // salePrice/listPrice), so a missing mapped ratio header is a loud warning,
+  // not a hard failure.
+  if (mapping.saleToListRatio && !resolvesHeader(mapping.saleToListRatio)) {
+    console.warn(
+      "[market-aggregate][MISSING_PRICE_COLUMN] mapped saleToListRatio header absent from CSV",
+      JSON.stringify({
+        uploadId: logContext?.uploadId,
+        userId: logContext?.userId,
+        marketName: config.marketName,
+        mappedHeader: mapping.saleToListRatio,
+        hint: "SP/LP falls back to salePrice/listPrice when available, else null.",
+      }),
+    );
+  }
+
   // Resolve the market's status mapping ONCE (override -> statusCodes ->
   // MARKET_SOURCE_DEFAULTS). This is the single interpretation point for
   // "which raw MLS label is sold / off-market / active / pending".
