@@ -36,3 +36,21 @@ Same pattern likely applies to other AI-tool prompts.
 **How to apply:** when asked to change an ARC rule, grep both files for the rule
 text, update every prompt constant + the reviewer template, and consider whether a
 live `AppSetting` override is shadowing the code default.
+
+**Exception — data-honesty guardrails are now consolidated (do NOT hand-sync these):**
+The locked data-honesty subset (MOI reading thresholds, failure-rate ratio framing,
+generic data-grounding) lives in ONE shared module `src/lib/script-data-honesty-rules.ts`
+(`MOI_READING_RULES`, `FAILURE_RATE_RATIO_FRAMING`, `DATA_GROUNDING_GUARDRAILS`).
+It is imported/interpolated by BOTH the Jarvis canonical prompt
+(`src/lib/script-builder-mode-prompt.ts`) AND the ARC wizard route
+(`src/app/api/ai-tools/arc-script-builder/route.ts`). Change these rules in the
+shared module only — re-inlining them into either prompt reintroduces drift.
+`src/lib/script-data-honesty-rules.test.ts` fails loudly if either path stops
+composing from the shared module. Voice/structure stay specialized per path; only
+the data-honesty rules are shared.
+**Why failure-rate framing exists:** failureRate = (expired+terminated+withdrawn)/sold,
+so it can exceed 100% (e.g. 178.9%); the canonical prompt previously endorsed quoting
+that nonsense percentage. The framing rule makes the model say "for every ten that
+sold, ~N didn't" instead. Verified live via the Jarvis `runBuildScript` path.
+**Self-check is HIDDEN:** the canonical's end-of-draft self-check now runs INTERNALLY
+and must never be printed in member-facing output.

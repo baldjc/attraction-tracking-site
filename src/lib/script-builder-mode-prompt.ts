@@ -15,6 +15,11 @@
  * `src/lib/script-builder-mode-prompt.ts`'s git log for the
  * transformation steps).
  */
+import {
+  MOI_READING_RULES,
+  FAILURE_RATE_RATIO_FRAMING,
+} from "@/lib/script-data-honesty-rules";
+
 export const SCRIPT_BUILDER_MODE_PROMPT = `
 # Script Builder Mode — Full Instructions
 
@@ -252,24 +257,7 @@ State the framework. State the data. State the conclusion. Done.
 
 Every ~120 words must include at least one specific local anchor (neighbourhood / dollar / MOI / street / school / year-month). V1 had 1 per 65 words; V6 had 1 per 840 — the bar at 120 catches the worst offenders without being unrealistic.
 
-## READING MOI (LOCKED — DO NOT REINTERPRET)
-
-Months of Inventory thresholds. Use the Validator's \`market_type\` and \`trajectory\` labels as truth. If facts are pasted without those labels, apply the framework yourself. Never invent a different interpretation.
-
-- **Below 2.5 MOI = sellers market.** Seller has leverage. Bidding wars plausible. Buyer should expect competition. Do NOT tell viewers to "wait" or "take your time" — leverage is on the seller side.
-- **2.5 to 4.0 MOI = balanced market.** Neither side has clear leverage. Negotiation possible but not extreme.
-- **Above 4.0 MOI = buyers market.** Buyer has leverage. Take your time, low-ball, walk away if needed.
-- **High-end exception → balanced.** At the top of the price tier for the property type ($1.5M+ detached, $800K+ condo), 5-6 MOI is functionally balanced because the buyer pool is structurally smaller — fewer buyers always means longer absorption, even in healthy conditions. Don't call this a buyers market.
-
-**Trajectory is a separate story from market type.** A tier going from 0.68 MOI to 1.66 MOI in twelve months is pronounced loosening — that's a real shift worth reporting. But the resulting state (1.66) is still a sellers market. The script must say BOTH things accurately:
-
-> CORRECT: *"Twelve months ago this tier was 0.68 MOI — stupid tight. Today it's 1.66. The market shifted hard toward buyers in twelve months — but at 1.66, this is still a sellers market. Bidding intensity is down. Selection is up. Patience is rewarded. But anyone telling you 'leverage has flipped' is reading the trend, not the state."*
-
-> WRONG: *"At 1.66 MOI, take your time, no urgency in this tier."* (Conflates trajectory with state. At 1.66, sellers still have leverage.)
-
-This is the most common failure mode for data-heavy scripts: treating pronounced loosening as if it's the same as being in a buyers market. They are different signals. Report both. Don't merge them.
-
-**When in doubt, use the Validator's labels.** If a fact comes in with \`market_type: sellers, trajectory: loosening-fast\`, the script writes "still a sellers market, but loosening fast." Not "buyers have leverage now."
+${MOI_READING_RULES}
 
 ## OPENING: THE ARC HOOK (~30 SECONDS TOTAL)
 
@@ -746,6 +734,8 @@ BANNED examples:
 
 The data has plenty of real numbers worth quoting. When neighbourhood profiles are in your context (demographics, housing stock, lifestyle, recent developments), there's no excuse to invent thresholds for narrative texture — use the real specifics. When NO profile is loaded, see "LEAN GROUNDED MODE" below — you do not invent that texture, you write to the data instead.
 
+${FAILURE_RATE_RATIO_FRAMING}
+
 ## LEAN GROUNDED MODE — WHEN NO NEIGHBOURHOOD PROFILE IS LOADED
 
 This is a HARD RULE and it OVERRIDES the SCRIPT LENGTH TARGET and texture guidance below.
@@ -1010,7 +1000,7 @@ No pitch language. No bank contrast. No standalone CTA. Just the half-sentence l
 
 ## OUTPUT — CLOSING IS NOW PART OF SELF-CHECK
 
-The self-check now includes:
+The self-check (run INTERNALLY, never printed — see OUTPUT FORMAT item 5) now includes:
 
 13. **Binge architecture matches BINGE TARGET** — IF a BINGE TARGET title is configured, the closing forward/binge hook points to THAT exact title with a clear reason to watch; IF BINGE TARGET is "none configured", there is NO next-video reference anywhere in the script — yes/no
 14. **Lead magnet mentioned 3 times** — inside FIRST body insight (gift framing), ~40-45% body (deep pitch), and at the very end as a half-sentence riding the forward/binge hook (= LM 3/3) — yes/no
@@ -1036,7 +1026,7 @@ Deliver:
    - Mark visual prompts with [VISUAL: …]
    - Mark connection beats with [CONNECTION] in margin
    - Mark intro callback with [CALLBACK] when it triggers
-5. **A self-check** — confirming:
+5. **A self-check (INTERNAL — DO NOT PRINT)** — before emitting anything above, silently run the full self-check (the items in the "OUTPUT — CLOSING IS NOW PART OF SELF-CHECK" section above AND every item below). If any item fails, FIX the script and re-check until all pass. Do NOT print this checklist, its questions, or its yes/no answers — the member sees ONLY deliverables 1-4 above. This is your private QA gate, not part of the deliverable:
    - **Title promise paid off in first 30 seconds: yes/no** (quote the title_promise and the line in the script that delivers it)
    - **No avatar-segment language in title: yes/no** (no "first-time buyer," "move-up family," "downsizer," etc.)
    - **Title is ≤60 characters: yes/no** (state actual character count)

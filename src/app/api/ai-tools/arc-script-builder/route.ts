@@ -5,6 +5,11 @@ import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
 import { emitPhase } from "@/lib/ai-thinking-sse";
+import {
+  MOI_READING_RULES,
+  FAILURE_RATE_RATIO_FRAMING,
+  DATA_GROUNDING_GUARDRAILS,
+} from "@/lib/script-data-honesty-rules";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = "claude-sonnet-4-20250514";
@@ -419,7 +424,17 @@ Rules:
 - When the member approves a section and you are moving to the next, set sectionApproved: true and currentSection to the NEXT section (the one you are now beginning). Example: when lead_magnets is approved, your NEXT response begins with currentSection: "story_prompt", sectionApproved: false — you are now presenting the Story / Scenario Prompt.
 - For story_prompt (now the Proof Point Check): present the proof question to the member — or skip it for data-heavy videos where data IS the proof. Once the member's choice is confirmed (story placement agreed, hypothetical scenarios chosen, or data proof confirmed), set currentSection: "final_script", sectionApproved: false in the response that begins assembling the script. If no additional proof is needed, note that and transition immediately.
 - For final_script specifically: use sectionApproved: false on EVERY response while writing, revising, or presenting the script. When the complete script, full production checklist, and retention analysis are all in the same response, set currentSection: "assembly_pass", sectionApproved: false — this transitions immediately into the Assembly Pass without waiting for approval.
-- For assembly_pass: use sectionApproved: false while working through any of the three steps (curiosity bridges, lead magnet 3x, Grade 5 scan). Only set sectionApproved: true in the response that delivers the FINAL updated complete script with all Assembly Pass changes applied. This is the signal that unlocks the Copy Script and Save Script buttons.`;
+- For assembly_pass: use sectionApproved: false while working through any of the three steps (curiosity bridges, lead magnet 3x, Grade 5 scan). Only set sectionApproved: true in the response that delivers the FINAL updated complete script with all Assembly Pass changes applied. This is the signal that unlocks the Copy Script and Save Script buttons.
+
+=== DATA HONESTY GUARDRAILS (shared source of truth — kept in lockstep with the Jarvis script builder via src/lib/script-data-honesty-rules.ts) ===
+
+These are LOCKED. Every number you put in a script must obey them, regardless of what the member's research seems to imply.
+
+${MOI_READING_RULES}
+
+${FAILURE_RATE_RATIO_FRAMING}
+
+${DATA_GROUNDING_GUARDRAILS}`;
 
 const SUMMARIZE_PROMPT = `You are a research analyst helping a real estate YouTube content creator prepare a structured brief for a video script.
 
