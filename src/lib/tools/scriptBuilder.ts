@@ -444,7 +444,7 @@ function buildInitialUserMessage(args: {
       lines.push(
         "**TREND ROWS PRESENT.** The most recent `(month: …)` rows are your spine. " +
           (hasYearAgoRows
-            ? "Year-ago rows appear under their own earlier `(month: …)` header — when an endpoint pair exists, state BOTH values and name each period. "
+            ? "**Year-ago rows are present (under their own earlier `(month: …)` header), so a year-over-year comparison is a REQUIRED beat — not optional texture.** For EACH headline metric that has both endpoints — median price, months of inventory (MOI), and sale-to-list ratio — state BOTH the year-ago value and the current value and name each period (e.g. \"the median was $591,250 in May last year, and it's $X today\"). Cite both real numbers, not just a percentage; treating the year-ago rows as mere extra sources without comparing is a FAIL. "
             : "") +
           (hasPeriodRows
             ? "`(period: 90-day pooled …)` rows are a TRUE trailing-quarter pooled figure — reference them as \"over the last 90 days,\" never as a single month. "

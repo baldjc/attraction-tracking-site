@@ -44,6 +44,25 @@ match."
 injection (aggregatePooled90dFromDb → pooled90dToSourceOfTruth with the member's
 moiMetricKey) and print the resulting rows. Only change code if a family is genuinely absent.
 
+# Year-ago rows reach the prompt; the model won't compare unless YoY is a REQUIRED beat
+
+Verified live (replicating `runBuildScript`'s SoT assembly + `renderSourceOfTruthBlockWithLock`):
+the injected year-ago rows DO render into the prompt the generator sees, under their own
+`### <hood> | <type> (month: YYYY-MM)` headers. So "no YoY in the draft" was **not** a
+data-layer/rendering gap — it was a PROMPT-FRAMING gap: the period-scoped trend rule framed
+year-ago as "OPTIONAL texture you may add," so the writer treated year-ago rows as extra
+sources and never compared.
+
+**Why:** grounding rules are necessarily permissive ("only reference periods actually shown"),
+and that permissiveness reads as "optional" unless an explicit REQUIRE is layered on top.
+**How to apply:** when year-ago rows are present, the prompt must make the YoY comparison a
+REQUIRED beat for the headline metrics (median, MOI, sale-to-list) — state BOTH endpoints, name
+each period, a bare `[YoY %]` doesn't satisfy it. This requirement is duplicated in TWO places
+that must stay in lockstep: the dynamic "TREND ROWS PRESENT" note in `scriptBuilder.ts`
+(gated on `hasYearAgoRows`) AND HARD RULE #4 (period-scoped trend) in
+`script-builder-mode-prompt.ts`. Keep the gate ("don't reference a period whose row is absent")
+intact so no-year-ago drafts still produce a clean current-state script with no trend claims.
+
 # Jarvis (AI Content Manager) access is an allowlist feature flag, not a role
 
 Access is the `tool_jarvis` flag in the `feature_visibility` AppSetting, stored in the object
