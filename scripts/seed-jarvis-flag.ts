@@ -3,9 +3,9 @@
  *
  * Idempotently sets the `tool_jarvis` flag in the `feature_visibility`
  * AppSetting to the object form `{ enabled: false, allowedUserIds: [...] }`,
- * gating the tool to the two pilot members (Chris Proctor and Phil Martin) and
- * nobody else. Existing flags are left untouched. Admin/editor still bypass all
- * flags via their NextAuth role.
+ * gating the tool to the pilot members (Chris Proctor, Phil Martin, and Jared
+ * Chamberlain) and nobody else. Existing flags are left untouched. Admin/editor
+ * still bypass all flags via their NextAuth role.
  *
  * Each pilot is resolved by BOTH its known account UUID and its full name; the
  * two lookups must agree on a single account or the script throws. A missing id,
@@ -23,6 +23,7 @@ type FlagValue = boolean | { enabled?: boolean; allowedUserIds?: string[] };
 const PILOTS: { fullName: string; id: string }[] = [
   { fullName: "Chris Proctor", id: "1d08f47e-af3e-4b1c-a47c-715d69c77b62" },
   { fullName: "Phil Martin", id: "033acb01-58c9-4783-803d-558aae3c45dd" },
+  { fullName: "Jared Chamberlain", id: "c3d00532-9a60-47cd-9287-66c4f5ea864f" },
 ];
 
 async function resolvePilotIds(): Promise<string[]> {
