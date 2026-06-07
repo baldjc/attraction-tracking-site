@@ -520,6 +520,14 @@ export type RunBuildScriptResult =
       title: string;
       rotationSlot: RotationSlotKey;
       linkedFactIds: string[];
+      /**
+       * Whether a binge/next-video target was wired into this draft. The
+       * lightweight Jarvis drafter never assigns one (interim until full binge
+       * support lands), so the orchestrator uses this to nudge Jarvis to ASK the
+       * member which recent video to point viewers to instead of shipping a
+       * generic forward-looking close.
+       */
+      bingeTargetConfigured: boolean;
     };
 
 /**
@@ -749,6 +757,7 @@ export async function runBuildScript(args: {
     title: ideaCard.title,
     rotationSlot,
     linkedFactIds: factRows.map((f) => f.id),
+    bingeTargetConfigured: false,
   };
 }
 

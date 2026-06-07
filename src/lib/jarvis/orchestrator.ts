@@ -284,8 +284,11 @@ async function runTool(ctx: {
       record("ok", `Drafted "${built.title}".`);
       emit("script_done", {});
       const words = built.result.metrics?.dialogueWordCount ?? null;
+      const bingeNudge = built.bingeTargetConfigured
+        ? ""
+        : " This member has no next-video/binge target configured, so the close is a generic forward-looking line. After telling them it's ready, ASK which recent video of theirs you should point viewers to as the \"watch this next\" — do NOT invent or suggest a title yourself.";
       return result(
-        `Script drafted successfully${words ? ` (~${words} dialogue words)` : ""}. It is shown to the member with an Approve & save button. Tell them it's ready to review; do NOT save it yourself.`,
+        `Script drafted successfully${words ? ` (~${words} dialogue words)` : ""}. It is shown to the member with an Approve & save button. Tell them it's ready to review; do NOT save it yourself.${bingeNudge}`,
       );
     }
 

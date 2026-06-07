@@ -176,7 +176,7 @@ test("buildScript returns a non-empty script containing the cited facts (headles
 /**
  * A lean, fully-grounded body for the NO-profile path. Reuses the clean
  * paragraph (every $/% token is a cited fact) but with far fewer repeats so the
- * dialogue lands between the lean floor (1,200) and the full floor (2,200).
+ * dialogue lands between the lean floor (1,600) and the full floor (2,200).
  * Append an optional invented-stat paragraph to force a persistent
  * `unanchored_stat` error while keeping the draft grounded.
  */
@@ -187,7 +187,7 @@ function makeLeanScript(opts: { withPersistentError?: boolean } = {}): string {
     `That pairing of a ${PRICE} price level against a ${SALE_SHARE} absorption read is the single ` +
     `clearest signal of how balanced this corner of the market has become through the season, ` +
     `and it is the kind of grounded read that helps a household plan the next move with real confidence.`;
-  const body = Array.from({ length: 17 }, () => paragraph).join("\n\n");
+  const body = Array.from({ length: 23 }, () => paragraph).join("\n\n");
   // A banned avatar-pander phrase ("leverage") trips `no_avatar_pander` (error)
   // on every attempt. Unlike an invented stat, it is NOT auto-softened by the
   // builder, so it persists through every retry — while the draft stays grounded
@@ -222,7 +222,7 @@ test("buildScript ships a lean grounded draft (no profile) as a clean, non-degra
 
   const result = await buildScript(noProfileParams(fake));
 
-  // Lean floor (1,200) — not the 2,200 profile floor — so a grounded lean draft
+  // Lean floor (1,600) — not the 2,200 profile floor — so a grounded lean draft
   // passes cleanly on the first attempt with no graceful-degrade flagging.
   assert.equal(
     result.ok,

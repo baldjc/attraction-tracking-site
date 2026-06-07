@@ -245,6 +245,11 @@ function buildInitialUserMessage(args: {
   // the output instruction below must ask for a lean, fully-grounded draft
   // instead of telling the model to pad toward 2,200 with colour it can't source.
   const hasProfile = Object.keys(neighbourhoodContext).length > 0;
+  // A market update earns its length from DATA, not profile prose. A 1,600-word
+  // market update is already a full 10-12 minutes, so it uses the lean floor and
+  // a 1,700-1,950 target even when a neighbourhood profile happens to be loaded —
+  // pushing it toward 2,200 only invites padding.
+  const isMarketUpdate = plan.rotationSlot === "market_update";
 
   // ── PRIOR ATTEMPT — REVISION NOTES ──────────────────────────────────
   // Wave 3.5: when the client sends a regenerationBrief, prepend a
@@ -354,7 +359,7 @@ function buildInitialUserMessage(args: {
     } else {
       lines.push("");
       lines.push(
-        "This presenter has NOT set credibility figures yet. Do NOT state any years-in-business, transaction counts, or families-helped numbers, and do NOT borrow them from anyone else. Omit credentials entirely. Only if a credibility reference is structurally unavoidable, write the literal token [SET YOUR CREDIBILITY IN ONBOARDING] verbatim — never fill it with a guess.",
+        "This presenter has NOT set credibility figures yet. Do NOT state any years-in-business, transaction counts, or families-helped numbers, and do NOT borrow them from anyone else. Omit credentials entirely. If a credibility reference is structurally unavoidable, do NOT print any placeholder or bracketed token — instead use a qualitative experience bridge that claims NO specific figure (e.g. \"after running these numbers across the city\" / \"having watched this market closely\"). NEVER write a literal token such as [SET YOUR CREDIBILITY IN ONBOARDING] in the script, and never fill it with a guess or anyone else's numbers.",
       );
     }
     lines.push("");
@@ -730,9 +735,15 @@ function buildInitialUserMessage(args: {
   lines.push("");
   lines.push(
     "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` woven naturally into the FIRST body insight as one context-anchored sentence (a bolted-on gift block is BANNED), `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). " +
-      (hasProfile
-        ? "Body must be ≥ 2,200 dialogue words. "
-        : "There is NO neighbourhood profile loaded, so the body must be lean and fully grounded — but it must STILL run a full 10-12 minutes (≥ 1,600 dialogue words). Reach that length through grounded DEPTH, NOT padding: segment every metric by property type, compare neighbourhoods, interpret each number and its viewer implication, and add sub-persona guidance — never invent demographic/build-era/income/amenity colour or unsourced numbers, and state each point only once. ") +
+      (isMarketUpdate
+        ? "This is a market update — it earns its length from DATA, not profile prose. Target roughly 1,700-1,950 dialogue words and NEVER below 1,600 (a 1,600-word market update is already a full 10-12 minutes — do NOT pad to chase a higher number). Reach that length through grounded DEPTH: segment every metric by property type, compare neighbourhoods, interpret each number and its viewer implication, and add sub-persona guidance" +
+          (hasProfile
+            ? ", drawing on the loaded neighbourhood profile for colour where it fits"
+            : " — never invent demographic/build-era/income/amenity colour or unsourced numbers") +
+          ", and state each point only once. "
+        : hasProfile
+          ? "Body must be ≥ 2,200 dialogue words. "
+          : "There is NO neighbourhood profile loaded, so the body must be lean and fully grounded — but it must STILL run a full 10-12 minutes (≥ 1,600 dialogue words). Reach that length through grounded DEPTH, NOT padding: segment every metric by property type, compare neighbourhoods, interpret each number and its viewer implication, and add sub-persona guidance — never invent demographic/build-era/income/amenity colour or unsourced numbers, and state each point only once. ") +
       "Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
@@ -1389,6 +1400,11 @@ export async function buildScript(
   // no-profile member (e.g. one who hasn't populated their KB) ships a lean,
   // fully-data-grounded draft instead of being pushed to invent colour.
   const hasProfile = Object.keys(neighbourhoodContext).length > 0;
+  // Market updates use the lean 1,600-word floor even with a profile loaded
+  // (see buildUserMessage). useLeanFloor drives both the validator floor signal
+  // and the retry-prompt expansion guidance.
+  const isMarketUpdate = planContext.rotationSlot === "market_update";
+  const useLeanFloor = isMarketUpdate || !hasProfile;
 
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
@@ -1502,7 +1518,7 @@ export async function buildScript(
             violations: lastErrors,
             previousDialogueWordCount:
               lastDraftMetrics?.dialogueWordCount ?? null,
-            hasProfile,
+            hasProfile: !useLeanFloor,
           });
 
     // Mid-stream phase hints, fired on timers like the route did.
@@ -1643,6 +1659,9 @@ export async function buildScript(
       credentialsText,
       bingeTargetConfigured,
       bingeTargetTitle: bingeTargetTitle ?? undefined,
+      // Market updates pass the lean (1,600) floor explicitly so a data-rich
+      // 1,600+ word draft is never flagged degraded just because a profile loaded.
+      hasNeighbourhoodProfile: useLeanFloor ? false : undefined,
     });
 
     if (validation.ok) {
