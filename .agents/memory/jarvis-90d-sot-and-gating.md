@@ -1,7 +1,27 @@
 ---
-name: Jarvis 90-day pooled SoT + access gating
-description: Two recurring "please add X" requests that are already done — diagnose before re-implementing.
+name: Jarvis SoT parity (90-day + YoY) + access gating
+description: Trend SoT injection (90-day pooled, year-ago endpoints) must be wired in the Jarvis tool path, not just the route; plus how Jarvis access is gated.
 ---
+
+# Trend SoT injection must be duplicated in BOTH the route AND the Jarvis tool path
+
+The market-update script has two generators: the `script-builder-v2` API route and the
+Jarvis tool path (`runBuildScript` in `src/lib/jarvis/tools.ts`). **Members use the Jarvis
+tool path.** Any "trend" enrichment appended onto `sourceOfTruthMetrics` (trailing-90-day
+pooled read, year-ago / YoY endpoints) is implemented per-path and **drifts** — a feature
+added only to the route silently never reaches members. This has now bitten twice: first the
+90-day pooled read, then the year-ago (YoY) endpoints (each cited month shifted -12, fetched
+from validated uploads and injected under its own YYYY-MM header).
+
+**Why:** the two paths share helpers (`getSourceOfTruthMetrics`, `aggregatePooled90dFromDb`,
+`pooled90dToSourceOfTruth`, `shiftMonthYear`) but assemble the SoT array independently, so
+there is no single chokepoint. **How to apply:** when adding/altering any period-scoped SoT
+enrichment, change it in lockstep in the route and the Jarvis path, and keep each enrichment
+INDEPENDENT — e.g. YoY only needs the single year-ago month and must NOT be gated on the
+90-day window's three-month contiguity, or a broken/non-contiguous 90-day window wrongly
+suppresses YoY. Validate live, not just in the route.
+
+
 
 # 90-day pooled SoT metrics (incl. MOI) are already wired in the Jarvis path
 

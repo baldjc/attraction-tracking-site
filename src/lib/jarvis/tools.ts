@@ -19,7 +19,7 @@ import {
   resolveCanonicalSotValue,
   type MetricFamily,
 } from "@/lib/aggregated-metrics";
-import { aggregatePooled90dFromDb } from "@/lib/csv-aggregate";
+import { aggregatePooled90dFromDb, shiftMonthYear } from "@/lib/csv-aggregate";
 import { canonicalVariantKeys } from "@/lib/market-config";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
@@ -643,6 +643,68 @@ export async function runBuildScript(args: {
     neighbourhoods: neighbourhoodsInScript,
   });
 
+  // ── Year-ago ENDPOINTS (shift -12 of each cited month) — parity with the
+  // script-builder-v2 route, and INDEPENDENT of the trailing-90-day window ──
+  // The members' actual market-update path is this Jarvis tool, and the year-ago
+  // injection was wired only into the route — so YoY never reached the generator
+  // here and every cited fact was the current month. Surface each cited month's
+  // year-ago upload's OWN persisted metrics under their own YYYY-MM header so a
+  // "$X a year ago → $Y now" line is fully grounded on BOTH endpoints. This must
+  // NOT be coupled to the 90-day read below: that window is correctly OFF
+  // whenever a prior month is missing (non-contiguous), but YoY only needs the
+  // single year-ago month, which can be present even when 90-day is off. Only
+  // validated uploads that genuinely exist contribute — no year-ago upload, no
+  // YoY row (omitted silently, never invented). Bounded + best-effort like the
+  // 90-day block: any failure simply omits the year-ago rows.
+  const citedMonths = Array.from(
+    new Set(
+      factRows
+        .map((f) => f.upload?.monthYear ?? "")
+        .filter((m) => /^\d{4}-\d{2}$/.test(m)),
+    ),
+  );
+  const yearAgoMonths = Array.from(
+    new Set(
+      citedMonths
+        .map((m) => shiftMonthYear(m, -12))
+        .filter((m): m is string => !!m),
+    ),
+  );
+  if (yearAgoMonths.length > 0) {
+    try {
+      const yearAgoUploads = await prisma.marketDataUpload.findMany({
+        where: {
+          userId,
+          status: "validated",
+          monthYear: { in: yearAgoMonths },
+        },
+        select: { id: true },
+      });
+      const yearAgoUploadIds = yearAgoUploads.map((u) => u.id);
+      if (yearAgoUploadIds.length > 0) {
+        const yearAgoMetrics = await getSourceOfTruthMetrics({
+          userId,
+          uploadIds: yearAgoUploadIds,
+          neighbourhoods: neighbourhoodsInScript,
+        });
+        sourceOfTruthMetrics.push(...yearAgoMetrics);
+        console.log(
+          `[jarvis:sot] yearAgo months=${yearAgoMonths.join(",")} uploads=${yearAgoUploadIds.length} metrics=${yearAgoMetrics.length}`,
+        );
+      } else {
+        console.log(
+          `[jarvis:sot] yearAgo months=${yearAgoMonths.join(",")} uploads=0 (no validated year-ago month — YoY omitted)`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[jarvis:sot] yearAgo aggregation failed (omitting): ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
   // ── TRUE pooled trailing-90-day re-aggregation (parity with the
   // script-builder-v2 route) ──────────────────────────────────────────────
   // The Jarvis script tool is the path members actually use for market-update
@@ -654,11 +716,11 @@ export async function runBuildScript(args: {
   // script-content-rules change). The anchor is the latest cited upload (max
   // calendar monthYear); it defines the 90-day window's leading month.
   //
-  // Scope note: ONLY the 90-day read is injected here — year-ago endpoints are
-  // intentionally NOT added, so a "$X a year ago" claim can never appear
-  // without an explicit, separately-reviewed change. Bounded + best-effort:
-  // any failure (missing prior months, storage stall, config gap) simply omits
-  // the 90-day rows; the script falls back to the monthly context with no error
+  // Scope note: the year-ago endpoints are injected SEPARATELY above (their own
+  // gated block) so YoY survives a broken 90-day window; this block adds ONLY
+  // the trailing-quarter pooled read. Bounded + best-effort: any failure
+  // (missing prior months, storage stall, config gap) simply omits the 90-day
+  // rows; the script falls back to the monthly + year-ago context with no error
   // surfaced to the member.
   const anchorUpload = factRows
     .map((f) => ({ uploadId: f.uploadId, monthYear: f.upload?.monthYear ?? "" }))
