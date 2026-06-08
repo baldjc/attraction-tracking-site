@@ -7,6 +7,14 @@ import { useToast } from "@/components/ToastProvider";
 import type { ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
 import { buildMlsVerifyLine } from "@/lib/mls-verify-reminder";
 
+/**
+ * sessionStorage key for the Dashboard → Jarvis "Build a script" hand-off.
+ * The dashboard writes a one-shot prompt here then routes to /member/jarvis,
+ * where JarvisChat reads + clears it and auto-sends once. Exported so the
+ * dashboard sets the exact same key.
+ */
+export const JARVIS_SEED_KEY = "jarvis:seedPrompt";
+
 // Markdown rendering for assistant turns + draft-script cards. react-markdown
 // does NOT render raw HTML by default (no rehype-raw), so embedded HTML is
 // escaped — safe for streamed model output. Re-renders incrementally as
@@ -358,6 +366,28 @@ export default function JarvisChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [busy, threadId, toast],
   );
+
+  // Dashboard "Build a script" hand-off. When the member clicks an idea card's
+  // Build-a-script CTA we stash a one-shot prompt in sessionStorage and route
+  // here; on mount we read it, auto-send it once (ref-guarded so React 18
+  // double-invoke / re-renders can't double-fire), and clear it so a refresh
+  // doesn't replay it. Only seeds a fresh thread (no prior messages) so we
+  // never inject into an existing conversation.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    if (initialMessages.length > 0) return;
+    let seed: string | null = null;
+    try {
+      seed = sessionStorage.getItem(JARVIS_SEED_KEY);
+      if (seed) sessionStorage.removeItem(JARVIS_SEED_KEY);
+    } catch {
+      seed = null;
+    }
+    if (!seed || !seed.trim()) return;
+    seededRef.current = true;
+    void send(seed);
+  }, [initialMessages.length, send]);
 
   // Snapshot live tool rows into the persisted assistant message.
   const liveToolsRef = useRef<ToolRow[]>([]);

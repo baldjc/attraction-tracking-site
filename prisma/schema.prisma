@@ -226,6 +226,7 @@ model User {
 
   // Jarvis (AI Content Manager) — additive relation only
   contentManagerThreads ContentManagerThread[]
+  monthlyBriefings      MonthlyBriefing[]
   researchSources       ResearchSource[]
 
   // Team access (delegated account access)
@@ -515,6 +516,29 @@ model ContentManagerMessage {
 
   @@index([threadId])
   @@map("content_manager_messages")
+}
+
+/// Dashboard monthly briefing cache (Content Manager front door). For each
+/// member + validated month we generate exactly 3 grounded story ideas via the
+/// existing idea engine ONCE and cache them here — the dashboard reads this and
+/// never regenerates on load. `ideas` is BriefingIdea[] (index, title, why,
+/// fact:{stat,label,source}, citedFactIds, rotationSlot). `sources` is the
+/// member's data sources (e.g. ["CREB","your MLS export"]). Unique per
+/// (userId, monthYear) makes generation idempotent under concurrent loads.
+model MonthlyBriefing {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthYear      String
+  uploadId       String
+  ideas          Json
+  factsValidated Int
+  sources        Json
+  generatedAt    DateTime @default(now())
+
+  @@unique([userId, monthYear])
+  @@index([userId])
+  @@map("monthly_briefings")
 }
 
 model SavedScript {

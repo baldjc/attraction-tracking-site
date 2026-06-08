@@ -17,7 +17,9 @@ function fallbackNextThursday(): string {
   return next.toISOString().split("T")[0];
 }
 
-async function fetchGHLCoachingInfo(email: string): Promise<{ date: string; link: string | null }> {
+async function fetchGHLCoachingInfo(
+  email: string,
+): Promise<{ date: string; link: string | null; confirmed: boolean }> {
   try {
     const [contact, fieldDefs, customValues] = await Promise.all([
       fetchContactByEmail(email),
@@ -44,13 +46,15 @@ async function fetchGHLCoachingInfo(email: string): Promise<{ date: string; link
         const parsed = /^\d+$/.test(rawVal)
           ? new Date(parseInt(rawVal, 10)).toISOString().split("T")[0]
           : rawVal.split("T")[0];
-        return { date: parsed, link };
+        return { date: parsed, link, confirmed: true };
       }
     }
 
-    return { date: fallbackNextThursday(), link };
+    // No confirmed date in GHL — surface the recurring cadence as an
+    // UNconfirmed placeholder so the UI can decline to assert a fake date.
+    return { date: fallbackNextThursday(), link, confirmed: false };
   } catch {
-    return { date: fallbackNextThursday(), link: null };
+    return { date: fallbackNextThursday(), link: null, confirmed: false };
   }
 }
 
@@ -81,6 +85,15 @@ async function GET_impl() {
 
   const thisBounds = monthBounds(0);
   const lastBounds = monthBounds(1);
+
+  // "Your month with Jarvis" counters on the dashboard front door. Lifetime
+  // totals (not month-scoped) — they tell the member how much the assistant
+  // has produced + how much market data is on file backing it.
+  const [ideasProposed, scriptsApproved, factsOnFile] = await Promise.all([
+    prisma.savedIdea.count({ where: { userId: user.id } }),
+    prisma.savedScript.count({ where: { userId: user.id } }),
+    prisma.marketFact.count({ where: { userId: user.id } }),
+  ]);
 
   const [
     [audits, thisMthClicks, lastMthClicks, trackingLinks],
@@ -248,5 +261,6 @@ async function GET_impl() {
     daysSinceUpload,
     nextCoachingCall: coachingInfo,
     scoreHistory,
+    jarvisStats: { ideasProposed, scriptsApproved, factsOnFile },
   });
 }
