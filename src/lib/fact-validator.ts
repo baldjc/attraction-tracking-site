@@ -60,6 +60,7 @@ import {
   DEFAULT_METHODOLOGY,
   settingsEqual,
   sampleFloorFor,
+  HEADLINE_SOLD_FLOOR,
   type MemberMethodologySettings,
 } from "@/lib/member-metric-settings";
 
@@ -995,7 +996,7 @@ function buildMethodologyBlock(settings: MemberMethodologySettings): string {
   // Sample size floor
   const floor = sampleFloorFor(settings.sampleSizeVariant);
   lines.push(
-    `SAMPLE SIZE — A neighbourhood needs at least ${floor.sold} closed sales (and ${floor.offMarket} off-market listings for failure/sale-share) before any of its facts may be headline-safe. Below the floor, emit the fact as supporting-texture-only or skip it.`,
+    `SAMPLE SIZE — three honesty bands by closed-sale count: (1) >= ${HEADLINE_SOLD_FLOOR} sales = headline-safe, cite normally; (2) ${floor.sold}–${HEADLINE_SOLD_FLOOR - 1} sales = still headline-safe but ONLY WITH a mandatory "based on N sales" disclosure baked into viewer_caveat/usage_notes — do NOT bench it to texture-only; (3) < ${floor.sold} sales = supporting-texture-only with an honest "small sample" caveat, never a headline. (Off-market needs ${floor.offMarket} listings for failure/sale-share.) Never skip a real neighbourhood — emit and classify it.`,
   );
 
   return lines.join("\n");
@@ -1031,7 +1032,7 @@ function buildFactsChunkMessage(
     `Scope for this call: ${chunk.label}.`,
     "Emit ONLY the `## VALIDATED FACTS LIBRARY` section — a single ```json``` fenced code block containing a JSON array of fact objects.",
     "Do NOT emit `## SUMMARY` or `## STORY LEADS` in this call. Those are produced by a separate parallel call over the full dataset.",
-    "Cover EVERY neighbourhood that appears in the GROUPS block below — do not curate which neighbourhoods to include. Apply the per-neighbourhood × metric-family classification rules from the system prompt to each one. Small-sample neighbourhoods are NOT to be skipped: emit a fact for them and classify it as supporting-texture-only (per the sample-size hygiene rules) rather than omitting it.",
+    `Cover EVERY neighbourhood that appears in the GROUPS block below — do not curate which neighbourhoods to include. Apply the per-neighbourhood × metric-family classification rules from the system prompt to each one, using the per-member hard sample floor from the SAMPLE SIZE line of the methodology block below. NEVER skip a neighbourhood for being small: a neighbourhood with ${HEADLINE_SOLD_FLOOR}+ sales is headline-safe; one between that floor and ${HEADLINE_SOLD_FLOOR - 1} sales stays headline-safe but MUST carry a "based on N sales" disclosure in viewer_caveat/usage_notes; one below the floor is supporting-texture-only with an honest small-sample caveat. Emit a fact in every case rather than omitting it.`,
     ...(hasRollupTail
       ? [
           'Some GROUPS below carry `usage_hint: supporting-texture-only`. Each such group is the "All other neighbourhoods" bucket — a synthetic rollup of many low-volume neighbourhoods below the coverage cap. Its counts / MOI / failure-rate are exact sums, but its medians (price, sqft, psf, DOM, SP/LP) are SAMPLE-WEIGHTED APPROXIMATIONS, not true pooled medians, and it has no YoY. Emit facts for these buckets, but you MUST set `usageClass` to "supporting-texture-only" (never "headline-safe") and state in `usage_notes` that the value is a multi-neighbourhood rollup with approximate medians.',

@@ -20,10 +20,13 @@
  * holds Single Family / Condo) is refused with the available values listed — it
  * is NEVER proxied through the style column.
  *
- * Headline discipline mirrors the validator: a group needs >= the headline sold
- * floor (>= 30) to be cited as a headline number; thinner groups are flagged
- * `supporting_texture_only` (usable as texture, never headlined); zero-sold
- * groups carry null metrics and can never be headlined.
+ * Headline discipline mirrors the validator's three honesty bands by closed-sale
+ * count: a group at/above the headline sold floor (HEADLINE_SOLD_FLOOR = 15) may
+ * be cited as a headline number; a group between the per-member hard sample floor
+ * and that floor stays USABLE but only WITH an explicit "based on N sales"
+ * disclosure baked into the claim; a group below the hard floor is too thin to
+ * headline (`supporting_texture_only` — texture/colour only, never fabricated);
+ * zero-sold groups carry null metrics and can never be headlined.
  *
  * The math (which rows count, how each metric is derived) mirrors
  * `tallyRow` / `metricsFromAccumulator` in csv-aggregate.ts EXACTLY, so a
@@ -37,9 +40,15 @@ import { normalizePropertyType } from "@/lib/csv-aggregate";
 import {
   resolveStatusMapping,
   bucketStatus,
+  MIN_SOLD_SAMPLE,
   type StatusBucket,
 } from "@/lib/market-status-buckets";
-import { sampleFloorFor } from "@/lib/member-metric-settings";
+import {
+  sampleFloorFor,
+  sampleBandFor,
+  HEADLINE_SOLD_FLOOR,
+  type SampleBand,
+} from "@/lib/member-metric-settings";
 import { loadMemberMetricSettings as realLoadSettings } from "@/lib/member-metric-settings-server";
 import { getMarketConfigForUser as realGetMarketConfig } from "@/lib/market-config-server";
 import type { ColumnMapping, MarketConfigShape } from "@/lib/market-config";
@@ -120,8 +129,14 @@ export interface CutGroup {
   pendingCount: number;
   offMarketCount: number;
   totalCount: number;
-  /** soldCount >= headlineSoldFloor. */
+  /** soldCount >= headlineSoldFloor (i.e. band === "headline"). */
   headlineSafe: boolean;
+  /**
+   * Honesty band by closed-sale count: "headline" (>= headlineSoldFloor),
+   * "disclose" (hard sample floor .. headlineSoldFloor-1 — usable WITH a
+   * "based on N sales" disclosure), or "thin" (< hard floor — texture only).
+   */
+  band: SampleBand;
   metrics: CutGroupMetric[];
 }
 
@@ -391,9 +406,12 @@ function metricsFor(acc: GroupAcc): CutGroupMetric[] {
 export function computeCut(
   rows: CutRow[],
   params: ComputeCutParams,
-  opts: { headlineSoldFloor: number },
+  opts: { headlineSoldFloor: number; discloseFloor?: number },
 ): ComputeCutCoreResult {
   const headlineSoldFloor = opts.headlineSoldFloor;
+  // Hard minimum below which a figure is too thin to headline at all. Defaults
+  // to the platform sold floor; runComputeCut passes the per-member floor.
+  const discloseFloor = opts.discloseFloor ?? MIN_SOLD_SAMPLE;
   const appliedFilters = params.filters ?? [];
 
   const availableValues = FILTER_FIELDS.reduce(
@@ -454,6 +472,7 @@ export function computeCut(
   const groups: CutGroup[] = [...accs.values()]
     .map((acc) => {
       const total = acc.active + acc.pending + acc.sold + acc.offMarket;
+      const band = sampleBandFor(acc.sold, headlineSoldFloor, discloseFloor);
       return {
         bucket: acc.bucket,
         soldCount: acc.sold,
@@ -461,7 +480,8 @@ export function computeCut(
         pendingCount: acc.pending,
         offMarketCount: acc.offMarket,
         totalCount: total,
-        headlineSafe: acc.sold >= headlineSoldFloor,
+        headlineSafe: band === "headline",
+        band,
         metrics: metricsFor(acc),
       };
     })
@@ -483,8 +503,18 @@ export function computeCut(
 // DB wrapper
 // ─────────────────────────────────────────────────────────────────────────────
 
-const HEADLINE_SOLD_FLOOR = 30;
 export const COMPUTE_CUT_TOOL_TYPE = "compute_cut";
+
+/** "2026-05" → "May 2026", for human-readable sample disclosures. */
+function monthYearLabel(monthYear: string): string {
+  const d = new Date(`${monthYear.slice(0, 7)}-01T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return monthYear;
+  return d.toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
 /** Raw-column header candidates (normalized) for the two unmapped dimensions. */
 const PROPERTY_CLASS_HEADER_CANDIDATES = ["propertytype", "propertyclass"];
@@ -819,12 +849,16 @@ export async function runComputeCut(
     };
   });
 
-  const headlineSoldFloor = Math.max(
-    HEADLINE_SOLD_FLOOR,
-    sampleFloorFor((await deps.loadSettings(userId)).sampleSizeVariant).sold,
-  );
+  // Per-member hard sample floor (default 5): below it a figure is too thin to
+  // headline at all. Between it and HEADLINE_SOLD_FLOOR a figure is usable WITH
+  // an explicit "based on N sales" disclosure. At/above HEADLINE_SOLD_FLOOR it
+  // headlines normally.
+  const discloseFloor = sampleFloorFor(
+    (await deps.loadSettings(userId)).sampleSizeVariant,
+  ).sold;
+  const headlineSoldFloor = Math.max(HEADLINE_SOLD_FLOOR, discloseFloor);
 
-  const core = computeCut(cutRows, params, { headlineSoldFloor });
+  const core = computeCut(cutRows, params, { headlineSoldFloor, discloseFloor });
 
   // Honesty gate 2 — column present, but the requested filter value isn't.
   if (core.classification === "no_match" || core.classification === "empty") {
@@ -879,12 +913,23 @@ export async function runComputeCut(
       dimension === "style"
         ? group.bucket
         : (filtersStyle?.value ?? null);
-    const usageClass = group.headlineSafe
+    // Three honesty bands. The disclose band (hard floor .. headlineSoldFloor-1)
+    // stays headline-eligible but its caveat MUST be surfaced as a "based on N
+    // sales" disclosure. The thin band (< hard floor) is texture-only. Caveat
+    // text deliberately contains no property-type words (scriptBuilder parses
+    // property type out of caveats).
+    const monthLabel = monthYearLabel(monthYear);
+    const usableAsHeadline =
+      group.band === "headline" || group.band === "disclose";
+    const usageClass = usableAsHeadline
       ? "headline_safe"
       : "supporting_texture_only";
-    const caveat = group.headlineSafe
-      ? undefined
-      : `Computed from ${group.soldCount} sold — below the ${headlineSoldFloor}-sale headline floor. Use as supporting texture, not a headline number.`;
+    const caveat =
+      group.band === "headline"
+        ? `Based on ${group.soldCount} sales in ${monthLabel}.`
+        : group.band === "disclose"
+          ? `Small sample — based on ${group.soldCount} sales in ${monthLabel}. State the sample size out loud whenever you cite this figure.`
+          : `Only ${group.soldCount} sales in ${monthLabel} — too thin to headline. Use as background colour and say the sample is small; never present it as a headline number.`;
 
     for (const metric of group.metrics) {
       const id = randomUUID();
@@ -956,12 +1001,16 @@ export async function runComputeCut(
   });
 
   const headlineBuckets = core.groups
-    .filter((g) => g.headlineSafe && g.metrics.length > 0)
+    .filter((g) => g.band === "headline" && g.metrics.length > 0)
     .map((g) => g.bucket);
-  const textureBuckets = core.groups
-    .filter((g) => !g.headlineSafe && g.metrics.length > 0)
+  const discloseBuckets = core.groups
+    .filter((g) => g.band === "disclose" && g.metrics.length > 0)
     .map((g) => `${g.bucket} (n=${g.soldCount})`);
-  const anyHeadline = headlineBuckets.length > 0;
+  const thinBuckets = core.groups
+    .filter((g) => g.band === "thin" && g.metrics.length > 0)
+    .map((g) => `${g.bucket} (n=${g.soldCount})`);
+  // Both headline and disclose groups are usable (disclose only WITH disclosure).
+  const anyUsable = headlineBuckets.length + discloseBuckets.length > 0;
 
   const noteParts: string[] = [];
   noteParts.push(
@@ -970,14 +1019,19 @@ export async function runComputeCut(
   if (headlineBuckets.length) {
     noteParts.push(`Headline-safe (≥${headlineSoldFloor} sold): ${headlineBuckets.join(", ")}.`);
   }
-  if (textureBuckets.length) {
+  if (discloseBuckets.length) {
     noteParts.push(
-      `Below the ${headlineSoldFloor}-sale floor — texture only, do not headline: ${textureBuckets.join(", ")}.`,
+      `Usable WITH disclosure (${discloseFloor}–${headlineSoldFloor - 1} sold) — cite these only with an explicit "based on N sales" qualifier: ${discloseBuckets.join(", ")}.`,
+    );
+  }
+  if (thinBuckets.length) {
+    noteParts.push(
+      `Below the ${discloseFloor}-sale floor — texture only, do not headline: ${thinBuckets.join(", ")}.`,
     );
   }
   noteParts.push("Cite these numbers only by their fact ids.");
 
-  const classification: RunCutClassification = anyHeadline
+  const classification: RunCutClassification = anyUsable
     ? "computed"
     : "sample_too_small";
   await logCall(
@@ -985,7 +1039,7 @@ export async function runComputeCut(
     userId,
     upload.id,
     params,
-    anyHeadline ? "computed" : "sample_too_small",
+    anyUsable ? "computed" : "sample_too_small",
     pending[0]?.id ?? null,
   );
 

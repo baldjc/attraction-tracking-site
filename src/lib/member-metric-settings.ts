@@ -155,6 +155,40 @@ export function sampleFloorFor(variant: SampleSizeVariant): SampleFloor {
   return SAMPLE_FLOORS[variant] ?? SAMPLE_FLOORS.conservative;
 }
 
+/**
+ * Minimum closed sales before a neighbourhood figure may be a *headline* claim.
+ *
+ * Lowered 30 → 15: thin-but-real samples are no longer silently benched to
+ * texture-only. A figure at/above this floor headlines normally; a figure
+ * between the per-member hard sample floor (sampleFloorFor().sold, default 5)
+ * and this floor stays USABLE but only WITH an explicit "based on N sales"
+ * disclosure baked into the claim; below the hard floor it is too thin to
+ * headline at all (texture/colour only, never fabricated).
+ *
+ * Single tunable source of truth — applied in computeCut.ts and the fact
+ * validator. May later be promoted to an admin setting.
+ */
+export const HEADLINE_SOLD_FLOOR = 15;
+
+/** Honesty band a neighbourhood figure falls into, by closed-sale count. */
+export type SampleBand = "headline" | "disclose" | "thin";
+
+/**
+ * Classify a closed-sale count into one of the three honesty bands.
+ *  - >= headlineFloor          → "headline" (may anchor a video)
+ *  - hardMin .. headlineFloor-1 → "disclose" (usable WITH sample disclosure)
+ *  - < hardMin                  → "thin" (texture/colour only, never headline)
+ */
+export function sampleBandFor(
+  soldCount: number,
+  headlineFloor: number,
+  hardMin: number,
+): SampleBand {
+  if (soldCount >= headlineFloor) return "headline";
+  if (soldCount >= hardMin) return "disclose";
+  return "thin";
+}
+
 // ── Validation ──────────────────────────────────────────────────────────────
 
 function oneOf<T extends string>(

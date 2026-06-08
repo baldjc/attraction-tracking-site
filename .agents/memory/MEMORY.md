@@ -4,6 +4,7 @@
 - [Deploy + GitHub topology](deploy-and-github-topology.md) — prod is a Replit VM publish (members.attractionbyvideo.com); GitHub main is source-of-record only (no auto-deploy); non-force push works despite a local tracking-ref lock; 404→307 proves a member route shipped.
 - [Dark-mode token remapping](dark-mode-token-remap.md) — `--abv-text` flips for dark but `--abv-ink` does NOT; using `--abv-ink` as foreground over a remapped surface = dark-on-dark.
 - [Fact validator market lock-in](fact-validator-market-lockin.md) — the validator prompt hardcodes one market's schema, so wide off-market uploads extract far fewer facts.
+- [Sample-size honesty bands](sample-size-honesty-bands.md) — headline/disclose/thin by sale count; HEADLINE_SOLD_FLOOR is a global constant but the per-member hard floor must defer to the methodology block (cached-per-market prompt can't hold it).
 - [Validator 200K-context overflow](market-validator-overflow.md) — the unsplittable SUMMARY+LEADS call overflows on ultra-wide markets; its rollups must be hard-bounded to the char budget.
 - [Script Builder identity guard](script-builder-identity-guard.md) — scripts can leak the exemplar's identity; the no_other_member_identity rule must get identity inputs at every validateScript() caller.
 - [Binge-title quote false positives](script-binge-quote-fp.md) — the binge_target_match "wrong quoted title" check must anchor on an explicit next-video cue or it false-positives on viewer-thought dialogue.

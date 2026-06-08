@@ -8,6 +8,7 @@ import {
   type ComputeCutDeps,
 } from "./computeCut";
 import { emptyMarketConfig, type ColumnMapping } from "@/lib/market-config";
+import { HEADLINE_SOLD_FLOOR } from "@/lib/member-metric-settings";
 
 /**
  * Build injectable deps for runComputeCut around a fixed CSV + column mapping.
@@ -298,4 +299,166 @@ test("runComputeCut: properly mapped headers resolve and compute (sanity)", asyn
   // "unavailable".)
   assert.notEqual(res.classification, "unavailable");
   assert.notEqual(res.classification, "no_upload");
+});
+
+// ── Sample-size honesty bands ────────────────────────────────────────────────
+
+/** A neighbourhood CSV with exactly `n` sold rows (Community-mapped). */
+function soldNbhdCsv(neighbourhood: string, n: number): string {
+  let csv = "Community,Status,Sale Price,List Price\n";
+  for (let i = 0; i < n; i++) {
+    csv += `${neighbourhood},Sold,${500000 + i * 1000},${510000 + i * 1000}\n`;
+  }
+  return csv;
+}
+
+const NBHD_MAPPING: ColumnMapping = {
+  neighbourhood: "Community",
+  status: "Status",
+  salePrice: "Sale Price",
+  listPrice: "List Price",
+};
+
+test("HEADLINE_SOLD_FLOOR is the single tunable source of truth (15)", () => {
+  assert.equal(HEADLINE_SOLD_FLOOR, 15);
+});
+
+test("computeCut: classifies sold count into headline / disclose / thin bands", () => {
+  const mk = (hood: string, n: number): CutRow[] =>
+    Array.from({ length: n }, () => soldRow({ neighbourhood: hood }));
+  const rows = [...mk("A", 24), ...mk("B", 12), ...mk("C", 4)];
+
+  const result = computeCut(
+    rows,
+    { dimension: "neighbourhood" },
+    { headlineSoldFloor: 15, discloseFloor: 5 },
+  );
+
+  const a = result.groups.find((g) => g.bucket === "A")!;
+  const b = result.groups.find((g) => g.bucket === "B")!;
+  const c = result.groups.find((g) => g.bucket === "C")!;
+
+  // 24 sales → headline band, headline-safe.
+  assert.equal(a.band, "headline");
+  assert.equal(a.headlineSafe, true);
+  // 12 sales → disclose band: usable but NOT headlineSafe (needs disclosure).
+  assert.equal(b.band, "disclose");
+  assert.equal(b.headlineSafe, false);
+  // 4 sales → thin band, never headline.
+  assert.equal(c.band, "thin");
+  assert.equal(c.headlineSafe, false);
+});
+
+test("computeCut: 15 sold is the headline boundary (inclusive)", () => {
+  const rows = Array.from({ length: 15 }, () =>
+    soldRow({ neighbourhood: "Edge" }),
+  );
+  const result = computeCut(
+    rows,
+    { dimension: "neighbourhood" },
+    { headlineSoldFloor: 15, discloseFloor: 5 },
+  );
+  const edge = result.groups.find((g) => g.bucket === "Edge")!;
+  assert.equal(edge.band, "headline");
+  assert.equal(edge.headlineSafe, true);
+});
+
+test("computeCut: discloseFloor defaults to MIN_SOLD_SAMPLE (5) when omitted", () => {
+  const rows = Array.from({ length: 5 }, () =>
+    soldRow({ neighbourhood: "Five" }),
+  );
+  const result = computeCut(
+    rows,
+    { dimension: "neighbourhood" },
+    { headlineSoldFloor: 15 },
+  );
+  const five = result.groups.find((g) => g.bucket === "Five")!;
+  // 5 >= default hard floor 5 → disclose (usable), not thin.
+  assert.equal(five.band, "disclose");
+});
+
+test("runComputeCut: 24-sale neighbourhood headlines WITH 'based on 24 sales' disclosure", async () => {
+  const { deps, logged, createdFacts } = stubDeps(
+    soldNbhdCsv("Bowness", 24),
+    NBHD_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  assert.ok(createdFacts.length > 0, "expected persisted facts");
+  for (const f of createdFacts as Array<{
+    usageClass: string;
+    viewerCaveat: string | null;
+  }>) {
+    assert.equal(f.usageClass, "headline_safe");
+    assert.match(f.viewerCaveat ?? "", /based on 24 sales in may 2026/i);
+  }
+  assert.deepEqual(logged, ["computed"]);
+});
+
+test("runComputeCut: 12-sale neighbourhood stays usable WITH mandatory small-sample disclosure", async () => {
+  const { deps, createdFacts } = stubDeps(
+    soldNbhdCsv("Bowness", 12),
+    NBHD_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  // Disclose band is still computed/usable, not benched.
+  assert.equal(res.classification, "computed");
+  assert.ok(createdFacts.length > 0, "expected persisted facts");
+  for (const f of createdFacts as Array<{
+    usageClass: string;
+    viewerCaveat: string | null;
+  }>) {
+    assert.equal(f.usageClass, "headline_safe");
+    assert.match(f.viewerCaveat ?? "", /based on 12 sales/i);
+    assert.match(f.viewerCaveat ?? "", /state the sample size/i);
+  }
+});
+
+test("runComputeCut: 4-sale neighbourhood held back honestly as texture-only", async () => {
+  const { deps, logged, createdFacts } = stubDeps(
+    soldNbhdCsv("Bowness", 4),
+    NBHD_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  // Below the hard floor → no usable headline → sample_too_small, but the fact
+  // is still emitted honestly (texture-only), never fabricated away.
+  assert.equal(res.classification, "sample_too_small");
+  assert.ok(createdFacts.length > 0, "thin facts are still persisted as texture");
+  for (const f of createdFacts as Array<{
+    usageClass: string;
+    viewerCaveat: string | null;
+  }>) {
+    assert.equal(f.usageClass, "supporting_texture_only");
+    assert.match(f.viewerCaveat ?? "", /only 4 sales/i);
+    assert.match(f.viewerCaveat ?? "", /too thin to headline/i);
+  }
+  assert.deepEqual(logged, ["sample_too_small"]);
+});
+
+test("computed-cut disclosure carries NO property-type words (scriptBuilder caveat parser safety)", async () => {
+  const { deps, createdFacts } = stubDeps(
+    soldNbhdCsv("Bowness", 12),
+    NBHD_MAPPING,
+  );
+  await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  const propertyWords =
+    /\b(detached|semi|townhouse|townhome|condo|apartment|duplex|bungalow|single[- ]family)\b/i;
+  for (const f of createdFacts as Array<{ viewerCaveat: string | null }>) {
+    assert.ok(
+      !propertyWords.test(f.viewerCaveat ?? ""),
+      `caveat must not contain property-type words: ${f.viewerCaveat}`,
+    );
+  }
 });
