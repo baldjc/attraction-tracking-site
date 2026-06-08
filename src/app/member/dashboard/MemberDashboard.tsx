@@ -83,12 +83,14 @@ interface FactChip {
 
 interface BriefingIdea {
   index: number;
+  leadId: string;
   title: string;
   why: string;
   fact: FactChip | null;
-  thinking: { clarityPremise: string; titlePromise: string; whyItWorks: string };
-  citedFactIds: string[];
-  rotationSlot: string;
+  pattern: string;
+  dataThreads: string[];
+  rotationSlot: string | null;
+  isThesis: boolean;
 }
 
 interface Briefing {
@@ -100,6 +102,15 @@ interface Briefing {
   sources?: string[];
   ideas?: BriefingIdea[];
   estReadMinutes?: number;
+  totalLeads?: number;
+  browseHref?: string;
+}
+
+/** Humanize a RotationSlot enum value, e.g. "neighbourhood_fact" → "Neighbourhood fact". */
+function slotLabel(slot: string | null): string | null {
+  if (!slot) return null;
+  const s = slot.replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 // ── Jarvis avatar (monogram — no image asset exists) ──────────
@@ -143,34 +154,22 @@ export default function MemberDashboard() {
       .catch(() => setLoading(false));
   }, []);
 
-  // The first cold load of a month generates the briefing (~50s) behind a
-  // single-flight claim. While another request owns generation this endpoint
-  // returns reason:"generating" — so we poll until it's ready (bounded).
+  // The briefing reads the member's Story Lead pool directly — a cheap DB read,
+  // no per-month generation — so a single fetch is enough.
   useEffect(() => {
     let cancelled = false;
-    let attempts = 0;
-    const MAX_ATTEMPTS = 12;
-    const POLL_MS = 6000;
-
-    const load = () => {
-      fetch("/api/member/dashboard/briefing")
-        .then((r) => (r.ok ? r.json() : { empty: true, reason: "error" }))
-        .then((d: Briefing) => {
-          if (cancelled) return;
-          setBriefing(d);
-          setBriefingLoading(false);
-          if (d.empty && d.reason === "generating" && attempts < MAX_ATTEMPTS) {
-            attempts += 1;
-            setTimeout(load, POLL_MS);
-          }
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setBriefing({ empty: true, reason: "error" });
-          setBriefingLoading(false);
-        });
-    };
-    load();
+    fetch("/api/member/dashboard/briefing")
+      .then((r) => (r.ok ? r.json() : { empty: true, reason: "error" }))
+      .then((d: Briefing) => {
+        if (cancelled) return;
+        setBriefing(d);
+        setBriefingLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setBriefing({ empty: true, reason: "error" });
+        setBriefingLoading(false);
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -200,18 +199,23 @@ export default function MemberDashboard() {
     ideasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  // "Build a script" hand-off → seed the prompt, route to Jarvis (or, when
-  // Jarvis isn't enabled, the manual planner wizard).
+  // "Build a script" hand-off → seed the chat with the lead's grounding and
+  // route to Jarvis, which auto-sends the seed and streams a draft script
+  // (the Jarvis draft path). When Jarvis isn't enabled, deep-link straight
+  // into the planner wizard for this lead instead.
   const buildScript = useCallback((idea: BriefingIdea) => {
-    const seed =
-      `Build a script for this idea: "${idea.title}".\n` +
-      (idea.why ? `Why it works: ${idea.why}\n` : "") +
-      (idea.fact ? `Lead with this stat: ${idea.fact.stat} — ${idea.fact.label} (${idea.fact.source}).` : "");
     if (jarvisEnabled) {
+      const threads = idea.dataThreads.slice(0, 3);
+      const seed =
+        `Build a script for this story lead: "${idea.title}".\n` +
+        (idea.why ? `Why it matters: ${idea.why}\n` : "") +
+        (idea.pattern ? `Pattern: ${idea.pattern}\n` : "") +
+        (threads.length ? `Data: ${threads.join("; ")}\n` : "") +
+        (idea.fact ? `Lead with this stat: ${idea.fact.stat} — ${idea.fact.label} (${idea.fact.source}).` : "");
       try { sessionStorage.setItem(JARVIS_SEED_KEY, seed); } catch { /* ignore */ }
       router.push("/member/jarvis");
     } else {
-      router.push("/member/content-planner/wizard");
+      router.push(`/member/content-planner/wizard?step=3&storyLeadId=${encodeURIComponent(idea.leadId)}`);
     }
   }, [jarvisEnabled, router]);
 
@@ -228,8 +232,9 @@ export default function MemberDashboard() {
   const conversationHref = jarvisEnabled ? "/member/jarvis" : "/member/content-tools";
   const ideaCount = briefing?.ideas?.length ?? 0;
   const hasBriefing = !!briefing && !briefing.empty && ideaCount > 0;
-  const briefingGenerating = !!briefing && briefing.empty && briefing.reason === "generating";
-  const ideaNoun = ideaCount === 1 ? "story" : "stories";
+  const ideaNoun = ideaCount === 1 ? "idea" : "ideas";
+  const totalLeads = briefing?.totalLeads ?? 0;
+  const browseHref = briefing?.browseHref ?? "/member/content-planner/wizard?step=2a";
 
   return (
     <div className="space-y-10 pb-12 max-w-5xl mx-auto">
@@ -249,17 +254,12 @@ export default function MemberDashboard() {
       </div>
 
       {/* ── Briefing card ── */}
-      {briefingLoading || briefingGenerating ? (
+      {briefingLoading ? (
         <div className="rounded-2xl bg-[var(--abv-dark)] p-6 sm:p-8 animate-pulse">
           <div className="h-4 w-56 bg-white/10 rounded-full mb-5" />
           <div className="h-8 w-full max-w-lg bg-white/10 rounded-lg mb-3" />
           <div className="h-5 w-72 bg-white/10 rounded mb-6" />
           <div className="h-10 w-64 bg-white/10 rounded-full" />
-          {briefingGenerating && (
-            <p className="text-white/50 text-sm mt-5">
-              Jarvis is preparing your briefing…
-            </p>
-          )}
         </div>
       ) : hasBriefing && !dismissed ? (
         <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-5 sm:p-8">
@@ -271,7 +271,7 @@ export default function MemberDashboard() {
               </p>
               <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
                 Your market moved — here {ideaCount === 1 ? "is" : "are"} {ideaCount}{" "}
-                <span className="text-[var(--abv-azure)]">{ideaNoun}</span> worth telling.
+                <span className="text-[var(--abv-azure)]">{ideaNoun}</span> worth exploring.
               </h2>
 
               {/* meta row */}
@@ -302,6 +302,14 @@ export default function MemberDashboard() {
                 >
                   Open the conversation →
                 </Link>
+                {totalLeads > 0 && (
+                  <Link
+                    href={browseHref}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-white/80 font-semibold text-sm hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    Browse all {totalLeads} {totalLeads === 1 ? "lead" : "leads"} →
+                  </Link>
+                )}
                 <button
                   onClick={dismiss}
                   className="px-3 py-2.5 text-sm text-white/50 hover:text-white/80 transition-colors"
@@ -360,9 +368,21 @@ export default function MemberDashboard() {
               key={idea.index}
               className="flex flex-col rounded-2xl border border-[var(--abv-border)] bg-[var(--abv-card)] p-5"
             >
-              <span className="font-mono text-sm text-[var(--abv-text-secondary)]">
-                {String(idea.index).padStart(2, "0")}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-sm text-[var(--abv-text-secondary)]">
+                  {String(idea.index).padStart(2, "0")}
+                </span>
+                {idea.isThesis && (
+                  <span className="rounded-full bg-[var(--abv-azure-tint)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--abv-azure)]">
+                    Thesis
+                  </span>
+                )}
+                {slotLabel(idea.rotationSlot) && (
+                  <span className="rounded-full border border-[var(--abv-border)] px-2 py-0.5 text-[10px] font-medium text-[var(--abv-text-secondary)]">
+                    {slotLabel(idea.rotationSlot)}
+                  </span>
+                )}
+              </div>
               <h3 className="font-display text-lg text-[var(--abv-text)] mt-2 leading-snug">
                 {idea.title}
               </h3>
@@ -370,7 +390,7 @@ export default function MemberDashboard() {
                 {idea.why}
               </p>
 
-              {idea.fact && (
+              {idea.fact ? (
                 <div className="mt-4 rounded-xl bg-[var(--abv-bg)] border border-[var(--abv-border)] p-3">
                   <p className="font-mono tabular-nums text-lg font-semibold text-[var(--abv-text)]">
                     {idea.fact.stat}
@@ -380,18 +400,26 @@ export default function MemberDashboard() {
                     {idea.fact.source}
                   </p>
                 </div>
-              )}
+              ) : idea.dataThreads.length > 0 ? (
+                <div className="mt-4 rounded-xl bg-[var(--abv-bg)] border border-[var(--abv-border)] p-3">
+                  <p className="font-mono text-sm text-[var(--abv-text)]">{idea.dataThreads[0]}</p>
+                </div>
+              ) : null}
 
               {openThinking === idea.index && (
                 <div className="mt-3 rounded-xl bg-[var(--abv-bg)] border border-[var(--abv-border)] p-3 space-y-2 text-xs text-[var(--abv-text-secondary)]">
-                  {idea.thinking.titlePromise && (
-                    <p><span className="font-semibold text-[var(--abv-text)]">Promise:</span> {idea.thinking.titlePromise}</p>
+                  {idea.pattern && (
+                    <p><span className="font-semibold text-[var(--abv-text)]">Pattern:</span> {idea.pattern}</p>
                   )}
-                  {idea.thinking.clarityPremise && (
-                    <p><span className="font-semibold text-[var(--abv-text)]">Premise:</span> {idea.thinking.clarityPremise}</p>
-                  )}
-                  {idea.thinking.whyItWorks && (
-                    <p><span className="font-semibold text-[var(--abv-text)]">Why it works:</span> {idea.thinking.whyItWorks}</p>
+                  {idea.dataThreads.length > 0 && (
+                    <div>
+                      <p className="font-semibold text-[var(--abv-text)]">Data threads</p>
+                      <ul className="list-inside list-disc mt-0.5 space-y-0.5">
+                        {idea.dataThreads.slice(0, 4).map((t, i) => (
+                          <li key={i}>{t}</li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
               )}
