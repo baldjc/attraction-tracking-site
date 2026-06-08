@@ -61,6 +61,7 @@ import type { LedgerFact } from "@/lib/jarvis/types";
 
 export type CutDimension =
   | "neighbourhood"
+  | "city"
   | "style"
   | "propertyClass"
   | "yearBuiltDecade"
@@ -68,6 +69,7 @@ export type CutDimension =
 
 export type CutFilterField =
   | "neighbourhood"
+  | "city"
   | "style"
   | "propertyClass"
   | "priceBracket";
@@ -95,6 +97,8 @@ export interface ComputeCutParams {
 export interface CutRow {
   status: StatusBucket;
   neighbourhood: string | null;
+  /** Mapped City/municipality cell (aliases city|municipality), or null. */
+  city: string | null;
   /** Normalized mapped propertyType ("Style") — mirrors the ledger. */
   style: string | null;
   /** RAW "Property Type" cell, verbatim (no normalization). */
@@ -231,6 +235,7 @@ export function yearBuiltDecadeLabel(year: number | null): string {
 
 const FILTER_FIELDS: CutFilterField[] = [
   "neighbourhood",
+  "city",
   "style",
   "propertyClass",
   "priceBracket",
@@ -240,6 +245,8 @@ function dimensionValueOf(row: CutRow, dim: CutDimension): string | null {
   switch (dim) {
     case "neighbourhood":
       return emptyToNull(row.neighbourhood);
+    case "city":
+      return emptyToNull(row.city);
     case "style":
       return emptyToNull(row.style);
     case "propertyClass":
@@ -255,6 +262,8 @@ function filterValueOf(row: CutRow, field: CutFilterField): string | null {
   switch (field) {
     case "neighbourhood":
       return emptyToNull(row.neighbourhood);
+    case "city":
+      return emptyToNull(row.city);
     case "style":
       return emptyToNull(row.style);
     case "propertyClass":
@@ -268,6 +277,15 @@ function emptyToNull(s: string | null): string | null {
   if (s == null) return null;
   const t = s.toString().trim();
   return t.length > 0 ? t : null;
+}
+
+/**
+ * Identity key for "is this the same city?" decisions (multi-city detection):
+ * case-insensitive with collapsed internal whitespace. Used ONLY for counting
+ * distinct cities — display labels keep the original string.
+ */
+function normalizeCityKey(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function distinctSorted(values: Array<string | null>): string[] {
@@ -464,9 +482,33 @@ export function computeCut(
     };
   }
 
+  // City scoping: when grouping BY neighbourhood across a dataset that spans
+  // 2+ cities, disambiguate the bucket by its city so same-named neighbourhoods
+  // in different municipalities never merge (e.g. "Downtown" in two cities north
+  // of Dallas). Single-city scopes (0 or 1 distinct city — including no city
+  // column, and any cut already filtered to one city) take the legacy path
+  // untouched, so their output is byte-for-byte identical. Other dimensions are
+  // never affected (city is its own dimension via dimensionValueOf).
+  // Count distinct cities by a normalized key (case-insensitive, whitespace-
+  // collapsed) so that mere format variants of ONE city ("Plano", "PLANO",
+  // " plano ") never trip multi-city mode and accidentally push a single-city
+  // member onto the composite-label path. Display still uses the original
+  // string.
+  const distinctCities = new Set<string>();
+  for (const row of scoped) {
+    const c = emptyToNull(row.city);
+    if (c) distinctCities.add(normalizeCityKey(c));
+  }
+  const scopeNeighbourhoodByCity =
+    params.dimension === "neighbourhood" && distinctCities.size >= 2;
+
   const accs = new Map<string, GroupAcc>();
   for (const row of scoped) {
-    const bucket = dimensionValueOf(row, params.dimension) ?? "Unknown";
+    let bucket = dimensionValueOf(row, params.dimension) ?? "Unknown";
+    if (scopeNeighbourhoodByCity) {
+      const c = emptyToNull(row.city);
+      if (c) bucket = `${bucket} (${c})`;
+    }
     let acc = accs.get(bucket);
     if (!acc) {
       acc = emptyGroupAcc(bucket);
@@ -638,6 +680,8 @@ function dimensionLabel(dim: CutDimension): string {
   switch (dim) {
     case "neighbourhood":
       return "neighbourhood";
+    case "city":
+      return "city";
     case "style":
       return "style";
     case "propertyClass":
@@ -653,6 +697,8 @@ function filterFieldLabel(field: CutFilterField): string {
   switch (field) {
     case "neighbourhood":
       return "neighbourhood";
+    case "city":
+      return "city";
     case "style":
       return "style";
     case "propertyClass":
@@ -694,6 +740,7 @@ function scopeSignature(
 /** dimension/filter column availability against the resolved CSV headers. */
 interface ResolvedColumns {
   neighbourhood: boolean;
+  city: boolean;
   style: boolean;
   yearBuilt: boolean;
   propertyClassHeader: string | null;
@@ -704,6 +751,8 @@ function dimensionAvailable(dim: CutDimension, cols: ResolvedColumns): boolean {
   switch (dim) {
     case "neighbourhood":
       return cols.neighbourhood;
+    case "city":
+      return cols.city;
     case "style":
       return cols.style;
     case "yearBuiltDecade":
@@ -719,6 +768,8 @@ function filterAvailable(field: CutFilterField, cols: ResolvedColumns): boolean 
   switch (field) {
     case "neighbourhood":
       return cols.neighbourhood;
+    case "city":
+      return cols.city;
     case "style":
       return cols.style;
     case "propertyClass":
@@ -731,6 +782,7 @@ function filterAvailable(field: CutFilterField, cols: ResolvedColumns): boolean 
 function availableDimensionsFrom(cols: ResolvedColumns): CutDimension[] {
   const all: CutDimension[] = [
     "neighbourhood",
+    "city",
     "style",
     "propertyClass",
     "yearBuiltDecade",
@@ -812,6 +864,7 @@ export async function runComputeCut(
   );
   const cols: ResolvedColumns = {
     neighbourhood: mappedHeaderResolves(mapping.neighbourhood, headerLookup),
+    city: mappedHeaderResolves(mapping.city, headerLookup),
     style: mappedHeaderResolves(mapping.propertyType, headerLookup),
     yearBuilt: mappedHeaderResolves(mapping.yearBuilt, headerLookup),
     propertyClassHeader,
@@ -847,6 +900,7 @@ export async function runComputeCut(
     const neighbourhood =
       emptyToNull(readMappedCell(raw, headerLookup, mapping.neighbourhood)) ??
       "Unknown";
+    const city = emptyToNull(readMappedCell(raw, headerLookup, mapping.city));
     const style = normalizePropertyType(
       readMappedCell(raw, headerLookup, mapping.propertyType),
     ).type;
@@ -859,6 +913,7 @@ export async function runComputeCut(
     return {
       status,
       neighbourhood,
+      city,
       style,
       propertyClass,
       priceBracket,

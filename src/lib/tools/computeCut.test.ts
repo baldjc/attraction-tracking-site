@@ -58,6 +58,7 @@ function soldRow(over: Partial<CutRow>): CutRow {
   return {
     status: "sold",
     neighbourhood: "All Neighbourhoods",
+    city: null,
     style: "2 Storey",
     propertyClass: "Single Family",
     priceBracket: null,
@@ -232,6 +233,100 @@ test("propertyClass vs style are distinct dimensions", () => {
   const byStyle = computeCut(rows, { dimension: "style" }, { headlineSoldFloor: 30 });
   assert.deepEqual(byClass.dimensionValues.sort(), ["Condo", "Single Family"]);
   assert.deepEqual(byStyle.dimensionValues.sort(), ["2 Storey", "Apartment Unit", "Bungalow"]);
+});
+
+// ── City / multi-city neighbourhood scoping ──────────────────────────────────
+
+test("city: multi-city neighbourhood cut keeps same-named neighbourhoods separate by city", () => {
+  const rows: CutRow[] = [];
+  // "Downtown" in two different cities at different price levels. With >=2
+  // distinct cities in scope, neighbourhood buckets disambiguate by city so the
+  // two Downtowns never merge into one (wrong) blended median.
+  for (let i = 0; i < 40; i++)
+    rows.push(soldRow({ neighbourhood: "Downtown", city: "Plano", salePrice: 500000, listPrice: 500000 }));
+  for (let i = 0; i < 40; i++)
+    rows.push(soldRow({ neighbourhood: "Downtown", city: "Frisco", salePrice: 800000, listPrice: 800000 }));
+
+  const result = computeCut(rows, { dimension: "neighbourhood" }, { headlineSoldFloor: 30 });
+
+  assert.deepEqual(
+    result.groups.map((g) => g.bucket).sort(),
+    ["Downtown (Frisco)", "Downtown (Plano)"],
+  );
+  const plano = result.groups.find((g) => g.bucket === "Downtown (Plano)")!;
+  const frisco = result.groups.find((g) => g.bucket === "Downtown (Frisco)")!;
+  const medOf = (g: typeof plano) => g.metrics.find((m) => m.key === "median_sale_price")!.value;
+  assert.equal(medOf(plano), 500000);
+  assert.equal(medOf(frisco), 800000);
+  assert.equal(plano.soldCount, 40);
+  assert.equal(frisco.soldCount, 40);
+});
+
+test("city: dimension=city returns per-city rollups", () => {
+  const rows: CutRow[] = [];
+  for (let i = 0; i < 40; i++)
+    rows.push(soldRow({ neighbourhood: "A", city: "Plano", salePrice: 500000, listPrice: 500000 }));
+  for (let i = 0; i < 40; i++)
+    rows.push(soldRow({ neighbourhood: "B", city: "Frisco", salePrice: 800000, listPrice: 800000 }));
+
+  const result = computeCut(rows, { dimension: "city" }, { headlineSoldFloor: 30 });
+
+  assert.deepEqual(result.groups.map((g) => g.bucket).sort(), ["Frisco", "Plano"]);
+  const plano = result.groups.find((g) => g.bucket === "Plano")!;
+  assert.equal(plano.metrics.find((m) => m.key === "median_sale_price")!.value, 500000);
+});
+
+test("city: filterCity scopes a neighbourhood cut to one city (plain labels, no merge)", () => {
+  const rows: CutRow[] = [];
+  for (let i = 0; i < 40; i++)
+    rows.push(soldRow({ neighbourhood: "Downtown", city: "Plano", salePrice: 500000, listPrice: 500000 }));
+  for (let i = 0; i < 40; i++)
+    rows.push(soldRow({ neighbourhood: "Downtown", city: "Frisco", salePrice: 800000, listPrice: 800000 }));
+
+  const result = computeCut(
+    rows,
+    { dimension: "neighbourhood", filters: [{ field: "city", value: "Plano" }] },
+    { headlineSoldFloor: 30 },
+  );
+
+  // Only one city is in scope after the filter → plain label, only Plano rows.
+  assert.deepEqual(result.groups.map((g) => g.bucket), ["Downtown"]);
+  assert.equal(result.groups[0].soldCount, 40);
+  assert.equal(result.groups[0].metrics.find((m) => m.key === "median_sale_price")!.value, 500000);
+});
+
+test("city: case/whitespace variants of ONE city stay single-city (no composite labels)", () => {
+  // "Plano", "PLANO" and " plano " are the same municipality typed three ways.
+  // They must NOT trip multi-city mode, so neighbourhood buckets stay plain.
+  const rows: CutRow[] = [];
+  for (const variant of ["Plano", "PLANO", " plano "]) {
+    for (let i = 0; i < 14; i++)
+      rows.push(soldRow({ neighbourhood: "Downtown", city: variant, salePrice: 500000, listPrice: 500000 }));
+  }
+  const result = computeCut(rows, { dimension: "neighbourhood" }, { headlineSoldFloor: 30 });
+  assert.deepEqual(result.groups.map((g) => g.bucket), ["Downtown"]);
+  assert.equal(result.groups[0].soldCount, 42);
+});
+
+test("city: single-city dataset is byte-for-byte identical to a no-city dataset", () => {
+  const build = (city: string | null): CutRow[] => {
+    const rows: CutRow[] = [];
+    for (let i = 0; i < 40; i++)
+      rows.push(soldRow({ neighbourhood: "Downtown", city, salePrice: 500000 + i * 1000, listPrice: 500000 + i * 1000 }));
+    for (let i = 0; i < 35; i++)
+      rows.push(soldRow({ neighbourhood: "Uptown", city, salePrice: 700000 + i * 1000, listPrice: 700000 + i * 1000 }));
+    return rows;
+  };
+  const withCity = computeCut(build("Plano"), { dimension: "neighbourhood" }, { headlineSoldFloor: 30 });
+  const noCity = computeCut(build(null), { dimension: "neighbourhood" }, { headlineSoldFloor: 30 });
+
+  // With a single distinct city, the city dimension plays no role: plain
+  // neighbourhood buckets and identical aggregates to the no-city baseline.
+  assert.deepEqual(withCity.groups.map((g) => g.bucket).sort(), ["Downtown", "Uptown"]);
+  assert.deepEqual(
+    withCity.groups.map((g) => ({ bucket: g.bucket, sold: g.soldCount, metrics: g.metrics })),
+    noCity.groups.map((g) => ({ bucket: g.bucket, sold: g.soldCount, metrics: g.metrics })),
+  );
 });
 
 // CSV whose headers do NOT include the column some mappings point at.
@@ -672,4 +767,117 @@ test("runYoYCut: prior upload lacks the property-type column → degrades honest
   // Base-period facts are still returned so the current period stays citable.
   assert.ok(res.facts.some((f) => f.monthYear === "2026-05"));
   assert.match(res.note, /do NOT invent/i);
+});
+
+// ── City dimension through the full runComputeCut / runYoYCut pipeline ────────
+
+const CITY_MAPPING: ColumnMapping = {
+  neighbourhood: "Community",
+  city: "City",
+  status: "Status",
+  salePrice: "Sale Price",
+  listPrice: "List Price",
+};
+
+function cityCsv(blocks: string): string {
+  return "City,Community,Status,Sale Price,List Price\n" + blocks;
+}
+
+/** `n` sold rows for one city × community at a fixed sale (== list) price. */
+function soldCityRows(city: string, community: string, price: number, n: number): string {
+  let s = "";
+  for (let i = 0; i < n; i++) {
+    s += `${city},${community},Sold,${price + i * 1000},${price + i * 1000}\n`;
+  }
+  return s;
+}
+
+test("runComputeCut: dimension=city with no city column mapped → honest unavailable", async () => {
+  // The upload has no City column and the mapping doesn't point at one, so a
+  // city cut must refuse honestly rather than inventing a single bucket.
+  const { deps, logged, createdFacts } = stubDeps(
+    typeCsv(soldTypeRows("Condo", 400000, 20)),
+    TYPE_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "city", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "unavailable");
+  assert.equal(res.facts.length, 0);
+  assert.equal(createdFacts.length, 0, "must not persist facts on unavailable");
+  assert.deepEqual(logged, ["unavailable"]);
+});
+
+test("runComputeCut: multi-city neighbourhood cut disambiguates same-named neighbourhoods", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "Downtown", 500000, 20) +
+          soldCityRows("Frisco", "Downtown", 800000, 20),
+      ),
+    },
+    CITY_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  // Two distinct cities in scope → each Downtown fact is city-qualified, never merged.
+  const hoods = new Set(res.facts.map((f) => f.neighbourhood));
+  assert.ok(hoods.has("Downtown (Plano)"), "expected a Plano-scoped Downtown");
+  assert.ok(hoods.has("Downtown (Frisco)"), "expected a Frisco-scoped Downtown");
+  assert.ok(!hoods.has("Downtown"), "the bare merged Downtown must not appear");
+});
+
+test("runYoYCut: dimension=city composes a real per-city delta across two periods", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "A", 500000, 20) + soldCityRows("Frisco", "B", 800000, 20),
+      ),
+      "2025-05": cityCsv(
+        soldCityRows("Plano", "A", 460000, 20) + soldCityRows("Frisco", "B", 760000, 20),
+      ),
+    },
+    CITY_MAPPING,
+  );
+  const res = await runYoYCut(
+    { userId: "u", params: { dimension: "city", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  assert.equal(res.baseMonth, "2026-05");
+  assert.equal(res.comparisonMonth, "2025-05");
+  const planoMed = res.deltas.find(
+    (d) => d.bucket === "Plano" && d.metricKey === "median_sale_price",
+  );
+  assert.ok(planoMed, "expected a Plano median-sale-price delta");
+  assert.ok(planoMed!.deltaPct > 0, "Plano prices rose YoY → positive delta");
+  assert.match(planoMed!.deltaPctString, /^\+/);
+});
+
+test("runComputeCut: filterCity scopes a neighbourhood cut to one city end-to-end", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "Downtown", 500000, 20) +
+          soldCityRows("Frisco", "Downtown", 800000, 20),
+      ),
+    },
+    CITY_MAPPING,
+  );
+  const res = await runComputeCut(
+    {
+      userId: "u",
+      params: { dimension: "neighbourhood", filters: [{ field: "city", value: "Plano" }] },
+    },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  // Only Plano in scope after the filter → plain label, no Frisco leakage.
+  const hoods = new Set(res.facts.map((f) => f.neighbourhood));
+  assert.ok(hoods.has("Downtown"), "expected the plain Plano Downtown");
+  assert.ok(!hoods.has("Downtown (Frisco)"), "Frisco must be filtered out");
 });

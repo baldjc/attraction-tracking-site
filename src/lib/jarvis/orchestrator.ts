@@ -305,6 +305,8 @@ async function runTool(ctx: {
           typeof input.filterPropertyClass === "string" ? input.filterPropertyClass : undefined,
         filterNeighbourhood:
           typeof input.filterNeighbourhood === "string" ? input.filterNeighbourhood : undefined,
+        filterCity:
+          typeof input.filterCity === "string" ? input.filterCity : undefined,
         filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
         filterPriceBracket:
           typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,
@@ -346,6 +348,8 @@ async function runTool(ctx: {
           typeof input.filterPropertyClass === "string" ? input.filterPropertyClass : undefined,
         filterNeighbourhood:
           typeof input.filterNeighbourhood === "string" ? input.filterNeighbourhood : undefined,
+        filterCity:
+          typeof input.filterCity === "string" ? input.filterCity : undefined,
         filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
         filterPriceBracket:
           typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,

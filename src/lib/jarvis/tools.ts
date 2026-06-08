@@ -181,15 +181,21 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
           type: "string",
           enum: [
             "neighbourhood",
+            "city",
             "style",
             "propertyClass",
             "yearBuiltDecade",
             "priceBracket",
           ],
           description:
-            "What to break the market down BY. propertyClass = raw 'Property " +
-            "Type' class; style = mapped Style column; yearBuiltDecade = decade " +
-            "the home was built; priceBracket = raw price-bracket column.",
+            "What to break the market down BY. city = the mapped City/" +
+            "municipality column (city-level rollups; only available when the " +
+            "member's upload spans multiple cities); propertyClass = raw " +
+            "'Property Type' class; style = mapped Style column; yearBuiltDecade " +
+            "= decade the home was built; priceBracket = raw price-bracket " +
+            "column. NOTE: when a member's data spans 2+ cities, neighbourhood " +
+            "groups are automatically labelled 'Neighbourhood (City)' so same-" +
+            "named neighbourhoods in different cities are never merged.",
         },
         filterPropertyClass: {
           type: "string",
@@ -199,6 +205,13 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         filterNeighbourhood: {
           type: "string",
           description: "Optional. Restrict to one neighbourhood (exact name).",
+        },
+        filterCity: {
+          type: "string",
+          description:
+            "Optional. Restrict to one city/municipality (exact name). Combine " +
+            "with dimension='neighbourhood' to break a single city down by its " +
+            "neighbourhoods.",
         },
         filterStyle: {
           type: "string",
@@ -248,15 +261,20 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
           type: "string",
           enum: [
             "neighbourhood",
+            "city",
             "style",
             "propertyClass",
             "yearBuiltDecade",
             "priceBracket",
           ],
           description:
-            "What to break the year-over-year comparison down BY. propertyClass " +
-            "= raw 'Property Type' class; style = mapped Style column; " +
-            "yearBuiltDecade = decade built; priceBracket = raw price-bracket.",
+            "What to break the year-over-year comparison down BY. city = mapped " +
+            "City/municipality column (per-city YoY rollups; only when the data " +
+            "spans multiple cities); propertyClass = raw 'Property Type' class; " +
+            "style = mapped Style column; yearBuiltDecade = decade built; " +
+            "priceBracket = raw price-bracket. When the data spans 2+ cities, " +
+            "neighbourhood groups are labelled 'Neighbourhood (City)' so same-" +
+            "named neighbourhoods in different cities never merge.",
         },
         filterPropertyClass: {
           type: "string",
@@ -266,6 +284,12 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         filterNeighbourhood: {
           type: "string",
           description: "Optional. Restrict to one neighbourhood (exact name).",
+        },
+        filterCity: {
+          type: "string",
+          description:
+            "Optional. Restrict the year-over-year comparison to one city/" +
+            "municipality (exact name).",
         },
         filterStyle: {
           type: "string",
@@ -624,6 +648,7 @@ export interface ComputeCutArgs {
   dimension: string;
   filterPropertyClass?: string;
   filterNeighbourhood?: string;
+  filterCity?: string;
   filterStyle?: string;
   filterPriceBracket?: string;
   monthYear?: string;
@@ -639,6 +664,7 @@ export interface ComputeCutToolResult {
 
 const COMPUTE_CUT_DIMENSIONS: CutDimension[] = [
   "neighbourhood",
+  "city",
   "style",
   "propertyClass",
   "yearBuiltDecade",
@@ -669,6 +695,7 @@ export async function executeComputeCut(
   };
   pushFilter("propertyClass", args.filterPropertyClass);
   pushFilter("neighbourhood", args.filterNeighbourhood);
+  pushFilter("city", args.filterCity);
   pushFilter("style", args.filterStyle);
   pushFilter("priceBracket", args.filterPriceBracket);
 
@@ -695,6 +722,7 @@ export interface ComputeYoYCutArgs {
   dimension: string;
   filterPropertyClass?: string;
   filterNeighbourhood?: string;
+  filterCity?: string;
   filterStyle?: string;
   filterPriceBracket?: string;
   monthYear?: string;
@@ -740,6 +768,7 @@ export async function executeComputeYoYCut(
   };
   pushFilter("propertyClass", args.filterPropertyClass);
   pushFilter("neighbourhood", args.filterNeighbourhood);
+  pushFilter("city", args.filterCity);
   pushFilter("style", args.filterStyle);
   pushFilter("priceBracket", args.filterPriceBracket);
 
