@@ -564,13 +564,21 @@ function monthYearLabel(monthYear: string): string {
   });
 }
 
-/** Raw-column header candidates (normalized) for the two unmapped dimensions. */
+/** Raw-column header candidates (normalized) for the unmapped dimensions. */
 const PROPERTY_CLASS_HEADER_CANDIDATES = ["propertytype", "propertyclass"];
 const PRICE_BRACKET_HEADER_CANDIDATES = [
   "pricebracket",
   "pricerange",
   "priceband",
 ];
+/**
+ * City is optional in the column mapper and many members never mapped it even
+ * though their export carries a literal City/Municipality column. So — exactly
+ * like propertyClass/priceBracket above — we self-resolve it from well-known
+ * raw header names when it isn't explicitly mapped. (Normalized to match
+ * `headerLookup` keys.)
+ */
+const CITY_HEADER_CANDIDATES = ["city", "municipality"];
 
 export type RunCutClassification =
   | "computed"
@@ -676,6 +684,25 @@ function mappedHeaderResolves(
   );
 }
 
+/**
+ * Resolve the ACTUAL CSV header (original case) that supplies the city: prefer
+ * the member's explicit `city` mapping, and fall back to well-known city header
+ * names when it was never mapped. Returns null only when the upload genuinely
+ * has no city/municipality column — that's the honest "unavailable" case.
+ */
+function resolveCityHeader(
+  mappedHeader: string | undefined,
+  headerLookup: Map<string, string>,
+): string | null {
+  if (mappedHeader) {
+    const actual =
+      headerLookup.get(normalizeHeader(mappedHeader)) ??
+      ([...headerLookup.values()].includes(mappedHeader) ? mappedHeader : null);
+    if (actual) return actual;
+  }
+  return resolveRawHeader(headerLookup, CITY_HEADER_CANDIDATES);
+}
+
 function dimensionLabel(dim: CutDimension): string {
   switch (dim) {
     case "neighbourhood":
@@ -740,7 +767,7 @@ function scopeSignature(
 /** dimension/filter column availability against the resolved CSV headers. */
 interface ResolvedColumns {
   neighbourhood: boolean;
-  city: boolean;
+  cityHeader: string | null;
   style: boolean;
   yearBuilt: boolean;
   propertyClassHeader: string | null;
@@ -752,7 +779,7 @@ function dimensionAvailable(dim: CutDimension, cols: ResolvedColumns): boolean {
     case "neighbourhood":
       return cols.neighbourhood;
     case "city":
-      return cols.city;
+      return cols.cityHeader != null;
     case "style":
       return cols.style;
     case "yearBuiltDecade":
@@ -769,7 +796,7 @@ function filterAvailable(field: CutFilterField, cols: ResolvedColumns): boolean 
     case "neighbourhood":
       return cols.neighbourhood;
     case "city":
-      return cols.city;
+      return cols.cityHeader != null;
     case "style":
       return cols.style;
     case "propertyClass":
@@ -862,9 +889,10 @@ export async function runComputeCut(
     headerLookup,
     PRICE_BRACKET_HEADER_CANDIDATES,
   );
+  const cityHeader = resolveCityHeader(mapping.city, headerLookup);
   const cols: ResolvedColumns = {
     neighbourhood: mappedHeaderResolves(mapping.neighbourhood, headerLookup),
-    city: mappedHeaderResolves(mapping.city, headerLookup),
+    cityHeader,
     style: mappedHeaderResolves(mapping.propertyType, headerLookup),
     yearBuilt: mappedHeaderResolves(mapping.yearBuilt, headerLookup),
     propertyClassHeader,
@@ -900,7 +928,7 @@ export async function runComputeCut(
     const neighbourhood =
       emptyToNull(readMappedCell(raw, headerLookup, mapping.neighbourhood)) ??
       "Unknown";
-    const city = emptyToNull(readMappedCell(raw, headerLookup, mapping.city));
+    const city = cityHeader ? emptyToNull(raw[cityHeader] ?? null) : null;
     const style = normalizePropertyType(
       readMappedCell(raw, headerLookup, mapping.propertyType),
     ).type;

@@ -858,6 +858,123 @@ test("runYoYCut: dimension=city composes a real per-city delta across two period
   assert.match(planoMed!.deltaPctString, /^\+/);
 });
 
+// Mapping WITHOUT a `city` key — exactly Phil's real situation: his export has
+// a literal City column but his saved column mapping never mapped it. City must
+// still self-resolve from the raw header so the dimension is genuinely available.
+const NO_CITY_MAPPING: ColumnMapping = {
+  neighbourhood: "Community",
+  status: "Status",
+  salePrice: "Sale Price",
+  listPrice: "List Price",
+};
+
+test("runComputeCut: city resolves from the raw header even when NOT in the saved mapping (Phil's path)", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "Downtown", 500000, 20) +
+          soldCityRows("Frisco", "Uptown", 800000, 20),
+      ),
+    },
+    NO_CITY_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "city", filters: [] } },
+    deps,
+  );
+  // The mapping has no city key, but the CSV has a "City" column → available.
+  assert.equal(res.classification, "computed");
+  const hoods = new Set(res.facts.map((f) => f.neighbourhood));
+  // city dimension → facts are city-scoped (factNeighbourhood = "All Neighbourhoods"),
+  // but the per-city metricName/label carry the city; assert both cities produced facts.
+  assert.ok(res.facts.length > 0, "expected city-dimension facts");
+  const labels = res.facts.map((f) => `${f.neighbourhood} ${f.label}`).join(" | ");
+  assert.match(labels, /Plano/i);
+  assert.match(labels, /Frisco/i);
+  void hoods;
+});
+
+test("runComputeCut: unmapped-but-present city disambiguates neighbourhood across cities (Phil's path)", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "Downtown", 500000, 20) +
+          soldCityRows("Frisco", "Downtown", 800000, 20),
+      ),
+    },
+    NO_CITY_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  const hoods = new Set(res.facts.map((f) => f.neighbourhood));
+  assert.ok(hoods.has("Downtown (Plano)"), "expected a Plano-scoped Downtown");
+  assert.ok(hoods.has("Downtown (Frisco)"), "expected a Frisco-scoped Downtown");
+  assert.ok(!hoods.has("Downtown"), "the bare merged Downtown must not appear");
+});
+
+test("runComputeCut: explicit city mapping wins over the alias header", async () => {
+  // CSV has BOTH a "Region" column (member's true city) and a "City" column
+  // (a decoy that the alias would otherwise grab). The explicit mapping
+  // city→"Region" must take precedence over the "city" alias fallback.
+  const csv =
+    "Region,City,Community,Status,Sale Price,List Price\n" +
+    Array.from({ length: 20 }, () => `North,Decoy,A,Sold,500000,500000`).join("\n") +
+    "\n" +
+    Array.from({ length: 20 }, () => `South,Decoy,B,Sold,800000,800000`).join("\n") +
+    "\n";
+  const { deps } = stubMultiMonth(
+    { "2026-05": csv },
+    {
+      neighbourhood: "Community",
+      city: "Region",
+      status: "Status",
+      salePrice: "Sale Price",
+      listPrice: "List Price",
+    },
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "city", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  const labels = res.facts.map((f) => f.label).join(" | ");
+  assert.match(labels, /North/);
+  assert.match(labels, /South/);
+  assert.doesNotMatch(labels, /Decoy/, "must group by the mapped Region, not the City decoy");
+});
+
+test("runComputeCut: 'municipality' header also self-resolves as city", async () => {
+  const muniCsv =
+    "Municipality,Community,Status,Sale Price,List Price\n" +
+    Array.from({ length: 20 }, () => `Plano,A,Sold,500000,500000`).join("\n") +
+    "\n" +
+    Array.from({ length: 20 }, () => `Frisco,B,Sold,800000,800000`).join("\n") +
+    "\n";
+  const { deps } = stubMultiMonth({ "2026-05": muniCsv }, NO_CITY_MAPPING);
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "city", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+});
+
+test("runComputeCut: genuinely no city/municipality column → still honest unavailable", async () => {
+  // No City and no Municipality header anywhere → the dimension must refuse.
+  const { deps, logged } = stubMultiMonth(
+    { "2026-05": soldNbhdCsv("All", 20) },
+    NBHD_MAPPING,
+  );
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "city", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "unavailable");
+  assert.deepEqual(logged, ["unavailable"]);
+});
+
 test("runComputeCut: filterCity scopes a neighbourhood cut to one city end-to-end", async () => {
   const { deps } = stubMultiMonth(
     {
