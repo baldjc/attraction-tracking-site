@@ -256,8 +256,8 @@ html.dark textarea {
    ============================================================ */
 
 :root {
-  --ai-thinking-azure: #6ba3c7;
-  --ai-thinking-azure-soft: rgba(107, 163, 199, 0.18);
+  --ai-thinking-azure: var(--abv-azure);
+  --ai-thinking-azure-soft: rgba(61, 195, 255, 0.18);
   --ai-thinking-emerald: #10b981;
   /* Surface colors for Mode B / Mode C cards. Aligned to --abv-ink (#1A1A1A)
      so the dark thinking surface matches the sidebar and Content Editor hero
@@ -270,8 +270,8 @@ html.dark textarea {
   --ai-thinking-ink-text: #e2e8f0;
   --ai-thinking-ink-muted: rgba(226, 232, 240, 0.55);
   --ai-thinking-warm: #faf7f2;
-  --ai-thinking-warm-border: rgba(30, 42, 56, 0.08);
-  --ai-thinking-warm-text: #1e2a38;
+  --ai-thinking-warm-border: rgba(26, 26, 26, 0.08);
+  --ai-thinking-warm-text: var(--abv-ink);
 }
 
 /* ── Mode A — Quick (warm cream card, 3-dot pulse) ─────────── */
