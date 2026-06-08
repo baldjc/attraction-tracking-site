@@ -33,6 +33,7 @@ import {
   buildScript,
   buildPropertyTypeLock,
   type CitedFact,
+  type CitedResearch,
   type PlanContext,
   type BuildScriptResult,
   type AssignedCampaign,
@@ -43,6 +44,7 @@ import {
   PUBLISHED_PLAN_STATUSES,
 } from "@/lib/binge-target";
 import type { LedgerFact } from "@/lib/jarvis/types";
+import { coerceExtractedClaims } from "@/lib/jarvis/research-ingest";
 import { formatMlsPeriod } from "@/lib/mls-verify-reminder";
 
 // ── Tool schemas (Anthropic tool-use) ───────────────────────────────────────
@@ -126,6 +128,17 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
             "next video. Omit ONLY if the member has no recent videos or declined " +
             "one (the close is then a generic forward-looking line). NEVER invent " +
             "an id.",
+        },
+        researchSourceIds: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional. The ids of EXTERNAL research sources (from the RESEARCH " +
+            "SOURCES context block — items the member attached in chat) to ground " +
+            "this script on as the outside lens. The member's own validated facts " +
+            "still LEAD; research is referenced only as clearly-attributed outside " +
+            "sources. Include ONLY when the member is building a research-driven " +
+            "script. NEVER invent an id.",
         },
       },
       required: ["title", "rotationSlot", "titlePromise", "linkedFactIds"],
@@ -560,6 +573,13 @@ export type RunBuildScriptResult =
       rotationSlot: RotationSlotKey;
       linkedFactIds: string[];
       /**
+       * Research Reader — the EXTERNAL research source ids actually resolved
+       * (ownership-filtered) and grounded into this draft. Carried onto the
+       * proposal so Approve & save persists them onto the ContentPlan. Empty
+       * on every non-research path.
+       */
+      researchSourceIds: string[];
+      /**
        * Whether a usable binge/next-video target was wired into this draft (the
        * member confirmed an existing, non-idea-stage video). The orchestrator
        * uses this to decide whether to nudge Jarvis to point viewers at a recent
@@ -593,6 +613,12 @@ export type RunBuildScriptResult =
 export async function runBuildScript(args: {
   userId: string;
   ideaCard: BuildScriptArgs;
+  /**
+   * Research Reader — EXTERNAL research source ids the member attached and
+   * chose to ground this draft on. Ownership-filtered here; unknown/foreign ids
+   * are silently dropped. Empty/omitted on every non-research path.
+   */
+  researchSourceIds?: string[];
   onToken: (text: string) => void;
   signal?: AbortSignal;
 }): Promise<RunBuildScriptResult> {
@@ -659,6 +685,52 @@ export async function runBuildScript(args: {
     trajectory: f.trajectory,
     caveat: f.viewerCaveat,
   }));
+
+  // ── Research Reader — load the member's attached EXTERNAL sources ────────
+  // Ownership-filtered; unknown/foreign ids are silently dropped. Ordered to
+  // match the requested ids. Empty on every non-research path (the array is
+  // absent/empty), so this is a no-op for the market-update flow.
+  const requestedResearchIds = Array.from(
+    new Set(
+      (args.researchSourceIds ?? []).filter((s) => typeof s === "string"),
+    ),
+  );
+  let citedResearch: CitedResearch[] = [];
+  let resolvedResearchSourceIds: string[] = [];
+  if (requestedResearchIds.length > 0) {
+    const researchRows = await prisma.researchSource.findMany({
+      where: { id: { in: requestedResearchIds }, userId },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        sourceRef: true,
+        extractedClaims: true,
+      },
+    });
+    const researchOrder = new Map(requestedResearchIds.map((id, i) => [id, i]));
+    researchRows.sort(
+      (a, b) =>
+        (researchOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (researchOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+    );
+    const allowedTypes = new Set(["pdf", "text", "url", "image"]);
+    citedResearch = researchRows.map((r) => {
+      const claims = coerceExtractedClaims(r.extractedClaims);
+      const type = allowedTypes.has(r.type)
+        ? (r.type as CitedResearch["type"])
+        : "text";
+      return {
+        title: r.title,
+        sourceRef: r.sourceRef,
+        type,
+        thesis: claims.thesis,
+        claims: claims.claims,
+        stats: claims.stats,
+      };
+    });
+    resolvedResearchSourceIds = researchRows.map((r) => r.id);
+  }
 
   const marketConfig = await loadMarketConfigSummary(userId);
   if (!marketConfig) {
@@ -917,6 +989,7 @@ export async function runBuildScript(args: {
   const result = await buildScript({
     planContext,
     citedFacts,
+    citedResearch,
     marketConfig,
     neighbourhoodContext,
     sourceOfTruthMetrics,
@@ -939,6 +1012,7 @@ export async function runBuildScript(args: {
     title: ideaCard.title,
     rotationSlot,
     linkedFactIds: factRows.map((f) => f.id),
+    researchSourceIds: resolvedResearchSourceIds,
     bingeTargetConfigured,
     campaignId: resolvedCampaignId,
     bingeVideoId: resolvedBingeVideoId,

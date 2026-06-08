@@ -20,6 +20,15 @@ HOW YOU WORK
   - clean_knowledge_base: propose a cleanup that collapses fragmented neighbourhood/subdivision names (e.g. dozens of "Woodbridge Ph 5B" / "Woodbridge 1" variants → one "Woodbridge") so more areas clear the sample floor. This runs a DRY-RUN only — it changes nothing.
   - apply_merge: do NOT call this yourself. Applying a cleanup is the member's decision (see KNOWLEDGE BASE CLEANUP).
 
+RESEARCH READER (when the member attaches research)
+- When the member attaches research (articles, reports, charts), it appears in your context as RESEARCH SOURCES, each with an id, title, thesis, key claims, and key stats. This material is EXTERNAL / third-party — it is NEVER the member's own market data, and a research number is NEVER one of their facts.
+- First, briefly tell the member WHAT YOU READ (one line per source: title + the thesis in your words). If any item failed to read, the system already told the member; acknowledge it plainly and don't pretend you read it.
+- Then CROSS-REFERENCE: call get_facts to pull the member's validated local numbers, and produce 1–3 short "story leads". Each lead pairs the external finding with the member's local data and names an angle, citing BOTH sides:
+    "[Research title] says X (external); your [neighbourhood] data shows Y (fact id) — angle: …".
+  If the member's local data has no honest tie to a research finding, SAY SO ("no clean local angle on that one") — never invent a local number to match the research.
+- Keep the two worlds separate at all times: research = "a recent national report found…"; member data = the channel's own numbers cited by fact id. Never blend a research statistic into a sentence that frames it as the member's market.
+- When the member picks a lead to script, propose the lead magnet + watch-this-next as usual, then call build_script with the linked fact ids AND the chosen researchSourceIds. The script grounds on BOTH: every market number cites a fact id; every research claim is framed as external and listed under the script's Research sources — and NO research number is ever spoken as the member's own market figure.
+
 GROUNDING (hard rule)
 - The ONLY numbers you may state are values returned by get_facts in this conversation. Never invent or estimate a statistic, price, percentage, or ratio.
 - If you don't have a fact, say so and offer to look it up — never fabricate one.
@@ -78,14 +87,32 @@ export interface JarvisRecentVideoOption {
   theme: string | null;
 }
 
+/**
+ * An external research source the member attached in this thread. EXTERNAL /
+ * third-party — never the member's own market data. Surfaced so Jarvis can read
+ * it, cross-reference the member's facts, and (with its id) ground a script on
+ * it as a clearly-external citation.
+ */
+export interface JarvisResearchSource {
+  id: string;
+  title: string;
+  type: string;
+  sourceRef: string;
+  thesis: string;
+  claims: string[];
+  stats: string[];
+}
+
 export function buildJarvisDynamicContext(args: {
   memberFullName: string | null;
   marketConfig: MarketConfigSummary | null;
   ledger: LedgerFact[];
   campaigns?: JarvisCampaignOption[];
   recentVideos?: JarvisRecentVideoOption[];
+  researchSources?: JarvisResearchSource[];
 }): string {
-  const { memberFullName, marketConfig, ledger, campaigns, recentVideos } = args;
+  const { memberFullName, marketConfig, ledger, campaigns, recentVideos, researchSources } =
+    args;
   const lines: string[] = ["MEMBER & MARKET CONTEXT"];
   lines.push(`- Member: ${memberFullName ?? "(name not set)"}`);
   if (marketConfig) {
@@ -128,6 +155,19 @@ export function buildJarvisDynamicContext(args: {
     lines.push(
       "RECENT VIDEOS: none yet. Draft without a bingeVideoId (generic forward-looking close).",
     );
+  }
+
+  if (researchSources && researchSources.length > 0) {
+    lines.push("");
+    lines.push(
+      "RESEARCH SOURCES (EXTERNAL — attached by the member this thread; NEVER the member's own market data. Pass the chosen ids as build_script researchSourceIds):",
+    );
+    for (const r of researchSources.slice(0, 5)) {
+      lines.push(`- [${r.id}] ${r.title} (${r.type}: ${r.sourceRef})`);
+      if (r.thesis) lines.push(`    thesis: ${r.thesis}`);
+      for (const c of r.claims.slice(0, 8)) lines.push(`    claim: ${c}`);
+      for (const s of r.stats.slice(0, 12)) lines.push(`    stat (EXTERNAL): ${s}`);
+    }
   }
 
   lines.push("");

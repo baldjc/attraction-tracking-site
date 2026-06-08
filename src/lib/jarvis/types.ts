@@ -85,6 +85,12 @@ export interface ProposalState {
    * (the SavedScript draft is still created — routing is best-effort).
    */
   contentPlanId?: string;
+  /**
+   * External ResearchSource ids this draft was grounded against (Research
+   * Reader). Persisted onto the saved script + ContentPlan so the two-source
+   * provenance survives approval. Absent → a normal market-only draft.
+   */
+  researchSourceIds?: string[];
 }
 
 // ── Persisted ContentManagerMessage.content shapes ──────────────────────────

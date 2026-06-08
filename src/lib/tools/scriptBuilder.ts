@@ -61,6 +61,25 @@ export interface CitedFact {
   caveat: string | null;
 }
 
+/**
+ * Research Reader — an EXTERNAL source the member attached in Jarvis chat
+ * (article, report, chart image, pasted text). These are NEVER the member's
+ * own market data: their thesis/claims/stats may be referenced in the script
+ * ONLY as clearly-attributed outside research, and a research number must
+ * never be spoken as one of the member's own market figures. They are kept
+ * strictly separate from `CitedFact` (the member's validated MLS facts) so the
+ * grounding validator can tell the two apart.
+ */
+export interface CitedResearch {
+  title: string;
+  /** Human-readable source reference (URL, filename, or "Pasted text"). */
+  sourceRef: string;
+  type: "pdf" | "text" | "url" | "image";
+  thesis: string;
+  claims: string[];
+  stats: string[];
+}
+
 export interface PlanContext {
   id: string;
   title: string;
@@ -216,6 +235,7 @@ export function buildPropertyTypeLock(
 function buildInitialUserMessage(args: {
   plan: PlanContext;
   facts: CitedFact[];
+  citedResearch?: CitedResearch[];
   marketConfig: MarketConfigSummary;
   neighbourhoodContext: Record<string, string>;
   sourceOfTruthMetrics: SourceOfTruthMetric[];
@@ -239,6 +259,8 @@ function buildInitialUserMessage(args: {
     assignedBingeVideo,
     regenerationBrief,
   } = args;
+  const citedResearch = args.citedResearch ?? [];
+  const hasResearch = citedResearch.length > 0;
   const lines: string[] = [];
   // LEAN GROUNDED MODE — when no neighbourhood profile prose is loaded, the
   // 2,200-word floor (which assumes a profile to expand from) does not apply;
@@ -395,6 +417,45 @@ function buildInitialUserMessage(args: {
   lines.push(JSON.stringify(facts, null, 2));
   lines.push("```");
   lines.push("");
+
+  // ── CITED RESEARCH (EXTERNAL) — Research Reader ──────────────────────────
+  // External sources the member attached in chat (article, report, chart,
+  // pasted text). These are NOT the member's own market data. They may be
+  // referenced in the body ONLY as clearly-attributed outside research, and a
+  // research number must NEVER be spoken as one of the member's own market
+  // figures (the member's data leads; research is the supporting outside lens).
+  if (hasResearch) {
+    lines.push("## CITED RESEARCH (EXTERNAL — attribute clearly, never as your own market data)");
+    lines.push("");
+    lines.push(
+      "The member attached the following EXTERNAL research. These are outside sources — NOT the member's own MLS data. You MAY reference their thesis, claims, and figures to frame or contextualise the local story, but you MUST attribute every one to the named source in-dialogue (e.g. \"a recent [source] report found…\", \"according to [source]…\"). Rules:",
+    );
+    lines.push("");
+    lines.push(
+      "- **The member's local data LEADS.** Research is the supporting outside lens, never the headline. Open and anchor on the member's own validated facts; bring research in to contrast or contextualise.",
+    );
+    lines.push(
+      "- **NEVER speak a research number as the member's own market figure.** A figure from research must always carry its external attribution (\"the national report shows X\"), never \"our market\"/\"we pulled\"/\"this market\"/\"locally\". Doing so is a hard server-side failure.",
+    );
+    lines.push(
+      "- **Do not invent or round research figures.** Use them exactly as stated below, with attribution, or omit them.",
+    );
+    lines.push("");
+    for (const r of citedResearch) {
+      lines.push(`### ${r.title} (${r.type})`);
+      lines.push(`- **Source reference:** ${r.sourceRef}`);
+      if (r.thesis) lines.push(`- **Thesis:** ${r.thesis}`);
+      if (r.claims.length) {
+        lines.push("- **Key claims:**");
+        for (const c of r.claims) lines.push(`  - ${c}`);
+      }
+      if (r.stats.length) {
+        lines.push("- **Key figures (external — attribute to this source):**");
+        for (const s of r.stats) lines.push(`  - ${s}`);
+      }
+      lines.push("");
+    }
+  }
 
   // ── SOURCE-OF-TRUTH METRICS (Wave 1, deterministic) ──────────────────
   // These rows were computed directly from the member's CSV BEFORE the
@@ -747,6 +808,12 @@ function buildInitialUserMessage(args: {
       "Cite every fact from the JSON above by weaving the metric value into dialogue at least once. Title-body contract: the first ~30 seconds (~150 words) must pay off the **Title promise** verbatim or near-verbatim.",
   );
   lines.push("");
+  if (hasResearch) {
+    lines.push(
+      "Because this script draws on EXTERNAL research as well as the member's own data, the closing `## Sources` footnote MUST be split into TWO labelled sub-sections, in this order: `### Market data` — every market number you spoke, mapped to the member's fact id (exactly as you would normally list `## Sources`); and `### Research` — each external source you referenced, by its title and source reference from the CITED RESEARCH block above. Keep the two sets strictly separate: a research figure belongs ONLY under `### Research` with its source, NEVER under `### Market data`, and a member market number belongs ONLY under `### Market data`.",
+    );
+    lines.push("");
+  }
   lines.push(
     "Begin with the title line as `# Title: <title>` so the parser knows where the body starts.",
   );
@@ -1271,6 +1338,16 @@ export interface BuildScriptCallbacks {
 export interface BuildScriptParams {
   planContext: PlanContext;
   citedFacts: CitedFact[];
+  /**
+   * Research Reader — EXTERNAL sources the member attached in chat. Optional;
+   * absent/empty on every non-research path (the market-update flow is
+   * unchanged). When present, the writer may cite their thesis/claims/stats as
+   * clearly-attributed outside research, and the grounding validator treats
+   * their numbers as legal anchors so a research figure doesn't read as
+   * fabricated — but a research number spoken as the member's OWN market figure
+   * is a hard fail (see `research_stat_as_member`).
+   */
+  citedResearch?: CitedResearch[];
   marketConfig: MarketConfigSummary;
   neighbourhoodContext: Record<string, string>;
   sourceOfTruthMetrics: SourceOfTruthMetric[];
@@ -1367,6 +1444,7 @@ export async function buildScript(
     bingeTargetConfigured,
     bingeTargetTitle,
   } = params;
+  const citedResearch = params.citedResearch ?? [];
 
   const signal = params.signal;
   const llm = params.llm ?? createAnthropicStreamer();
@@ -1393,7 +1471,20 @@ export async function buildScript(
   const isAborted = () => signal?.aborted ?? false;
 
   const anchors = citedFactAnchors(citedFacts);
-  const profileText = profileAnchors(neighbourhoodContext, marketConfig);
+  // Research Reader — the EXTERNAL sources' stat strings. Folded into the
+  // grounding-anchor prose (profileText) so a legitimately-cited research number
+  // doesn't read as a fabrication, but kept OUT of `anchors`/`citedFacts` (the
+  // member-attributable set) so a research figure can NEVER pass the
+  // member-market gates. The dedicated `research_stat_as_member` validator then
+  // catches a research number spoken AS the member's own market figure.
+  const researchStats = citedResearch.flatMap((r) => r.stats);
+  const profileText = [
+    ...profileAnchors(neighbourhoodContext, marketConfig),
+    // Research thesis/claims/stats are legal anchor PROSE (so the qualitative
+    // and stat grounding rules accept a cited-external number/claim) but are
+    // never member-market anchors.
+    ...citedResearch.flatMap((r) => [r.thesis, ...r.claims, ...r.stats]),
+  ];
   const credentialsText = credentialsAnchorText(marketConfig);
   // Whether a KB neighbourhood profile is loaded for this script. Drives both
   // the lean word floor (validator) and the LEAN GROUNDED MODE steering so a
@@ -1502,6 +1593,7 @@ export async function buildScript(
         ? buildInitialUserMessage({
             plan: planContext,
             facts: citedFacts,
+            citedResearch,
             marketConfig,
             memberFullName,
             neighbourhoodContext,
@@ -1656,6 +1748,7 @@ export async function buildScript(
       sourceOfTruth: sourceOfTruthMetrics,
       citedFacts: anchors,
       profileText,
+      researchStats,
       credentialsText,
       bingeTargetConfigured,
       bingeTargetTitle: bingeTargetTitle ?? undefined,

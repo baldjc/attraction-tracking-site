@@ -23,6 +23,7 @@ import { loadMarketConfigSummary } from "@/lib/content-engine-context";
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { runJarvisTurn, type JarvisHistoryTurn } from "@/lib/jarvis/orchestrator";
+import { coerceExtractedClaims } from "@/lib/jarvis/research-ingest";
 import {
   JARVIS_TOOL_TYPE,
   type FactsToolContent,
@@ -126,22 +127,38 @@ export async function POST(req: NextRequest) {
   // before drafting (the member confirms or swaps). Both ownership-scoped, the
   // same queries that back the planner's lead-magnet linker (/api/campaigns)
   // and binge selector (/api/member/content-plans/list-for-binge-selector).
-  const [memberRecord, marketConfig, campaignRows, recentVideoRows] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } }),
-    loadMarketConfigSummary(userId),
-    prisma.campaign.findMany({
-      where: { userId, deletedAt: null, name: { not: "__test_installation__" } },
-      orderBy: { createdAt: "desc" },
-      take: 30,
-      select: { id: true, name: true, pitchOneLiner: true, audience: true },
-    }),
-    prisma.contentPlan.findMany({
-      where: { userId, deletedAt: null },
-      orderBy: { updatedAt: "desc" },
-      take: 8,
-      select: { id: true, title: true, status: true, theme: true },
-    }),
-  ]);
+  const [memberRecord, marketConfig, campaignRows, recentVideoRows, researchRows] =
+    await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } }),
+      loadMarketConfigSummary(userId),
+      prisma.campaign.findMany({
+        where: { userId, deletedAt: null, name: { not: "__test_installation__" } },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+        select: { id: true, name: true, pitchOneLiner: true, audience: true },
+      }),
+      prisma.contentPlan.findMany({
+        where: { userId, deletedAt: null },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: { id: true, title: true, status: true, theme: true },
+      }),
+      // Research Reader — the EXTERNAL sources the member attached in THIS thread
+      // (ownership + thread scoped). Surfaced to Jarvis as the outside lens; the
+      // member's own validated facts still lead. Empty on non-research threads.
+      prisma.researchSource.findMany({
+        where: { userId, threadId },
+        orderBy: { createdAt: "asc" },
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          sourceRef: true,
+          extractedClaims: true,
+        },
+      }),
+    ]);
   const memberFullName = memberRecord?.fullName?.trim() || null;
   const campaigns = campaignRows.map((c) => ({
     id: c.id,
@@ -155,6 +172,18 @@ export async function POST(req: NextRequest) {
     status: v.status,
     theme: v.theme ?? null,
   }));
+  const researchSources = researchRows.map((r) => {
+    const claims = coerceExtractedClaims(r.extractedClaims);
+    return {
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      sourceRef: r.sourceRef,
+      thesis: claims.thesis,
+      claims: claims.claims,
+      stats: claims.stats,
+    };
+  });
 
   // ── Open the SSE stream ───────────────────────────────────────────────────
   const encoder = new TextEncoder();
@@ -206,6 +235,7 @@ export async function POST(req: NextRequest) {
           marketConfig,
           campaigns,
           recentVideos,
+          researchSources,
           emit,
           signal: internalAbort.signal,
           usage,

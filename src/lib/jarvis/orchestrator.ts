@@ -16,6 +16,7 @@ import {
   buildJarvisDynamicContext,
   type JarvisCampaignOption,
   type JarvisRecentVideoOption,
+  type JarvisResearchSource,
 } from "@/lib/jarvis/system-prompt";
 import { saveConfirmedScript } from "@/lib/jarvis/save";
 import { applyConfirmedMerge } from "@/lib/jarvis/merge";
@@ -65,6 +66,9 @@ export async function runJarvisTurn(args: {
    *  before drafting (the member confirms/swaps). Loaded by the route. */
   campaigns?: JarvisCampaignOption[];
   recentVideos?: JarvisRecentVideoOption[];
+  /** External research the member attached to this thread (Research Reader).
+   *  Surfaced to Jarvis as EXTERNAL context — never the member's own facts. */
+  researchSources?: JarvisResearchSource[];
   emit: JarvisEmit;
   signal?: AbortSignal;
   /** Mutated in place as tokens accrue, so the caller can bill usage even if
@@ -80,6 +84,7 @@ export async function runJarvisTurn(args: {
     marketConfig,
     campaigns,
     recentVideos,
+    researchSources,
     emit,
     signal,
     usage,
@@ -124,6 +129,7 @@ export async function runJarvisTurn(args: {
           ledger: ledger(),
           campaigns,
           recentVideos,
+          researchSources,
         }),
       },
       { role: "assistant", content: "Understood — I'll use only these facts and my tools." },
@@ -193,7 +199,20 @@ export async function runJarvisTurn(args: {
   const proposalSourceText = builtProposal
     ? extractSourcesFootnote(builtProposal.script)
     : "";
-  const groundedText = groundAssistantText(assistantText, ledger(), proposalSourceText);
+  // Research stats are EXTERNAL but legitimately quotable in cross-reference
+  // prose ("a national report found X; your data shows Y"). Whitelist them as
+  // extra allowed text alongside the script's cited footnote so the grounding
+  // pass doesn't redact the very external numbers Jarvis is contrasting. They
+  // never enter the fact ledger, so they can't be cited as member facts.
+  const researchAllowedText = (researchSources ?? [])
+    .flatMap((r) => [r.thesis, ...r.claims, ...r.stats])
+    .filter(Boolean)
+    .join("\n");
+  const groundedText = groundAssistantText(
+    assistantText,
+    ledger(),
+    [proposalSourceText, researchAllowedText].filter(Boolean).join("\n"),
+  );
   return {
     assistantText: groundedText,
     proposal,
@@ -277,6 +296,9 @@ async function runTool(ctx: {
           campaignId: typeof input.campaignId === "string" ? input.campaignId : undefined,
           bingeVideoId: typeof input.bingeVideoId === "string" ? input.bingeVideoId : undefined,
         },
+        researchSourceIds: Array.isArray(input.researchSourceIds)
+          ? (input.researchSourceIds as unknown[]).filter((x): x is string => typeof x === "string")
+          : [],
         onToken: (text) => emit("script_token", { text }),
         signal,
       });
@@ -307,6 +329,7 @@ async function runTool(ctx: {
         campaignId: built.campaignId,
         bingeVideoId: built.bingeVideoId,
         dataPeriod: built.dataPeriod,
+        researchSourceIds: built.researchSourceIds,
       };
       onProposal(proposalState);
       record("ok", `Drafted "${built.title}".`);

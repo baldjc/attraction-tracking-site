@@ -226,6 +226,7 @@ model User {
 
   // Jarvis (AI Content Manager) — additive relation only
   contentManagerThreads ContentManagerThread[]
+  researchSources       ResearchSource[]
 
   // Team access (delegated account access)
   teamMembershipsOwned   TeamMember[]      @relation("TeamMemberPrimary")
@@ -527,6 +528,27 @@ model SavedScript {
 
   @@index([userId])
   @@map("saved_scripts")
+}
+
+/// Research Reader (Jarvis). One ingested research item a member attached in
+/// chat. `type` is "pdf" | "text" | "url" | "image"; `sourceRef` is the source
+/// url or original filename; `extractedClaims` holds the Claude-extracted
+/// { thesis, claims[], stats[] } payload. Used as an EXTERNAL cited source in
+/// grounded scripts — never as the member's own market data.
+model ResearchSource {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId        String?
+  title           String
+  type            String
+  sourceRef       String
+  extractedClaims Json
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([threadId])
+  @@map("research_sources")
 }
 
 model SavedTitle {
@@ -1015,6 +1037,12 @@ model ContentPlan {
   shootType         ShootType?
   rotationSlot      RotationSlot?
   linkedFactIds     Json?
+  // Research Reader — ids of the EXTERNAL research sources (ResearchSource)
+  // this plan's script was grounded against (the "outside lens"). Mirrors
+  // linkedFactIds (member's own data) so the plan's assigned assets stay in
+  // sync with the two-section "## Sources" footnote baked into the script.
+  // Null/absent on every non-research plan.
+  linkedResearchSourceIds Json?
   linkedStoryLeadId String?
   homeAddress       String?
   homePriceTier     String?

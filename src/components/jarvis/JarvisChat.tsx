@@ -100,6 +100,13 @@ interface ToolRow {
   summary: string;
 }
 
+/** A research item attached this thread, shown as a read/failed status chip. */
+interface ResearchChip {
+  id: string;
+  label: string;
+  status: "read" | "failed";
+}
+
 const SUGGESTIONS = [
   "What's happening in my market right now?",
   "Draft a market-update video from my latest numbers",
@@ -130,9 +137,68 @@ export default function JarvisChat({
   const [busy, setBusy] = useState(false);
   const [liveTools, setLiveTools] = useState<ToolRow[]>([]);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  // Research Reader — attached EXTERNAL sources for this thread, shown as
+  // read/failed status chips. A failed item is always reported, never dropped.
+  const [researchChips, setResearchChips] = useState<ResearchChip[]>([]);
+  const [researchBusy, setResearchBusy] = useState(false);
+  const [showResearchPanel, setShowResearchPanel] = useState(false);
+  const [researchText, setResearchText] = useState("");
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const ingestResearch = useCallback(
+    async (build: (fd: FormData) => boolean) => {
+      if (researchBusy || busy) return;
+      const fd = new FormData();
+      if (threadId) fd.append("threadId", threadId);
+      if (!build(fd)) return;
+      setResearchBusy(true);
+      try {
+        const resp = await fetch("/api/jarvis/research", {
+          method: "POST",
+          body: fd,
+        });
+        const data = (await resp.json().catch(() => null)) as {
+          threadId?: string;
+          sources?: Array<{ id: string; title: string }>;
+          failures?: Array<{ sourceRef: string; reason: string }>;
+          message?: string;
+          error?: string;
+        } | null;
+        if (!resp.ok || !data) {
+          toast.error(data?.message ?? "Couldn't read that research. Try again.");
+          return;
+        }
+        if (typeof data.threadId === "string") setThreadId(data.threadId);
+        const next: ResearchChip[] = [];
+        for (const s of data.sources ?? []) {
+          next.push({ id: s.id, label: s.title || "Untitled source", status: "read" });
+        }
+        for (const f of data.failures ?? []) {
+          next.push({
+            id: `fail-${f.sourceRef}-${Date.now()}-${next.length}`,
+            label: `${f.sourceRef} — ${f.reason}`,
+            status: "failed",
+          });
+        }
+        setResearchChips((prev) => [...prev, ...next]);
+        if ((data.sources?.length ?? 0) > 0) {
+          toast.success(
+            `Read ${data.sources!.length} research ${
+              data.sources!.length === 1 ? "source" : "sources"
+            }.`,
+          );
+        }
+      } catch {
+        toast.error("Couldn't read that research. Try again.");
+      } finally {
+        setResearchBusy(false);
+      }
+    },
+    [busy, researchBusy, threadId, toast],
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -406,6 +472,102 @@ export default function JarvisChat({
         }}
         className="border-t border-abv-border px-4 py-4 sm:px-6"
       >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.txt,.md,image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? []);
+            if (files.length > 0) {
+              void ingestResearch((fd) => {
+                for (const f of files.slice(0, 5)) fd.append("files", f);
+                return true;
+              });
+            }
+            e.target.value = "";
+          }}
+        />
+        {researchChips.length > 0 && (
+          <div className="mx-auto mb-2 flex max-w-3xl flex-wrap gap-1.5">
+            {researchChips.map((chip) => (
+              <span
+                key={chip.id}
+                title={chip.label}
+                className={`inline-flex max-w-[18rem] items-center gap-1 truncate rounded-full px-2.5 py-1 text-xs ${
+                  chip.status === "read"
+                    ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                    : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                }`}
+              >
+                <span>{chip.status === "read" ? "✓" : "⚠"}</span>
+                <span className="truncate">{chip.label}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {showResearchPanel && (
+          <div className="mx-auto mb-2 max-w-3xl rounded-xl border border-abv-border bg-abv-surface p-3">
+            <textarea
+              value={researchText}
+              onChange={(e) => setResearchText(e.target.value)}
+              rows={3}
+              placeholder="Paste an article URL, or paste research text to read…"
+              disabled={researchBusy}
+              className="w-full resize-none rounded-lg border border-abv-border bg-abv-bg px-3 py-2 text-sm text-abv-text outline-none focus:border-abv-border-strong disabled:opacity-60"
+            />
+            <div className="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={researchBusy}
+                onClick={() => {
+                  setShowResearchPanel(false);
+                  setResearchText("");
+                }}
+                className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={researchBusy || !researchText.trim()}
+                onClick={() => {
+                  const value = researchText.trim();
+                  if (!value) return;
+                  const isUrl = /^https?:\/\/\S+$/i.test(value);
+                  void ingestResearch((fd) => {
+                    fd.append(isUrl ? "url" : "text", value);
+                    return true;
+                  });
+                  setResearchText("");
+                  setShowResearchPanel(false);
+                }}
+                className="rounded-lg bg-abv-ai-tools px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+              >
+                {researchBusy ? "Reading…" : "Add research"}
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2">
+          <button
+            type="button"
+            disabled={busy || researchBusy}
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+          >
+            {researchBusy ? "Reading…" : "+ Attach file/image"}
+          </button>
+          <button
+            type="button"
+            disabled={busy || researchBusy}
+            onClick={() => setShowResearchPanel((v) => !v)}
+            className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+          >
+            + Add link/text
+          </button>
+        </div>
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea
             value={input}

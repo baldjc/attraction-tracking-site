@@ -90,7 +90,13 @@ export type ScriptViolationRule =
   /** A real market number (any family: failure rate, SP/LP, DOM, PSF, …) is
    *  spoken in the body but is missing from the "## Sources" footnote. Every
    *  spoken number must trace to a fact id in Sources, not just MOI + price. */
-  | "unlisted_market_stat";
+  | "unlisted_market_stat"
+  /** Research Reader — a figure that came from an attached EXTERNAL research
+   *  source is spoken AS one of the member's OWN market numbers (carries a
+   *  member-attribution marker like "our market"/"we pulled"/"locally"/"this
+   *  market") instead of being attributed to the outside source. The member's
+   *  data must lead and research must stay clearly external. */
+  | "research_stat_as_member";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -1478,6 +1484,115 @@ export function checkUnlistedMarketStat(
         `inventory, price, price per square foot, sale-to-list, days on market, ` +
         `failure rate, absorption — must appear in the footnote mapped to its fact ` +
         `id. Add a "## Sources" bullet for this number, or remove it from the script.`,
+      snippet: dialogue
+        .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
+        .trim(),
+    });
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  research_stat_as_member — Research Reader (ERROR).                     */
+/*                                                                        */
+/*  A figure that came from an attached EXTERNAL research source must     */
+/*  always stay clearly external ("a national report found 22%"). It is a */
+/*  hard fail to speak it AS the member's OWN market number — i.e. a       */
+/*  research figure spoken next to a member-attribution marker like "our   */
+/*  market", "we pulled", "this market", "locally". This is the inverse   */
+/*  of no_misattributed_stats (which catches the member's OWN number       */
+/*  credited to an outside body): here an OUTSIDE number is being claimed  */
+/*  as the member's. To stay false-positive-free, the rule fires only     */
+/*  when the spoken number matches a research figure AND does NOT also     */
+/*  match the member's own data (SoT / cited facts) — when a number is     */
+/*  legitimately in BOTH, the member-attribution is correct.              */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/** Member-attribution markers — claiming a number as the member's own data. */
+const MEMBER_ATTRIBUTION_PATTERNS = [
+  /\bour\s+(?:data|market|numbers|analysis|figures|export|MLS)\b/i,
+  /\bwe\s+(?:ran|pulled|found|saw|tracked|crunched|analy[sz]ed)\b/i,
+  /\bthis\s+market\b/i,
+  /\blocally\b/i,
+  /\bin\s+our\s+(?:area|market|city|region)\b/i,
+  /\bour\s+own\b/i,
+];
+
+export function checkResearchStatAsMember(
+  script: string,
+  researchStats: string[] | undefined,
+  sourceOfTruth: SourceOfTruthValue[] | undefined,
+  citedFacts: CitedFactValue[] | undefined,
+): ScriptViolation[] {
+  const research = (researchStats ?? []).filter(
+    (s) => typeof s === "string" && s.trim().length > 0,
+  );
+  if (research.length === 0) return [];
+
+  // Numbers (with unit) that came from the external research sources.
+  const researchNumbers: Array<{ unit: StatUnit; value: number }> = [];
+  for (const s of research) {
+    for (const t of extractStatTokens(s)) {
+      researchNumbers.push({ unit: t.unit, value: t.value });
+    }
+  }
+  if (researchNumbers.length === 0) return [];
+
+  // The member's OWN data anchors (SoT + cited facts). A spoken number that
+  // ALSO matches one of these is legitimately the member's, so the
+  // member-attribution is correct — never flagged here.
+  const memberAnchors: Array<{ unit: StatUnit; value: number }> = [];
+  for (const sot of sourceOfTruth ?? []) {
+    const unit = unitForFamily(sot.metricFamily);
+    if (!unit) continue;
+    for (const v of normalizeForCompare(sot.metricFamily, sot.metricValue)) {
+      memberAnchors.push({ unit, value: v });
+    }
+  }
+  for (const c of citedFacts ?? []) {
+    if (!c.raw) continue;
+    for (const t of extractStatTokens(c.raw)) {
+      memberAnchors.push({ unit: t.unit, value: t.value });
+    }
+  }
+
+  const { dialogue } = stripToDialogue(script);
+  const tokens = extractStatTokens(dialogue);
+  if (tokens.length === 0) return [];
+
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (const tok of tokens) {
+    // Must match a research figure of the same unit.
+    const matchesResearch = researchNumbers.some(
+      (r) => r.unit === tok.unit && withinTolerance(r.value, tok.value),
+    );
+    if (!matchesResearch) continue;
+    // If it ALSO matches the member's own data, the attribution is legitimate.
+    const matchesMember = memberAnchors.some(
+      (a) => a.unit === tok.unit && withinTolerance(a.value, tok.value),
+    );
+    if (matchesMember) continue;
+    // Only a hard fail when spoken AS the member's own market number.
+    const window = attributionWindowBefore(dialogue, tok.offset);
+    const claimedAsMember = MEMBER_ATTRIBUTION_PATTERNS.some((re) =>
+      re.test(window),
+    );
+    if (!claimedAsMember) continue;
+
+    const dedupeKey = `${tok.unit}|${tok.value}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    violations.push({
+      rule: "research_stat_as_member",
+      severity: "error",
+      message:
+        `Stat "${tok.raw}" comes from your attached EXTERNAL research but is spoken ` +
+        `as your OWN market number ("our market"/"we pulled"/"this market"/"locally"). ` +
+        `Research figures must stay clearly external — attribute it to the source ` +
+        `(e.g. "a recent national report found ${tok.raw}"), or replace it with the ` +
+        `corresponding number from your own validated data. Your local data leads; ` +
+        `research is the outside lens.`,
       snippet: dialogue
         .slice(Math.max(0, tok.offset - 60), tok.offset + tok.raw.length + 20)
         .trim(),
@@ -3139,6 +3254,17 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    */
   credentialsText?: string[];
   /**
+   * Research Reader — stat strings extracted from the member's attached
+   * EXTERNAL research sources (e.g. "U.S. existing-home inventory rose 22%
+   * year-over-year"). Drives `research_stat_as_member`: a spoken number that
+   * matches one of these, does NOT match the member's own data, and is spoken
+   * with a member-attribution marker ("our market"/"we pulled"/"locally") is a
+   * hard fail. Empty/unset ⇒ the rule is INERT (no research path). NOTE: the
+   * builder also folds these into `profileText` so a legitimately-attributed
+   * research number isn't flagged as a fabrication by the grounding gates.
+   */
+  researchStats?: string[];
+  /**
    * B1 — the resolved member's own full name (presenter identity). Used by
    * `no_other_member_identity` to know which name is legitimately allowed.
    */
@@ -3251,6 +3377,17 @@ export function validateScript(
   // "## Sources" footnote, not just MOI + price. Missing → error → re-prompt.
   violations.push(
     ...checkUnlistedMarketStat(script, opts.sourceOfTruth, opts.citedFacts),
+  );
+  // Research Reader — an EXTERNAL research figure spoken AS the member's own
+  // market number (member-attribution marker, not also member data) → hard fail.
+  // INERT when no research stats were passed (every non-research path).
+  violations.push(
+    ...checkResearchStatAsMember(
+      script,
+      opts.researchStats,
+      opts.sourceOfTruth,
+      opts.citedFacts,
+    ),
   );
   // PART C — data-window honesty: reject claims of a continuous data window
   // ("a year of data") beyond the months actually validated on the SoT block.

@@ -28,6 +28,87 @@ export type SaveResult =
   | { ok: false; code: "not_found" | "forbidden" | "not_gated" | "bad_state"; message: string };
 
 /**
+ * Route an already-saved, approved draft INTO the Content Planner. The Planner
+ * is the single home for member content, so an approved script must land there
+ * as a planned future video (leftmost backlog status, unscheduled) with the
+ * full script attached (its "## Sources" footnote + 3 title options ride along
+ * inside the script text).
+ *
+ * Idempotent: if a plan already exists for this draft (`linkedScriptId`) it is
+ * reused, never duplicated. Non-fatal on error (returns undefined + logs) so an
+ * approved draft is never lost — BUT because it is idempotent, a later re-save
+ * RETRIES routing, so a one-off plan-write failure self-heals on the next
+ * "save" instead of permanently missing the Planner item (acceptance c).
+ */
+async function routeApprovedDraftToPlanner(args: {
+  userId: string;
+  savedScriptId: string;
+  proposalMessageId: string;
+  proposal: ProposalState;
+}): Promise<string | undefined> {
+  const { userId, savedScriptId, proposalMessageId, proposal } = args;
+  try {
+    const existing = await prisma.contentPlan.findFirst({
+      where: { userId, linkedScriptId: savedScriptId },
+      select: { id: true },
+    });
+    const contentPlanId =
+      existing?.id ??
+      (
+        await prisma.contentPlan.create({
+          data: {
+            userId,
+            title: proposal.title,
+            status: getStatusOptions(
+              (
+                await prisma.user.findUnique({
+                  where: { id: userId },
+                  select: { serviceTier: true },
+                })
+              )?.serviceTier ?? "foundations",
+            )[0],
+            theme: rotationSlotToTheme(proposal.rotationSlot),
+            rotationSlot: proposal.rotationSlot,
+            script: proposal.script,
+            linkedScriptId: savedScriptId,
+            linkedFactIds: proposal.linkedFactIds ?? [],
+            // Research Reader — the external sources the script was grounded on,
+            // kept in sync with the script's two-section "## Sources" footnote.
+            // Empty on every non-research plan.
+            linkedResearchSourceIds: proposal.researchSourceIds ?? [],
+            // The member-confirmed references the draft was built against.
+            // onDelete:SetNull on both relations means a stale id self-heals.
+            linkedCampaignId: proposal.campaignId ?? null,
+            bingeVideoId: proposal.bingeVideoId ?? null,
+          },
+          select: { id: true },
+        })
+      ).id;
+
+    // Stamp the plan id onto the proposal so re-saves are idempotent and the
+    // chat can deep-link to the planner item.
+    if (proposal.contentPlanId !== contentPlanId) {
+      await prisma.contentManagerMessage.update({
+        where: { id: proposalMessageId },
+        data: {
+          proposalState: {
+            ...proposal,
+            status: "created",
+            savedScriptId,
+            contentPlanId,
+          } as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+    return contentPlanId;
+  } catch (err) {
+    // Non-fatal: the draft is saved; a later re-save retries this routing.
+    console.error("[jarvis/save] Content Planner routing failed", err);
+    return undefined;
+  }
+}
+
+/**
  * Persist a proposed script as a DRAFT SavedScript — gated.
  *
  * Gate: the latest member (role "user") message in the thread must be a
@@ -66,13 +147,24 @@ export async function saveConfirmedScript(args: {
     return { ok: false, code: "bad_state", message: "This message has no script to save." };
   }
 
-  // Idempotent: already saved → return the existing draft (+ its plan).
+  // Idempotent: already saved → return the existing draft (+ its plan). If a
+  // prior save created the draft but planner routing failed, the proposal has
+  // no contentPlanId — retry routing now so an approved draft reliably lands in
+  // the Planner (acceptance c).
   if (proposal.status === "created" && proposal.savedScriptId) {
+    const contentPlanId = proposal.contentPlanId
+      ? proposal.contentPlanId
+      : await routeApprovedDraftToPlanner({
+          userId,
+          savedScriptId: proposal.savedScriptId,
+          proposalMessageId,
+          proposal,
+        });
     return {
       ok: true,
       savedScriptId: proposal.savedScriptId,
       alreadySaved: true,
-      contentPlanId: proposal.contentPlanId,
+      contentPlanId,
     };
   }
 
@@ -112,6 +204,9 @@ export async function saveConfirmedScript(args: {
         source: "jarvis",
         rotationSlot: proposal.rotationSlot,
         linkedFactIds: proposal.linkedFactIds,
+        // Research Reader — the external sources this draft was grounded on
+        // (empty on every non-research draft). Mirrors linkedFactIds.
+        linkedResearchSourceIds: proposal.researchSourceIds ?? [],
       },
       arcScores: proposal.metrics
         ? (proposal.metrics as Prisma.InputJsonValue)
@@ -160,59 +255,15 @@ export async function saveConfirmedScript(args: {
   }
 
   // ── Route the approved draft INTO the Content Planner ────────────────────
-  // The Planner is the single home for member content: an approved script must
-  // land there as a planned future video (leftmost backlog status, unscheduled)
-  // with the full script attached (its "## Sources" footnote and 3 title options
-  // ride along inside the script text). We only reach here on the WINNING claim,
-  // so exactly one ContentPlan is ever created per proposal. Best-effort: if the
-  // plan write fails the SavedScript draft is still saved (nothing is lost) —
-  // routing is non-fatal so an approved draft never silently vanishes.
-  let contentPlanId: string | undefined;
-  try {
-    const planUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { serviceTier: true },
-    });
-    const startingStatus = getStatusOptions(planUser?.serviceTier ?? "foundations")[0];
-    const plan = await prisma.contentPlan.create({
-      data: {
-        userId,
-        title: proposal.title,
-        status: startingStatus,
-        theme: rotationSlotToTheme(proposal.rotationSlot),
-        rotationSlot: proposal.rotationSlot,
-        script: proposal.script,
-        linkedScriptId: saved.id,
-        linkedFactIds: proposal.linkedFactIds ?? [],
-        // The member-confirmed references the draft was actually built against
-        // (chosen before drafting via Jarvis). Persisting them keeps the plan's
-        // assigned assets in sync with the script and lets later regenerations
-        // (e.g. script-builder-v2) reuse the same lead magnet + binge target.
-        // onDelete:SetNull on both relations means a stale id self-heals.
-        linkedCampaignId: proposal.campaignId ?? null,
-        bingeVideoId: proposal.bingeVideoId ?? null,
-      },
-      select: { id: true },
-    });
-    contentPlanId = plan.id;
-    // Stamp the plan id onto the (already-claimed) proposal so re-saves are
-    // idempotent and the chat can deep-link to the planner item.
-    await prisma.contentManagerMessage.update({
-      where: { id: proposalMessageId },
-      data: {
-        proposalState: {
-          ...proposal,
-          status: "created",
-          savedScriptId: saved.id,
-          contentPlanId,
-        } as unknown as Prisma.InputJsonValue,
-      },
-    });
-  } catch (err) {
-    // Non-fatal: the draft is saved; planner routing can be retried by editing
-    // the saved script into a plan manually. Log for observability.
-    console.error("[jarvis/save] Content Planner routing failed", err);
-  }
+  // We only reach here on the WINNING claim, so exactly one ContentPlan is ever
+  // created per proposal. Routing is idempotent + non-fatal: a one-off plan
+  // write failure leaves the draft saved and self-heals on the next re-save.
+  const contentPlanId = await routeApprovedDraftToPlanner({
+    userId,
+    savedScriptId: saved.id,
+    proposalMessageId,
+    proposal,
+  });
 
   return { ok: true, savedScriptId: saved.id, alreadySaved: false, contentPlanId };
 }
