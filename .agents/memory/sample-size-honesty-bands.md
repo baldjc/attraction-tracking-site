@@ -41,6 +41,19 @@ strict (floor 10) / permissive (floor 3) members.
 prose, reference the methodology floor, not a literal. Only `HEADLINE_SOLD_FLOOR`
 (the headline boundary) may be a literal/interpolated constant.
 
+## Script-builder prompt is a separate band-enforcement site
+
+`computeCut.ts` emits disclose-band facts as `headline_safe` + a "based on N
+sales … state the sample size out loud" caveat, but the **script-builder mode
+prompt** ("On-demand computed cuts" section) independently tells the model how to
+treat them. That prompt historically benched *everything* below the headline
+floor as texture-only — silently contradicting the disclose band. The prompt
+must key off the caveat wording: "based on N sales / state the sample size out
+loud" = usable (incl. headline) WITH spoken disclosure; "too thin to headline" =
+texture only. **How to apply:** any change to the band caveat strings in
+computeCut must stay in lockstep with the discriminators in that prompt, or the
+generator re-benches usable disclose-band facts.
+
 ## Caveat text must avoid property-type words
 
 compute_cut disclosure strings ("Based on N sales in {Month Year}.") must contain
