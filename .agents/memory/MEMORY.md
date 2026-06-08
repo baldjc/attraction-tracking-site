@@ -63,3 +63,4 @@
 - [Status codes vs full-word CSV labels](market-status-fullword-vs-codes.md) — short statusCodes (A/S/P…) vs full-word CSV labels → all rows unknown → 0 sold → every fact rejected; needs canonical-word + token fallback. Also get_facts 4-state honesty.
 - [Jarvis proposal lifecycle CAS](jarvis-proposal-cas.md) — every proposalState write (save + reopen/decline) must be a guarded compare-and-swap or a stale transition clobbers created/savedScriptId and dupes the draft.
 - [Grounding macro-duration split](script-grounding-timeref-split.md) — macro durations ground via unanchored_stat but stay dropped in no_sot_disagreement; detect by connector+anchor, not bare topic words.
+- [Jarvis YoY / period-aware cuts](jarvis-yoy-period-cuts.md) — computed YoY % deltas aren't ledger facts (whitelist via allowText or grounding strips them); forward monthYear AND structured result fields in the orchestrator, not just schema/executor.

@@ -8,6 +8,7 @@ import {
   JARVIS_TOOLS,
   executeGetFacts,
   executeComputeCut,
+  executeComputeYoYCut,
   executeCleanKnowledgeBase,
   runBuildScript,
   groundAssistantText,
@@ -93,6 +94,11 @@ export async function runJarvisTurn(args: {
 
   const newLedgerFacts: LedgerFact[] = [];
   const toolCalls: ToolCallRecord[] = [];
+  // Server-computed numbers that are legitimate to surface but never enter the
+  // fact ledger — e.g. compute_yoy_cut % deltas, which are derived from two real
+  // (and individually grounded) endpoint facts. Without whitelisting these the
+  // grounding pass would redact the very year-over-year change Jarvis computed.
+  const computedAllowText: string[] = [];
   let proposal: ProposalState | null = null;
   let assistantText = "";
 
@@ -179,6 +185,9 @@ export async function runJarvisTurn(args: {
         onProposal: (p) => {
           proposal = p;
         },
+        allowText: (t) => {
+          if (t) computedAllowText.push(t);
+        },
         toolCalls,
       });
       toolResults.push(resultBlock);
@@ -212,7 +221,9 @@ export async function runJarvisTurn(args: {
   const groundedText = groundAssistantText(
     assistantText,
     ledger(),
-    [proposalSourceText, researchAllowedText].filter(Boolean).join("\n"),
+    [proposalSourceText, researchAllowedText, ...computedAllowText]
+      .filter(Boolean)
+      .join("\n"),
   );
   return {
     assistantText: groundedText,
@@ -232,9 +243,10 @@ async function runTool(ctx: {
   signal?: AbortSignal;
   onFact: (f: LedgerFact) => void;
   onProposal: (p: ProposalState) => void;
+  allowText: (t: string) => void;
   toolCalls: ToolCallRecord[];
 }): Promise<Anthropic.ToolResultBlockParam> {
-  const { userId, threadId, tu, emit, signal, onFact, onProposal, toolCalls } = ctx;
+  const { userId, threadId, tu, emit, signal, onFact, onProposal, allowText, toolCalls } = ctx;
   const input = (tu.input ?? {}) as Record<string, unknown>;
 
   const record = (status: "ok" | "error", summary: string) => {
@@ -296,6 +308,7 @@ async function runTool(ctx: {
         filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
         filterPriceBracket:
           typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,
+        monthYear: typeof input.monthYear === "string" ? input.monthYear : undefined,
       });
       for (const f of res.facts) onFact(f);
       record(
@@ -309,6 +322,72 @@ async function runTool(ctx: {
         classification: res.classification,
         ok: res.ok,
         note: res.note,
+        facts: res.facts.map((f) => ({
+          id: f.id,
+          neighbourhood: f.neighbourhood,
+          metric: f.label,
+          value: f.value,
+          monthYear: f.monthYear,
+          ...(f.caveat ? { caveat: f.caveat } : {}),
+        })),
+      };
+      return result(JSON.stringify(payload));
+    }
+
+    if (tu.name === "compute_yoy_cut") {
+      emit("tool", {
+        name: "compute_yoy_cut",
+        status: "running",
+        summary: "Computing a year-over-year cut from your raw data…",
+      });
+      const res = await executeComputeYoYCut(userId, {
+        dimension: typeof input.dimension === "string" ? input.dimension : "",
+        filterPropertyClass:
+          typeof input.filterPropertyClass === "string" ? input.filterPropertyClass : undefined,
+        filterNeighbourhood:
+          typeof input.filterNeighbourhood === "string" ? input.filterNeighbourhood : undefined,
+        filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
+        filterPriceBracket:
+          typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,
+        monthYear: typeof input.monthYear === "string" ? input.monthYear : undefined,
+      });
+      for (const f of res.facts) onFact(f);
+      // Whitelist the % deltas for grounding — each is derived from two real,
+      // individually-grounded endpoint facts, so it is a legitimate number even
+      // though it never enters the fact ledger.
+      if (res.deltas.length > 0) {
+        allowText(res.deltas.map((d) => d.deltaPctString).join(" "));
+      }
+      const window =
+        res.baseMonth && res.comparisonMonth
+          ? ` (${res.comparisonMonth} → ${res.baseMonth})`
+          : "";
+      record(
+        res.ok && res.classification === "computed" ? "ok" : "error",
+        res.classification === "computed"
+          ? `Computed year-over-year deltas${window}.`
+          : res.note,
+      );
+      const payload = {
+        baseMonth: res.baseMonth,
+        comparisonMonth: res.comparisonMonth,
+        comparisonIsFallback: res.comparisonIsFallback,
+        classification: res.classification,
+        ok: res.ok,
+        note: res.note,
+        availableMonths: res.availableMonths,
+        deltas: res.deltas.map((d) => ({
+          bucket: d.bucket,
+          metric: d.metricLabel,
+          prior: d.priorValueString,
+          base: d.baseValueString,
+          change: d.deltaPctString,
+          priorMonth: res.comparisonMonth,
+          baseMonth: res.baseMonth,
+          priorSold: d.priorSold,
+          baseSold: d.baseSold,
+          needsDisclosure: d.needsDisclosure,
+        })),
         facts: res.facts.map((f) => ({
           id: f.id,
           neighbourhood: f.neighbourhood,

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   computeCut,
   runComputeCut,
+  runYoYCut,
   yearBuiltDecadeLabel,
   type CutRow,
   type ComputeCutDeps,
@@ -461,4 +462,214 @@ test("computed-cut disclosure carries NO property-type words (scriptBuilder cave
       `caveat must not contain property-type words: ${f.viewerCaveat}`,
     );
   }
+});
+
+// ── Period-aware selection + year-over-year (runYoYCut) ─────────────────────
+
+/**
+ * CSV of `n` sold rows of one property type, with a deterministic ascending
+ * sale price so medians are predictable. Header always carries "Property Type"
+ * so the propertyClass dimension (raw-header based) resolves.
+ */
+function soldTypeRows(propertyType: string, base: number, n: number): string {
+  let csv = "";
+  for (let i = 0; i < n; i++) {
+    csv += `${propertyType},All,Sold,${base + i * 1000},${base + i * 1000}\n`;
+  }
+  return csv;
+}
+
+function typeCsv(blocks: string): string {
+  return "Property Type,Community,Status,Sale Price,List Price\n" + blocks;
+}
+
+const TYPE_MAPPING: ColumnMapping = {
+  neighbourhood: "Community",
+  status: "Status",
+  salePrice: "Sale Price",
+  listPrice: "List Price",
+};
+
+/**
+ * Injectable deps over a {monthYear → CSV} map. findFirst honours an explicit
+ * where.monthYear (else returns the latest), findMany lists validated months,
+ * and readCsv resolves each upload's CSV — enough to exercise period-aware
+ * selection and the two-period YoY engine without a real DB.
+ */
+function stubMultiMonth(months: Record<string, string>, mapping: ColumnMapping) {
+  const logged: string[] = [];
+  const createdFacts: unknown[] = [];
+  const config = { ...emptyMarketConfig(), columnMapping: mapping };
+  const monthList = Object.keys(months).sort((a, b) =>
+    a < b ? 1 : a > b ? -1 : 0,
+  );
+  const byUrl = new Map<string, string>();
+  for (const m of monthList) byUrl.set(`market-data/u/${m}.csv`, months[m]);
+  const deps: ComputeCutDeps = {
+    prisma: {
+      marketDataUpload: {
+        findFirst: async (args: unknown) => {
+          const where =
+            (args as { where?: { monthYear?: string } }).where ?? {};
+          const want = where.monthYear;
+          const m = want ? (months[want] ? want : null) : (monthList[0] ?? null);
+          if (!m) return null;
+          return {
+            id: `upload-${m}`,
+            monthYear: m,
+            csvStorageUrl: `market-data/u/${m}.csv`,
+          };
+        },
+        findMany: async () => monthList.map((m) => ({ monthYear: m })),
+      },
+      marketFact: {
+        deleteMany: async () => ({ count: 0 }),
+        createMany: async (args: unknown) => {
+          const data = (args as { data?: unknown[] }).data ?? [];
+          createdFacts.push(...data);
+          return { count: data.length };
+        },
+      },
+      onDemandExtractionLog: {
+        create: async (args: unknown) => {
+          const classification = (
+            args as { data?: { resultClassification?: string } }
+          ).data?.resultClassification;
+          if (classification) logged.push(classification);
+          return {};
+        },
+      },
+    },
+    readCsv: async (storageKey: string) =>
+      Buffer.from(byUrl.get(storageKey) ?? "", "utf8"),
+    getMarketConfig: async () => config,
+    loadSettings: async () => ({ sampleSizeVariant: "conservative" }),
+  };
+  return { deps, logged, createdFacts };
+}
+
+test("runComputeCut: monthYear targets that exact upload, not the latest", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": typeCsv(soldTypeRows("Condo", 400000, 20)),
+      "2025-05": typeCsv(soldTypeRows("Condo", 380000, 20)),
+    },
+    TYPE_MAPPING,
+  );
+  const res = await runComputeCut(
+    {
+      userId: "u",
+      params: { dimension: "propertyClass", filters: [], monthYear: "2025-05" },
+    },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  assert.equal(res.monthYear, "2025-05");
+  // Facts must carry the requested period, never the latest.
+  for (const f of res.facts) assert.equal(f.monthYear, "2025-05");
+});
+
+test("runComputeCut: monthYear with no upload → honest no_upload (no silent swap)", async () => {
+  const { deps } = stubMultiMonth(
+    { "2026-05": typeCsv(soldTypeRows("Condo", 400000, 20)) },
+    TYPE_MAPPING,
+  );
+  const res = await runComputeCut(
+    {
+      userId: "u",
+      params: { dimension: "propertyClass", filters: [], monthYear: "2024-01" },
+    },
+    deps,
+  );
+  assert.equal(res.ok, false);
+  assert.equal(res.classification, "no_upload");
+  assert.equal(res.facts.length, 0);
+  assert.match(res.note, /2024-01/);
+});
+
+test("runYoYCut: real delta per property type when BOTH periods exist", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": typeCsv(
+        soldTypeRows("Condo", 400000, 20) + soldTypeRows("Single Family", 600000, 20),
+      ),
+      "2025-05": typeCsv(
+        soldTypeRows("Condo", 380000, 20) + soldTypeRows("Single Family", 560000, 20),
+      ),
+    },
+    TYPE_MAPPING,
+  );
+  const res = await runYoYCut(
+    { userId: "u", params: { dimension: "propertyClass", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  assert.equal(res.baseMonth, "2026-05");
+  assert.equal(res.comparisonMonth, "2025-05");
+  assert.equal(res.comparisonIsFallback, false);
+  // Both periods' facts are returned so each endpoint is citable.
+  assert.ok(res.facts.length > 0);
+  // Condo median sale price rose YoY (400000-base vs 380000-base) → positive.
+  const condoMed = res.deltas.find(
+    (d) => d.bucket === "Condo" && d.metricKey === "median_sale_price",
+  );
+  assert.ok(condoMed, "expected a Condo median-sale-price delta");
+  assert.ok(condoMed!.deltaPct > 0, "Condo prices rose YoY → positive delta");
+  assert.match(condoMed!.deltaPctString, /^\+/);
+});
+
+test("runYoYCut: only one uploaded month → no_comparison listing available months, no fabricated baseline", async () => {
+  const { deps } = stubMultiMonth(
+    { "2026-05": typeCsv(soldTypeRows("Condo", 400000, 20)) },
+    TYPE_MAPPING,
+  );
+  const res = await runYoYCut(
+    { userId: "u", params: { dimension: "propertyClass", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "no_comparison");
+  assert.equal(res.comparisonMonth, null);
+  assert.equal(res.deltas.length, 0);
+  assert.deepEqual(res.availableMonths, ["2026-05"]);
+  assert.match(res.note, /do NOT invent/i);
+});
+
+test("runYoYCut: exact year-ago missing → nearest prior period flagged as fallback", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": typeCsv(soldTypeRows("Condo", 400000, 20)),
+      "2025-03": typeCsv(soldTypeRows("Condo", 360000, 20)),
+    },
+    TYPE_MAPPING,
+  );
+  const res = await runYoYCut(
+    { userId: "u", params: { dimension: "propertyClass", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  assert.equal(res.comparisonMonth, "2025-03");
+  assert.equal(res.comparisonIsFallback, true);
+  assert.match(res.note, /nearest available prior period/i);
+});
+
+test("runYoYCut: prior upload lacks the property-type column → degrades honestly, no delta, base facts kept", async () => {
+  // The 2025-05 export has NO "Property Type" column, so the propertyClass cut
+  // can't be computed there. The engine must withhold any YoY delta but still
+  // surface the base-period facts — never fabricate a prior-year number.
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": typeCsv(soldTypeRows("Condo", 400000, 20)),
+      "2025-05": soldNbhdCsv("All", 20), // no Property Type column at all
+    },
+    TYPE_MAPPING,
+  );
+  const res = await runYoYCut(
+    { userId: "u", params: { dimension: "propertyClass", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "no_comparison");
+  assert.equal(res.deltas.length, 0);
+  // Base-period facts are still returned so the current period stays citable.
+  assert.ok(res.facts.some((f) => f.monthYear === "2026-05"));
+  assert.match(res.note, /do NOT invent/i);
 });

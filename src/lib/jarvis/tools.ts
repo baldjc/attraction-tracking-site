@@ -46,9 +46,12 @@ import {
 import type { LedgerFact } from "@/lib/jarvis/types";
 import {
   runComputeCut,
+  runYoYCut,
   type CutDimension,
   type CutFilter,
   type RunCutClassification,
+  type YoYCutClassification,
+  type YoYGroupDelta,
 } from "@/lib/tools/computeCut";
 import { coerceExtractedClaims } from "@/lib/jarvis/research-ingest";
 import { formatMlsPeriod } from "@/lib/mls-verify-reminder";
@@ -205,6 +208,81 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         filterPriceBracket: {
           type: "string",
           description: "Optional. Restrict to one raw price-bracket value.",
+        },
+        monthYear: {
+          type: "string",
+          description:
+            "Optional YYYY-MM (e.g. '2025-05'). Compute the cut from THAT " +
+            "month's validated upload instead of the latest one — use for a " +
+            "specific prior month. If no upload exists for that month the tool " +
+            "refuses honestly (it does not silently use a different month).",
+        },
+      },
+      required: ["dimension"],
+    },
+  },
+  {
+    name: "compute_yoy_cut",
+    description:
+      "Compute a YEAR-OVER-YEAR breakdown on-demand from the member's raw " +
+      "uploads: it runs the same deterministic cut for a base month AND the " +
+      "same month a year earlier, then returns a real % change per group plus " +
+      "BOTH endpoints as citable facts (e.g. 'which property type grew the most " +
+      "year-over-year', 'condos this May vs last May'). Use this whenever the " +
+      "member asks about change over a year, growth/decline vs last year, or a " +
+      "prior-year comparison — get_facts only carries the current period. " +
+      "Same two property dimensions as compute_cut, never swapped: " +
+      "`propertyClass` is the broad class from the raw 'Property Type' column; " +
+      "`style` is the member's mapped Style column. GROUNDING: if the member " +
+      "hasn't uploaded a comparable prior period, or that older upload doesn't " +
+      "contain the column, the tool returns 'no_comparison' and tells you which " +
+      "months DO exist — relay that honestly and do NOT invent a prior-year " +
+      "number. When the exact 12-months-prior month is missing it may compare " +
+      "against the nearest available prior period and flags it — say that " +
+      "comparison window out loud. Only groups with enough closed sales in BOTH " +
+      "periods get a headline delta; smaller samples come back flagged.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dimension: {
+          type: "string",
+          enum: [
+            "neighbourhood",
+            "style",
+            "propertyClass",
+            "yearBuiltDecade",
+            "priceBracket",
+          ],
+          description:
+            "What to break the year-over-year comparison down BY. propertyClass " +
+            "= raw 'Property Type' class; style = mapped Style column; " +
+            "yearBuiltDecade = decade built; priceBracket = raw price-bracket.",
+        },
+        filterPropertyClass: {
+          type: "string",
+          description:
+            "Optional. Restrict to one raw property CLASS (e.g. 'Single Family').",
+        },
+        filterNeighbourhood: {
+          type: "string",
+          description: "Optional. Restrict to one neighbourhood (exact name).",
+        },
+        filterStyle: {
+          type: "string",
+          description:
+            "Optional. Restrict to one mapped STYLE value (e.g. 'Bungalow').",
+        },
+        filterPriceBracket: {
+          type: "string",
+          description: "Optional. Restrict to one raw price-bracket value.",
+        },
+        monthYear: {
+          type: "string",
+          description:
+            "Optional YYYY-MM base month for the comparison (defaults to the " +
+            "latest validated upload). The comparison period is automatically " +
+            "the same month a year earlier (or the nearest available prior " +
+            "period).",
         },
       },
       required: ["dimension"],
@@ -548,6 +626,7 @@ export interface ComputeCutArgs {
   filterNeighbourhood?: string;
   filterStyle?: string;
   filterPriceBracket?: string;
+  monthYear?: string;
 }
 
 export interface ComputeCutToolResult {
@@ -593,13 +672,95 @@ export async function executeComputeCut(
   pushFilter("style", args.filterStyle);
   pushFilter("priceBracket", args.filterPriceBracket);
 
-  const res = await runComputeCut({ userId, params: { dimension, filters } });
+  const monthYear =
+    typeof args.monthYear === "string" && /^\d{4}-\d{2}$/.test(args.monthYear.trim())
+      ? args.monthYear.trim()
+      : undefined;
+  const res = await runComputeCut({
+    userId,
+    params: { dimension, filters, monthYear },
+  });
   return {
     facts: res.facts,
     monthYear: res.monthYear,
     classification: res.classification,
     ok: res.ok,
     note: res.note,
+  };
+}
+
+// ── compute_yoy_cut executor (deterministic year-over-year cut from raw CSV) ──
+
+export interface ComputeYoYCutArgs {
+  dimension: string;
+  filterPropertyClass?: string;
+  filterNeighbourhood?: string;
+  filterStyle?: string;
+  filterPriceBracket?: string;
+  monthYear?: string;
+}
+
+export interface ComputeYoYCutToolResult {
+  facts: LedgerFact[];
+  baseMonth: string | null;
+  comparisonMonth: string | null;
+  comparisonIsFallback: boolean;
+  classification: YoYCutClassification;
+  ok: boolean;
+  note: string;
+  deltas: YoYGroupDelta[];
+  availableMonths: string[];
+}
+
+export async function executeComputeYoYCut(
+  userId: string,
+  args: ComputeYoYCutArgs,
+): Promise<ComputeYoYCutToolResult> {
+  const dimension = COMPUTE_CUT_DIMENSIONS.includes(args.dimension as CutDimension)
+    ? (args.dimension as CutDimension)
+    : null;
+  if (!dimension) {
+    return {
+      facts: [],
+      baseMonth: null,
+      comparisonMonth: null,
+      comparisonIsFallback: false,
+      classification: "unavailable",
+      ok: false,
+      note: `Unknown cut dimension "${args.dimension}". Valid dimensions: ${COMPUTE_CUT_DIMENSIONS.join(", ")}.`,
+      deltas: [],
+      availableMonths: [],
+    };
+  }
+
+  const filters: CutFilter[] = [];
+  const pushFilter = (field: CutFilter["field"], value?: string) => {
+    const v = value?.trim();
+    if (v) filters.push({ field, value: v });
+  };
+  pushFilter("propertyClass", args.filterPropertyClass);
+  pushFilter("neighbourhood", args.filterNeighbourhood);
+  pushFilter("style", args.filterStyle);
+  pushFilter("priceBracket", args.filterPriceBracket);
+
+  const monthYear =
+    typeof args.monthYear === "string" && /^\d{4}-\d{2}$/.test(args.monthYear.trim())
+      ? args.monthYear.trim()
+      : undefined;
+  const res = await runYoYCut({
+    userId,
+    params: { dimension, filters, monthYear },
+  });
+  return {
+    facts: res.facts,
+    baseMonth: res.baseMonth,
+    comparisonMonth: res.comparisonMonth,
+    comparisonIsFallback: res.comparisonIsFallback,
+    classification: res.classification,
+    ok: res.ok,
+    note: res.note,
+    deltas: res.deltas,
+    availableMonths: res.availableMonths,
   };
 }
 

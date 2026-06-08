@@ -36,7 +36,7 @@ import { randomUUID } from "node:crypto";
 import prismaDefault from "@/lib/prisma";
 import { readUploadFile as realReadUploadFile } from "@/lib/market-csv";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
-import { normalizePropertyType } from "@/lib/csv-aggregate";
+import { normalizePropertyType, shiftMonthYear } from "@/lib/csv-aggregate";
 import {
   resolveStatusMapping,
   bucketStatus,
@@ -80,6 +80,12 @@ export interface CutFilter {
 export interface ComputeCutParams {
   dimension: CutDimension;
   filters?: CutFilter[];
+  /**
+   * Optional YYYY-MM. When set, the cut runs against THAT validated upload
+   * instead of the member's latest one — the mechanism behind prior-period and
+   * year-over-year cuts. Omitted → latest validated upload (legacy behaviour).
+   */
+  monthYear?: string;
 }
 
 /**
@@ -541,6 +547,13 @@ export interface RunComputeCutResult {
   /** Values available for messaging (honest refusals). */
   availableValues?: string[];
   availableDimensions?: CutDimension[];
+  /**
+   * Numeric per-group results for the computed cut (present only when
+   * classification === "computed"). Exposed so the YoY engine can match groups
+   * across periods and compute deterministic deltas without re-parsing the
+   * formatted ledger value strings.
+   */
+  coreGroups?: CutGroup[];
 }
 
 export interface ComputeCutDeps {
@@ -551,6 +564,7 @@ export interface ComputeCutDeps {
         monthYear: string;
         csvStorageUrl: string | null;
       } | null>;
+      findMany?: (args: unknown) => Promise<{ monthYear: string }[]>;
     };
     marketFact: {
       deleteMany: (args: unknown) => Promise<unknown>;
@@ -740,8 +754,18 @@ export async function runComputeCut(
   const { dimension } = params;
   const filters = params.filters ?? [];
 
+  // Period-aware: when params.monthYear is set, target that exact validated
+  // upload (the mechanism behind prior-period + YoY cuts); otherwise the latest.
+  const wantMonth =
+    typeof params.monthYear === "string" && /^\d{4}-\d{2}$/.test(params.monthYear)
+      ? params.monthYear
+      : null;
   const upload = await deps.prisma.marketDataUpload.findFirst({
-    where: { userId, status: "validated" },
+    where: {
+      userId,
+      status: "validated",
+      ...(wantMonth ? { monthYear: wantMonth } : {}),
+    },
     orderBy: [{ monthYear: "desc" }, { validatedAt: "desc" }],
     select: { id: true, monthYear: true, csvStorageUrl: true },
   });
@@ -749,9 +773,11 @@ export async function runComputeCut(
     return {
       ok: false,
       classification: "no_upload",
-      monthYear: null,
+      monthYear: wantMonth,
       dimension,
-      note: "No validated market-data upload is available for this member, so no cut can be computed.",
+      note: wantMonth
+        ? `No validated market-data upload exists for ${monthYearLabel(wantMonth)} (${wantMonth}), so no cut can be computed for that period.`
+        : "No validated market-data upload is available for this member, so no cut can be computed.",
       facts: [],
     };
   }
@@ -1050,6 +1076,7 @@ export async function runComputeCut(
     dimension,
     note: noteParts.join(" "),
     facts: pending.map((p) => p.ledger),
+    coreGroups: core.groups,
   };
 }
 
@@ -1072,4 +1099,317 @@ async function logCall(
       factId,
     },
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Year-over-year cut engine
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Runs the SAME deterministic cut against two periods — a base month (latest
+// validated, or an explicit one) and a comparison month (the 12-months-prior
+// upload, or the nearest available prior period when that exact month wasn't
+// uploaded) — then matches groups by bucket and computes a real % delta per
+// shared metric. Both endpoints are persisted, citable facts (via runComputeCut),
+// so the assistant can write "$X a year ago → $Y now" with BOTH numbers grounded.
+//
+// Grounding guarantees (never fabricate a prior-year number):
+//   - If no prior period exists at all → classification "no_comparison", note
+//     lists the months that DO exist; no delta, no invented baseline.
+//   - If the comparison upload can't support this cut (e.g. the column isn't in
+//     that period's export format) → "no_comparison" with base facts still
+//     returned; the YoY delta is withheld, not faked.
+//   - A delta is only emitted when BOTH periods' group is headline/disclose-
+//     usable; disclose-band endpoints carry the sample-size disclosure flag.
+
+export type YoYCutClassification =
+  | "computed"
+  | "no_comparison"
+  | "no_upload"
+  | "unavailable"
+  | "no_match"
+  | "sample_too_small";
+
+export interface YoYGroupDelta {
+  bucket: string;
+  metricKey: CutMetricKey;
+  metricLabel: string;
+  baseValue: number;
+  baseValueString: string;
+  priorValue: number;
+  priorValueString: string;
+  /** ((base - prior) / |prior|) * 100. */
+  deltaPct: number;
+  /** Signed, 1dp, e.g. "+12.3%". */
+  deltaPctString: string;
+  baseSold: number;
+  priorSold: number;
+  /** EITHER endpoint is in the disclose band → cite WITH "based on N sales". */
+  needsDisclosure: boolean;
+}
+
+export interface RunYoYCutResult {
+  ok: boolean;
+  classification: YoYCutClassification;
+  dimension: CutDimension;
+  baseMonth: string | null;
+  comparisonMonth: string | null;
+  /** comparisonMonth is NOT the exact 12-months-prior month (nearest fallback). */
+  comparisonIsFallback: boolean;
+  note: string;
+  /** BOTH periods' persisted facts, each citable by id. */
+  facts: LedgerFact[];
+  deltas: YoYGroupDelta[];
+  /** All validated months (desc) — for honest "what's available" messaging. */
+  availableMonths: string[];
+}
+
+function monthIndex(monthYear: string): number {
+  const [y, m] = monthYear.split("-").map(Number);
+  return y * 12 + (m - 1);
+}
+
+function formatSignedPercent(n: number): string {
+  return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+}
+
+/**
+ * Choose the comparison period: the exact 12-months-prior month if uploaded,
+ * else the available prior period CLOSEST to it (ties → the further-back month).
+ * Candidates are always strictly before the base month — a YoY comparison is a
+ * prior period, never a later one. Returns null when no prior period exists.
+ */
+function pickComparisonMonth(
+  available: string[],
+  base: string,
+  yearAgo: string | null,
+): { month: string; fallback: boolean } | null {
+  const baseIdx = monthIndex(base);
+  const priors = available.filter(
+    (m) => m !== base && monthIndex(m) < baseIdx,
+  );
+  if (priors.length === 0) return null;
+  if (yearAgo && priors.includes(yearAgo)) return { month: yearAgo, fallback: false };
+  const target = yearAgo ? monthIndex(yearAgo) : baseIdx - 12;
+  let best = priors[0];
+  let bestDist = Math.abs(monthIndex(best) - target);
+  for (const m of priors) {
+    const d = Math.abs(monthIndex(m) - target);
+    if (d < bestDist || (d === bestDist && monthIndex(m) < monthIndex(best))) {
+      best = m;
+      bestDist = d;
+    }
+  }
+  return { month: best, fallback: true };
+}
+
+export async function runYoYCut(
+  input: { userId: string; params: ComputeCutParams },
+  depsOverride?: Partial<ComputeCutDeps>,
+): Promise<RunYoYCutResult> {
+  const deps = { ...defaultDeps(), ...depsOverride };
+  const { userId, params } = input;
+  const { dimension } = params;
+
+  const base = {
+    ok: false as const,
+    dimension,
+    comparisonIsFallback: false,
+    facts: [] as LedgerFact[],
+    deltas: [] as YoYGroupDelta[],
+  };
+
+  // 1. Validated months (desc), de-duped.
+  const monthRows = deps.prisma.marketDataUpload.findMany
+    ? await deps.prisma.marketDataUpload.findMany({
+        where: { userId, status: "validated" },
+        select: { monthYear: true },
+        orderBy: [{ monthYear: "desc" }],
+      })
+    : [];
+  const availableMonths = Array.from(
+    new Set(monthRows.map((r) => r.monthYear).filter((m) => /^\d{4}-\d{2}$/.test(m))),
+  ).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+
+  // 2. Resolve the base month.
+  const requestedBase =
+    typeof params.monthYear === "string" && /^\d{4}-\d{2}$/.test(params.monthYear)
+      ? params.monthYear
+      : null;
+  const baseMonth = requestedBase ?? availableMonths[0] ?? null;
+  if (!baseMonth) {
+    return {
+      ...base,
+      classification: "no_upload",
+      baseMonth: null,
+      comparisonMonth: null,
+      note: "No validated market-data upload is available for this member, so no year-over-year cut can be computed.",
+      availableMonths,
+    };
+  }
+  if (requestedBase && !availableMonths.includes(requestedBase)) {
+    return {
+      ...base,
+      classification: "no_upload",
+      baseMonth: requestedBase,
+      comparisonMonth: null,
+      note: `No validated upload exists for ${monthYearLabel(requestedBase)} (${requestedBase}). Months actually uploaded: ${availableMonths.join(", ") || "(none)"}. Pick one of those; do not assume a period that isn't there.`,
+      availableMonths,
+    };
+  }
+
+  // 3. Resolve the comparison (year-ago, or nearest prior period).
+  const yearAgo = shiftMonthYear(baseMonth, -12);
+  const pick = pickComparisonMonth(availableMonths, baseMonth, yearAgo);
+  if (!pick) {
+    return {
+      ...base,
+      classification: "no_comparison",
+      baseMonth,
+      comparisonMonth: null,
+      note: `Only ${availableMonths.map(monthYearLabel).join(", ")} ${availableMonths.length === 1 ? "is" : "are"} uploaded, so there is no prior period to compare ${monthYearLabel(baseMonth)} against. Tell the member a year-over-year figure isn't available yet; do NOT invent a prior-year number.`,
+      availableMonths,
+    };
+  }
+  const comparisonMonth = pick.month;
+  const comparisonIsFallback = pick.fallback;
+
+  // 4. Run the same cut for both periods (each persists its own citable facts).
+  const baseRes = await runComputeCut(
+    { userId, params: { dimension, filters: params.filters, monthYear: baseMonth } },
+    depsOverride,
+  );
+  if (!baseRes.ok) {
+    // Column missing / no upload / filter value absent in the base period — the
+    // honest refusal propagates verbatim (no comparison even attempted).
+    const cls = (["no_upload", "unavailable", "no_match"] as const).includes(
+      baseRes.classification as "no_upload" | "unavailable" | "no_match",
+    )
+      ? (baseRes.classification as YoYCutClassification)
+      : "no_comparison";
+    return {
+      ...base,
+      classification: cls,
+      baseMonth,
+      comparisonMonth,
+      comparisonIsFallback,
+      note: baseRes.note,
+      availableMonths,
+    };
+  }
+  if (baseRes.classification === "sample_too_small") {
+    return {
+      ...base,
+      classification: "sample_too_small",
+      baseMonth,
+      comparisonMonth,
+      comparisonIsFallback,
+      note: `${baseRes.note} A year-over-year delta needs a usable base figure, so none can be stated.`,
+      availableMonths,
+    };
+  }
+
+  const priorRes = await runComputeCut(
+    { userId, params: { dimension, filters: params.filters, monthYear: comparisonMonth } },
+    depsOverride,
+  );
+
+  // 5. Match groups by bucket; compute deltas only where BOTH periods are usable.
+  const baseGroups = new Map(
+    (baseRes.coreGroups ?? []).map((g) => [g.bucket, g] as const),
+  );
+  const priorGroups = new Map(
+    (priorRes.coreGroups ?? []).map((g) => [g.bucket, g] as const),
+  );
+  const deltas: YoYGroupDelta[] = [];
+  for (const [bucket, bg] of baseGroups) {
+    const pg = priorGroups.get(bucket);
+    if (!pg) continue;
+    const bUsable = bg.band === "headline" || bg.band === "disclose";
+    const pUsable = pg.band === "headline" || pg.band === "disclose";
+    if (!bUsable || !pUsable) continue;
+    const needsDisclosure = bg.band === "disclose" || pg.band === "disclose";
+    const priorByKey = new Map(pg.metrics.map((m) => [m.key, m] as const));
+    for (const bm of bg.metrics) {
+      const pm = priorByKey.get(bm.key);
+      if (!pm || pm.value === 0) continue;
+      const deltaPct = ((bm.value - pm.value) / Math.abs(pm.value)) * 100;
+      deltas.push({
+        bucket,
+        metricKey: bm.key,
+        metricLabel: bm.label,
+        baseValue: bm.value,
+        baseValueString: bm.valueString,
+        priorValue: pm.value,
+        priorValueString: pm.valueString,
+        deltaPct,
+        deltaPctString: formatSignedPercent(deltaPct),
+        baseSold: bg.soldCount,
+        priorSold: pg.soldCount,
+        needsDisclosure,
+      });
+    }
+  }
+  deltas.sort(
+    (a, b) =>
+      a.metricKey.localeCompare(b.metricKey) || b.deltaPct - a.deltaPct,
+  );
+
+  const facts = [...priorRes.facts, ...baseRes.facts];
+
+  // The base period computed, but no grounded YoY delta is possible — either the
+  // comparison upload can't support this cut (export-format mismatch) or no
+  // group is usable in BOTH periods. Return the base facts so the assistant can
+  // still cite the current period, but WITHHOLD any year-over-year claim.
+  if (deltas.length === 0) {
+    const reason =
+      !priorRes.ok || (priorRes.coreGroups?.length ?? 0) === 0
+        ? `The ${monthYearLabel(comparisonMonth)} upload can't support this cut (${priorRes.note})`
+        : `No group is headline- or disclose-usable in BOTH ${monthYearLabel(baseMonth)} and ${monthYearLabel(comparisonMonth)}`;
+    return {
+      ok: true,
+      classification: "no_comparison",
+      dimension,
+      baseMonth,
+      comparisonMonth,
+      comparisonIsFallback,
+      note: `${reason}, so a grounded year-over-year delta can't be stated. Cite the ${monthYearLabel(baseMonth)} figures by their fact ids; do NOT invent a prior-year number or a change.`,
+      facts,
+      deltas: [],
+      availableMonths,
+    };
+  }
+
+  const noteParts: string[] = [];
+  noteParts.push(
+    `Year-over-year ${dimensionLabel(dimension)} cut: ${comparisonMonth} → ${baseMonth}${
+      comparisonIsFallback
+        ? ` (nearest available prior period — exact ${yearAgo} wasn't uploaded; say the comparison window out loud)`
+        : ""
+    }.`,
+  );
+  for (const d of deltas) {
+    noteParts.push(
+      `${d.bucket} · ${d.metricLabel}: ${d.priorValueString} (${comparisonMonth}) → ${d.baseValueString} (${baseMonth}) = ${d.deltaPctString}${
+        d.needsDisclosure
+          ? ` [small sample — state the sale counts: ${d.priorSold} then ${d.baseSold}]`
+          : ""
+      }.`,
+    );
+  }
+  noteParts.push(
+    "Both endpoints are real facts — cite each by its fact id. Never state a year-over-year number whose endpoints you didn't both cite.",
+  );
+
+  return {
+    ok: true,
+    classification: "computed",
+    dimension,
+    baseMonth,
+    comparisonMonth,
+    comparisonIsFallback,
+    note: noteParts.join(" "),
+    facts,
+    deltas,
+    availableMonths,
+  };
 }
