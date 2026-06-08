@@ -1,0 +1,10 @@
+Status,Property Type,Neighbourhood,City,Sale Price,List Price,Sale-to-List Ratio,Sold Date,Days on Market,Floor Area (SqFt),Bedrooms,Bathrooms,Year Built,MLS #,Postal Code
+Sold,Detached,Bowness,Calgary,575500,589900,0.976,2026-05-12,18,1320,3,2,1958,A2012345,T3B 0M5
+Sold,Detached,Auburn Bay,Calgary,602218,609900,0.987,2026-05-08,35,2100,4,3,2014,A2012346,T3M 1P7
+Sold,Apartment,Beltline,Calgary,318000,329900,0.964,2026-05-19,52,720,1,1,2007,A2012347,T2R 0S8
+Sold,Row/Townhouse,Crystallina Nera,Calgary,415000,419900,0.988,2026-05-11,16,1410,3,2,2019,A2012348,T3K 2V1
+Sold,Semi-Detached,Altadore,Calgary,742000,749900,0.989,2026-05-23,14,1650,3,3,2016,A2012349,T2T 3C2
+Sold,Detached,Airdrie,Airdrie,548000,559900,0.979,2026-05-09,21,1780,4,3,2011,A2012350,T4B 3K9
+Active,Detached,Aspen Woods,Calgary,,1145000,,,,2480,5,4,2012,A2012351,T3H 0V2
+Pending,Detached,Cochrane,Cochrane,,734900,,,,2310,4,3,2003,A2012352,T4C 2H1
+Expired,Detached,Springbank Hill,Calgary,,1349000,,,,3100,5,4,2008,A2012353,T3H 5R8

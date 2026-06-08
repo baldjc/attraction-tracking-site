@@ -104,6 +104,8 @@ export default function CsvRulesCard() {
               dotClass="bg-amber-400"
               headingClass="text-amber-700 dark:text-amber-300"
               items={[
+                "Floor Area / SqFt — powers price-per-sqft and the appreciation vs. mix-shift check; without it, price-growth claims get downgraded",
+                "Year Built — unlocks by-decade neighbourhood breakdowns",
                 "Property Type values use full words (Detached, Semi-Detached, Row/Townhouse, Apartment) not abbreviations (DET, TH, APT)",
                 "Dates in ISO format (2026-05-15) or month-first (5/15/2026), consistent across the file",
                 "Price columns are plain numbers (no $ signs in cells)",
@@ -124,7 +126,62 @@ export default function CsvRulesCard() {
             />
           </div>
 
-          <div className="mt-5 flex justify-end">
+          <div
+            className="mt-5 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/40"
+          >
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Your MLS may name these differently — that&apos;s fine
+            </p>
+            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+              Real MLS exports often use their own header names, and the system
+              matches them flexibly. You do <strong>not</strong> have to rename
+              your columns — the column mapper auto-matches them, and you can
+              confirm or adjust in{" "}
+              <span className="font-medium">Edit column mapping</span>. For
+              example, a real NTREIS export maps cleanly:
+            </p>
+            <ul className="mt-2 grid gap-x-6 gap-y-1 text-xs text-gray-600 sm:grid-cols-2 dark:text-gray-400">
+              {[
+                ["Close Price", "Sale Price"],
+                ["Original List Price", "List Price"],
+                ["Close Date", "Sale Date"],
+                ["Property Sub Type", "Property Type"],
+                ["Subdivision Name", "Neighbourhood"],
+                ["CDOM", "Days on Market"],
+                ["Close-List Price Ratio", "Sale-to-List Ratio"],
+                ["Baths Total", "Bathrooms"],
+                ["ML #", "MLS #"],
+              ].map(([from, to]) => (
+                <li key={from} className="flex items-center gap-1.5">
+                  <code className="rounded bg-gray-200 px-1 py-0.5 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                    {from}
+                  </code>
+                  <span aria-hidden="true">→</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {to}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <a
+              href="/market-data-template.csv"
+              download="market-data-template.csv"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M10 2a.75.75 0 01.75.75v8.69l2.72-2.72a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 111.06-1.06l2.72 2.72V2.75A.75.75 0 0110 2z" />
+                <path d="M3.5 13.25a.75.75 0 01.75.75v1.5c0 .414.336.75.75.75h10a.75.75 0 00.75-.75v-1.5a.75.75 0 011.5 0v1.5A2.25 2.25 0 0115 17.75H5a2.25 2.25 0 01-2.25-2.25v-1.5a.75.75 0 01.75-.75z" />
+              </svg>
+              Download example CSV
+            </a>
             <button
               type="button"
               onClick={dismiss}

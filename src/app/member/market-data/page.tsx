@@ -81,12 +81,30 @@ export default async function MarketDataPage() {
             {config.marketName} · {config.mlsSource}
           </p>
         </div>
-        <a
-          href="/member/market-data/setup"
-          className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-        >
-          Edit market settings
-        </a>
+        <div className="flex flex-col items-end gap-1">
+          <a
+            href="/member/market-data/setup"
+            className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Edit market settings
+          </a>
+          <a
+            href="/market-data-template.csv"
+            download="market-data-template.csv"
+            className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline dark:text-blue-400"
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M10 2a.75.75 0 01.75.75v8.69l2.72-2.72a.75.75 0 111.06 1.06l-4 4a.75.75 0 01-1.06 0l-4-4a.75.75 0 111.06-1.06l2.72 2.72V2.75A.75.75 0 0110 2z" />
+              <path d="M3.5 13.25a.75.75 0 01.75.75v1.5c0 .414.336.75.75.75h10a.75.75 0 00.75-.75v-1.5a.75.75 0 011.5 0v1.5A2.25 2.25 0 0115 17.75H5a2.25 2.25 0 01-2.25-2.25v-1.5a.75.75 0 01.75-.75z" />
+            </svg>
+            Download example CSV
+          </a>
+        </div>
       </header>
 
       <UploadProgressBanner
