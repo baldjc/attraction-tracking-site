@@ -241,7 +241,12 @@ async function GET_impl() {
     const chip: FactChip | null = f
       ? {
           stat: f.value,
-          label: f.neighbourhood ? `${f.metricName} · ${f.neighbourhood}` : f.metricName,
+          // Carry the property-type segment in the label so a per-type cut
+          // (e.g. citywide Detached MOI) never reads as the bare all-types
+          // overall. Order: metric · segment · neighbourhood.
+          label: [f.metricName, f.propertyType, f.neighbourhood]
+            .filter((p): p is string => !!p && p.trim().length > 0)
+            .join(" · "),
           source: (firstId ? sourceTitleById.get(firstId) : null) ?? upload.label,
         }
       : null;

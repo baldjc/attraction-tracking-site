@@ -1382,6 +1382,133 @@ async function callValidator(
 // Persistence
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Deterministic property-type relabel for the rollups chunk's MOI facts.
+ *
+ * buildChunks() routes EVERY "All Neighbourhoods" group into the single
+ * "rollups" chunk — both the type-pooled overall (propertyType=null) AND the
+ * per-property-type citywide cuts ("All Neighbourhoods" / Detached, …). That
+ * chunk stamps one property-type label on every fact it yields
+ * (propertyTypeColumnForChunkName("rollups") === null), so a per-type citywide
+ * MOI fact (e.g. Detached, ~2.44) gets persisted as the bare ALL-types overall.
+ * The dashboard briefing then surfaces that segment figure as the citywide
+ * overall MOI instead of the true pooled ~3.1 — a data-correctness bug.
+ *
+ * Fix: for an MOI fact the rollups chunk would stamp null, snap its property
+ * type back to the deterministic AggregatedGroup it actually describes,
+ * identified by its MOI (strict, inclusive) signature against the same-
+ * neighbourhood groups. The genuine pooled overall (matching the
+ * propertyType=null group) stays null; a per-type cut gets its real label
+ * ("Detached", "Apartment", "Row/Townhouse", …). This never guesses — only an
+ * exact-ish match to a known group relabels; anything unmatched stays overall.
+ * Built from the same deterministic table that backs AggregatedMetric, so it
+ * carries the exact per-type labels (no chunk-level coarsening).
+ */
+interface MoiRelabelCandidate {
+  propertyType: string | null;
+  moiStrict: number | null;
+  moiInclusive: number | null;
+  moiInclusiveRolling3: number | null;
+}
+
+/** neighbourhood → priceTier-null MOI candidates (pooled + per-type cuts). */
+function buildMoiRelabelIndex(
+  groups: AggregatedGroup[],
+): Map<string, MoiRelabelCandidate[]> {
+  const idx = new Map<string, MoiRelabelCandidate[]>();
+  for (const g of groups) {
+    if (g.priceTier !== null) continue; // rollup facts are always priceTier-null
+    const list = idx.get(g.neighbourhood) ?? [];
+    list.push({
+      propertyType: g.propertyType,
+      moiStrict: g.moiStrict,
+      moiInclusive: g.moiInclusive,
+      moiInclusiveRolling3: g.moiInclusiveRolling3,
+    });
+    idx.set(g.neighbourhood, list);
+  }
+  return idx;
+}
+
+/** Field on a candidate that a given MOI metricName maps to (single-value fallback). */
+function candidateValueForMoiName(
+  c: MoiRelabelCandidate,
+  metricName: string,
+): number | null {
+  switch (metricName) {
+    case "moi_strict":
+      return c.moiStrict;
+    case "moi_inclusive_rolling3":
+      return c.moiInclusiveRolling3 ?? c.moiInclusive;
+    case "moi_inclusive":
+    default:
+      return c.moiInclusive;
+  }
+}
+
+/**
+ * Resolve the true property type for a would-be-null MOI rollup fact. Returns
+ * the matched property type, or null when the fact is the genuine pooled
+ * overall OR no candidate matches confidently (conservative: never invents a
+ * label). Matches on the (strict, inclusive) pair when both are present (a very
+ * distinctive signature); otherwise on the single metricValue mapped to the
+ * fact's variant.
+ */
+export function resolveMoiRollupPropertyType(
+  fact: Pick<
+    ParsedFact,
+    "metricName" | "metricValue" | "moiStrict" | "moiInclusive"
+  >,
+  candidates: MoiRelabelCandidate[] | undefined,
+): string | null {
+  if (!candidates || candidates.length === 0) return null;
+  const PAIR_TOL = 0.25;
+  const SINGLE_TOL = 0.12;
+  // Minimum separation required before we relabel a fact to a SEGMENT. If two
+  // candidates sit within tolerance and within this margin of each other, the
+  // match is ambiguous (e.g. a market where pooled and a property type have
+  // near-equal MOI) — we conservatively leave the fact as the overall (null)
+  // rather than risk mislabelling. "Never guess" beats a confident wrong label.
+  const AMBIGUITY_MARGIN = 0.1;
+
+  const accepted: Array<{ propertyType: string | null; dist: number }> = [];
+  for (const c of candidates) {
+    const pairOK =
+      fact.moiStrict != null &&
+      fact.moiInclusive != null &&
+      c.moiStrict != null &&
+      c.moiInclusive != null;
+    let dist: number;
+    let tol: number;
+    if (pairOK) {
+      dist =
+        Math.abs((fact.moiStrict as number) - (c.moiStrict as number)) +
+        Math.abs((fact.moiInclusive as number) - (c.moiInclusive as number));
+      tol = PAIR_TOL;
+    } else {
+      const gv = candidateValueForMoiName(c, fact.metricName);
+      const fv = fact.metricValue;
+      if (fv == null || gv == null) continue;
+      dist = Math.abs(fv - gv);
+      tol = SINGLE_TOL;
+    }
+    if (dist > tol) continue;
+    accepted.push({ propertyType: c.propertyType, dist });
+  }
+  if (accepted.length === 0) return null;
+  accepted.sort((a, b) => a.dist - b.dist);
+
+  const best = accepted[0];
+  // The genuine pooled overall (best match is the propertyType=null group) needs
+  // no relabel — it is already the all-types overall.
+  if (best.propertyType === null) return null;
+  // Best is a per-type cut: only relabel when it is clearly separated from the
+  // next-closest candidate; otherwise the match is ambiguous → stay overall.
+  const second = accepted[1];
+  if (second && second.dist - best.dist < AMBIGUITY_MARGIN) return null;
+  return best.propertyType;
+}
+
 function mapFactToPrisma(
   fact: ParsedFact,
   uploadId: string,
@@ -1515,11 +1642,31 @@ async function persistResults(
   outputTokens: number,
   factYieldPct: number,
   methodologyVariant: Prisma.InputJsonValue,
+  moiRelabelIndex: Map<string, MoiRelabelCandidate[]>,
 ): Promise<void> {
   const allFactRows = factsBundles.flatMap((b) =>
-    b.facts.map((f) =>
-      mapFactToPrisma(f, uploadId, userId, b.propertyTypeColumn, methodologyVariant),
-    ),
+    b.facts.map((f) => {
+      // The rollups chunk (propertyTypeColumn === null) carries BOTH the pooled
+      // overall and per-type citywide cuts. For MOI, snap a per-type cut back to
+      // its real property type so the citywide "overall" stays the pooled value.
+      //
+      // Scoped to MOI deliberately: MOI carries a two-component (strict,
+      // inclusive) signature that makes deterministic matching to a known
+      // AggregatedGroup safe. Single-value families (median price, DOM, SP/LP)
+      // have high value-collision risk across property types, so value-matching
+      // them would risk a confident WRONG relabel — worse than the status quo.
+      // If a sibling family ever exhibits the same null-stamping symptom, fix it
+      // structurally (carry propertyType through the chunk) rather than widen
+      // this heuristic.
+      let propertyType = b.propertyTypeColumn;
+      if (propertyType === null && String(f.metricFamily) === "MOI") {
+        propertyType = resolveMoiRollupPropertyType(
+          f,
+          moiRelabelIndex.get(f.neighbourhood),
+        );
+      }
+      return mapFactToPrisma(f, uploadId, userId, propertyType, methodologyVariant);
+    }),
   );
 
   // Idempotent replace. Because the bulk inserts below run OUTSIDE a transaction
@@ -2110,6 +2257,7 @@ export async function runValidation(uploadId: string): Promise<void> {
       totalOutputTokens,
       Number(factYieldPct.toFixed(4)),
       methodologyVariantJson(methodologySnapshot),
+      buildMoiRelabelIndex(table.groups),
     );
     mdv("db.write.complete", uploadId, t0);
     mdv("validation.complete", uploadId, t0, {
