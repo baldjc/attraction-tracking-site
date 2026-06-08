@@ -80,6 +80,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Member knowingly acknowledged the "neighbourhood column looks numeric"
+  // warning (their MLS only exports area codes, no name column). Suppresses the
+  // confirmable NEIGHBOURHOOD_MOSTLY_NUMERIC preflight check on re-submit.
+  const ackNumericRaw = form.get("acknowledgeNumericNeighbourhood");
+  const allowNumericNeighbourhood = ackNumericRaw === "true" || ackNumericRaw === "1";
+
   let labels: string[] = [];
   let monthYears: string[] = [];
   const labelsRaw = form.get("labels");
@@ -167,7 +173,9 @@ export async function POST(req: NextRequest) {
     // required-column check.
     const effectiveMapping =
       columnMapping ?? (config.columnMapping as ColumnMapping | null);
-    const pf = runPreflight(preview, effectiveMapping);
+    const pf = runPreflight(preview, effectiveMapping, {
+      allowNumericNeighbourhood,
+    });
     console.log(
       `[mdv preflight] result=${pf.ok ? "ok" : pf.code} userId=${userId} ` +
         `filename=${JSON.stringify(file.name)} rowCount=${pf.rowCount} ` +
@@ -186,6 +194,9 @@ export async function POST(req: NextRequest) {
           message: pf.message,
           detail: pf.detail,
           suggestion: pf.suggestion,
+          // When true the member can knowingly re-submit past this warning (the
+          // client adds an acknowledgement flag) instead of being hard-blocked.
+          confirmable: pf.confirmable ?? false,
           // Headers power the interactive column mapper on the client so the
           // member can re-route columns instead of being dead-ended.
           headers: preview.headers,

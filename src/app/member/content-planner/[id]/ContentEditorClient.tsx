@@ -698,7 +698,7 @@ export default function ContentEditorClient({
     URL.revokeObjectURL(url);
   };
   const handleDuplicate = () => {
-    alert("Duplicate is coming soon. For now use Add Video on the planner.");
+    alert("Duplicate is coming soon. For now use Add Blank Video on the planner.");
   };
   const handleDelete = async () => {
     if (!confirm("Delete this video? It's removed from your planner. Your coaching team can restore it if you change your mind — the script, research, and AI-generated content stay saved.")) return;

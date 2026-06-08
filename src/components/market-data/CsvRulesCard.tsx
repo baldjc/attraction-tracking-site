@@ -93,6 +93,7 @@ export default function CsvRulesCard() {
                 "One calendar month per file",
                 "CSV with a header row in row 1",
                 "Columns present (names matched flexibly): Status, Property Type, Sale Price, List Price, Days on Market, Neighbourhood, Sale Date",
+                "Neighbourhood values are area NAMES (e.g. Crystallina Nera, Windermere) — not MLS zone numbers or area codes",
                 "Status values are words (Sold, Closed, Active, Pending, Expired, Withdrawn, Terminated) — not codes (S, C, A)",
                 "One row per property listing",
               ]}

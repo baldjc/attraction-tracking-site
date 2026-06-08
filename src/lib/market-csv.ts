@@ -193,10 +193,18 @@ export interface PreflightFail {
     | "MISSING_COLUMNS"
     | "STATUS_VALUES_UNRECOGNIZED"
     | "STATUS_ONLY_NON_ACTIONABLE"
+    | "NEIGHBOURHOOD_MOSTLY_NUMERIC"
     | "EMPTY_FILE";
   message: string;
   detail: string;
   suggestion?: string;
+  /**
+   * When true the member can knowingly proceed past this warning (e.g. their MLS
+   * genuinely has no neighbourhood-name column, only numeric area codes). The
+   * upload re-submits with an acknowledgement flag that suppresses the check.
+   * Hard data failures (missing columns, empty file) leave this false/undefined.
+   */
+  confirmable?: boolean;
   rowCount: number;
   headersCount: number;
   statusRecognizedRatio: number | null;
@@ -292,6 +300,7 @@ function isActionableStatus(v: string): boolean {
 export function runPreflight(
   preview: ParsedCsvPreview,
   columnMapping?: ColumnMapping | null,
+  opts?: { allowNumericNeighbourhood?: boolean },
 ): PreflightResult {
   const headersLower = preview.headers.map((h) => h.toLowerCase().trim());
   const headersCount = preview.headers.length;
@@ -420,6 +429,50 @@ export function runPreflight(
           headersCount,
           statusRecognizedRatio,
         };
+      }
+    }
+  }
+
+  // 4. Neighbourhood column should hold area NAMES, not numeric MLS zone/area
+  // codes — Jarvis needs names (e.g. "Crystallina Nera") to write neighbourhood
+  // content. Some boards genuinely only export numeric area codes (no name
+  // column exists), so this is a CONFIRMABLE warning the member can knowingly
+  // proceed past, not a hard block. Suppressed when the caller passes the
+  // acknowledgement flag (member chose to upload anyway).
+  if (!opts?.allowNumericNeighbourhood) {
+    const mappedHoodHeader = mappedHeaderFor("neighbourhood");
+    let hoodIdx = mappedHoodHeader ? headersLower.indexOf(mappedHoodHeader) : -1;
+    if (hoodIdx < 0) {
+      hoodIdx = headersLower.findIndex((h) =>
+        REQUIRED_COLUMN_CANDIDATES.neighbourhood.some((c) => h.includes(c)),
+      );
+    }
+    const hoodRows = preview.allRows ?? preview.sampleRows;
+    if (hoodIdx >= 0 && hoodRows.length > 0) {
+      const values = hoodRows
+        .map((r) => (r[hoodIdx] ?? "").toString().trim())
+        .filter((v) => v.length > 0);
+      if (values.length > 0) {
+        // "Numeric" = no alphabetic characters at all (plain numbers or
+        // punctuation-only codes like "12" or "3.1"). Names like "Windermere"
+        // or "St. Albert" contain letters and don't count.
+        const numericLike = values.filter((v) => !/[a-zA-Z]/.test(v));
+        const numericRatio = numericLike.length / values.length;
+        if (numericRatio > 0.6) {
+          const sample = Array.from(new Set(values)).slice(0, 5);
+          return {
+            ok: false,
+            code: "NEIGHBOURHOOD_MOSTLY_NUMERIC",
+            message: "Your Neighbourhood column looks like numbers or codes.",
+            detail: `Found values like: ${sample.join(", ")}. Jarvis needs the area names (e.g. Crystallina Nera) to write neighbourhood content.`,
+            suggestion:
+              "Re-export with neighbourhood names, or remap the column to the one that holds area names. If your MLS only provides numeric area codes, you can upload anyway.",
+            confirmable: true,
+            rowCount: preview.rowCount,
+            headersCount,
+            statusRecognizedRatio,
+          };
+        }
       }
     }
   }

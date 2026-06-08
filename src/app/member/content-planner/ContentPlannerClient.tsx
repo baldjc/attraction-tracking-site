@@ -518,7 +518,7 @@ export default function ContentPlannerClient({
           <HelpCard
             tone="azure"
             title="Generate with AI"
-            body="New Content (AI) pulls validated ideas anchored to your market data and avatar. Pick one, draft starts."
+            body="Browse Content Ideas pulls validated ideas anchored to your market data and avatar. Pick one, draft starts."
             icon={
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                 <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z" />

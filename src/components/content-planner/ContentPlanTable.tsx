@@ -641,7 +641,7 @@ export default function ContentPlanTable({
       {sortedPlans.length === 0 ? (
         <div className="text-center py-16 text-[var(--abv-text-dim)] text-sm">
           {plans.length === 0
-            ? "No videos planned yet. Hit “+ Add Video” above to start your pipeline."
+            ? "No videos planned yet. Hit “+ Add Blank Video” above to start your pipeline."
             : "No videos match the current filters."}
         </div>
       ) : (

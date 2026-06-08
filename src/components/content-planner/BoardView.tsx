@@ -308,7 +308,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
           className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white rounded-lg transition-colors"
         >
           <PlusIcon className="w-4 h-4" />
-          Add Video
+          Add Blank Video
         </button>
       </div>
 
@@ -446,7 +446,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="text-base font-semibold text-[var(--abv-text)]">Add Video</h2>
+              <h2 className="text-base font-semibold text-[var(--abv-text)]">Add Blank Video</h2>
               <button onClick={() => setShowAddModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]">
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -523,7 +523,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                 Cancel
               </button>
               <button onClick={handleAddSubmit} disabled={addLoading} className="flex-1 text-sm font-medium bg-[var(--abv-dark)] hover:bg-[#5a92b6] text-white px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
-                {addLoading ? "Adding…" : "Add Video"}
+                {addLoading ? "Adding…" : "Add Blank Video"}
               </button>
             </div>
           </div>

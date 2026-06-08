@@ -95,7 +95,14 @@ interface MapperState {
   initialMapping: ColumnMapping | null;
   context: "initial" | "preflight" | "proactive";
   filename?: string;
-  banner?: { message: string; detail?: string; suggestion?: string };
+  banner?: {
+    message: string;
+    detail?: string;
+    suggestion?: string;
+    // Confirmable warnings (e.g. neighbourhood column looks numeric) render an
+    // explicit "upload anyway" action so the member can knowingly proceed.
+    confirm?: { label: string; onConfirm: () => void };
+  };
 }
 
 function detectMonthYear(name: string): {
@@ -335,7 +342,10 @@ export default function UploadPanel({
     }
   }
 
-  async function doFinalUpload(mapping: ColumnMapping | null) {
+  async function doFinalUpload(
+    mapping: ColumnMapping | null,
+    opts?: { acknowledgeNumericNeighbourhood?: boolean },
+  ) {
     setStage("uploading");
     setError(null);
     setConflicts([]);
@@ -352,6 +362,9 @@ export default function UploadPanel({
         JSON.stringify(selected.map((s) => s.monthYear)),
       );
       if (mapping) fd.append("columnMapping", JSON.stringify(mapping));
+      if (opts?.acknowledgeNumericNeighbourhood) {
+        fd.append("acknowledgeNumericNeighbourhood", "true");
+      }
       const res = await fetch("/api/member/market-data/upload", {
         method: "POST",
         body: fd,
@@ -359,6 +372,39 @@ export default function UploadPanel({
       if (res.status === 400) {
         const j = await res.json().catch(() => ({}));
         if (j?.error === "preflight_failed" && j.code && j.message) {
+          // Confirmable warnings (e.g. neighbourhood column looks numeric) are
+          // not data failures — the member can remap to a names column OR
+          // knowingly upload anyway. Reopen the mapper with a banner that
+          // carries an explicit "upload anyway" action which re-submits with the
+          // acknowledgement flag set.
+          if (
+            j.code === "NEIGHBOURHOOD_MOSTLY_NUMERIC" &&
+            j.confirmable &&
+            Array.isArray(j.headers) &&
+            j.headers.length > 0
+          ) {
+            setPreflightError(null);
+            setMapper({
+              headers: j.headers as string[],
+              initialMapping: mapping ?? existingMapping ?? {},
+              context: "preflight",
+              filename: j.filename || oldestFile?.file.name,
+              banner: {
+                message: j.message,
+                detail: j.detail || undefined,
+                suggestion: j.suggestion,
+                confirm: {
+                  label: "Upload anyway",
+                  onConfirm: () =>
+                    doFinalUpload(mapping, {
+                      acknowledgeNumericNeighbourhood: true,
+                    }),
+                },
+              },
+            });
+            setStage("picking");
+            return;
+          }
           // Column-identity failures are recoverable through the mapper — open
           // it (seeded with the effective mapping) instead of dead-ending. Data
           // problems (empty file / all-unknown statuses) can't be fixed by
@@ -605,6 +651,16 @@ export default function UploadPanel({
         <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
           File: {mapper.filename}
         </p>
+      )}
+      {mapper.banner.confirm && (
+        <button
+          type="button"
+          onClick={mapper.banner.confirm.onConfirm}
+          disabled={mapperSaving}
+          className="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-60 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
+        >
+          {mapper.banner.confirm.label}
+        </button>
       )}
     </div>
   ) : mapper?.filename ? (
