@@ -307,7 +307,7 @@ export default function MemberDashboard() {
                     href={browseHref}
                     className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-white/80 font-semibold text-sm hover:text-white hover:bg-white/10 transition-colors"
                   >
-                    Browse all {totalLeads} {totalLeads === 1 ? "lead" : "leads"} →
+                    Browse all content ideas →
                   </Link>
                 )}
                 <button
