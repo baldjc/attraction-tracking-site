@@ -7,6 +7,7 @@ import type { MarketConfigSummary } from "@/lib/content-engine-context";
 import {
   JARVIS_TOOLS,
   executeGetFacts,
+  executeComputeCut,
   executeCleanKnowledgeBase,
   runBuildScript,
   groundAssistantText,
@@ -267,6 +268,46 @@ async function runTool(ctx: {
         monthYear: res.monthYear,
         state: res.state,
         textureOnly: res.textureOnly ?? false,
+        note: res.note,
+        facts: res.facts.map((f) => ({
+          id: f.id,
+          neighbourhood: f.neighbourhood,
+          metric: f.label,
+          value: f.value,
+          monthYear: f.monthYear,
+          ...(f.caveat ? { caveat: f.caveat } : {}),
+        })),
+      };
+      return result(JSON.stringify(payload));
+    }
+
+    if (tu.name === "compute_cut") {
+      emit("tool", {
+        name: "compute_cut",
+        status: "running",
+        summary: "Computing a cut from your raw data…",
+      });
+      const res = await executeComputeCut(userId, {
+        dimension: typeof input.dimension === "string" ? input.dimension : "",
+        filterPropertyClass:
+          typeof input.filterPropertyClass === "string" ? input.filterPropertyClass : undefined,
+        filterNeighbourhood:
+          typeof input.filterNeighbourhood === "string" ? input.filterNeighbourhood : undefined,
+        filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
+        filterPriceBracket:
+          typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,
+      });
+      for (const f of res.facts) onFact(f);
+      record(
+        res.ok && res.facts.length > 0 ? "ok" : "error",
+        res.facts.length > 0
+          ? `Computed ${res.facts.length} number${res.facts.length === 1 ? "" : "s"}${res.monthYear ? ` (${res.monthYear})` : ""}.`
+          : res.note,
+      );
+      const payload = {
+        monthYear: res.monthYear,
+        classification: res.classification,
+        ok: res.ok,
         note: res.note,
         facts: res.facts.map((f) => ({
           id: f.id,

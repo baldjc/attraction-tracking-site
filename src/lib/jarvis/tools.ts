@@ -44,6 +44,12 @@ import {
   PUBLISHED_PLAN_STATUSES,
 } from "@/lib/binge-target";
 import type { LedgerFact } from "@/lib/jarvis/types";
+import {
+  runComputeCut,
+  type CutDimension,
+  type CutFilter,
+  type RunCutClassification,
+} from "@/lib/tools/computeCut";
 import { coerceExtractedClaims } from "@/lib/jarvis/research-ingest";
 import { formatMlsPeriod } from "@/lib/mls-verify-reminder";
 
@@ -142,6 +148,66 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         },
       },
       required: ["title", "rotationSlot", "titlePromise", "linkedFactIds"],
+    },
+  },
+  {
+    name: "compute_cut",
+    description:
+      "Compute a market breakdown on-demand DIRECTLY from the member's raw " +
+      "uploaded CSV, for a slice the validated facts ledger (get_facts) doesn't " +
+      "already pre-compute — e.g. 'single-family homes by the decade they were " +
+      "built', 'condos by price bracket'. Returns real, deterministic aggregates " +
+      "(median price, days on market, sale-to-list, price/sq ft, months of " +
+      "inventory) per group, each with a stable fact id you reuse exactly like a " +
+      "get_facts id (cite or link to a script). Use this ONLY after get_facts " +
+      "returns nothing for the requested slice. " +
+      "TWO PROPERTY DIMENSIONS THAT ARE NOT THE SAME — never swap one for the " +
+      "other: `propertyClass` is the broad class from the raw 'Property Type' " +
+      "column (e.g. Single Family, Condo); `style` is the architectural/storey " +
+      "form from the member's mapped Style column (e.g. Bungalow, 2 Storey). " +
+      "If the member asks about a class or value the data doesn't contain (e.g. " +
+      "'townhouse' when the data only has Single Family and Condo), this tool " +
+      "returns a refusal that LISTS the values that DO exist — relay that " +
+      "honestly; do NOT substitute style for a missing class or invent a " +
+      "segment. Groups with fewer than the headline sold floor are flagged as " +
+      "texture-only — usable as background colour, never as a headline number.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dimension: {
+          type: "string",
+          enum: [
+            "neighbourhood",
+            "style",
+            "propertyClass",
+            "yearBuiltDecade",
+            "priceBracket",
+          ],
+          description:
+            "What to break the market down BY. propertyClass = raw 'Property " +
+            "Type' class; style = mapped Style column; yearBuiltDecade = decade " +
+            "the home was built; priceBracket = raw price-bracket column.",
+        },
+        filterPropertyClass: {
+          type: "string",
+          description:
+            "Optional. Restrict to one raw property CLASS (e.g. 'Single Family').",
+        },
+        filterNeighbourhood: {
+          type: "string",
+          description: "Optional. Restrict to one neighbourhood (exact name).",
+        },
+        filterStyle: {
+          type: "string",
+          description:
+            "Optional. Restrict to one mapped STYLE value (e.g. 'Bungalow').",
+        },
+        filterPriceBracket: {
+          type: "string",
+          description: "Optional. Restrict to one raw price-bracket value.",
+        },
+      },
+      required: ["dimension"],
     },
   },
   {
@@ -471,6 +537,69 @@ export async function executeGetFacts(
     monthYear: upload.monthYear,
     state: "none",
     note,
+  };
+}
+
+// ── compute_cut executor (deterministic on-demand cut from raw CSV) ──────────
+
+export interface ComputeCutArgs {
+  dimension: string;
+  filterPropertyClass?: string;
+  filterNeighbourhood?: string;
+  filterStyle?: string;
+  filterPriceBracket?: string;
+}
+
+export interface ComputeCutToolResult {
+  facts: LedgerFact[];
+  monthYear: string | null;
+  classification: RunCutClassification;
+  ok: boolean;
+  note: string;
+}
+
+const COMPUTE_CUT_DIMENSIONS: CutDimension[] = [
+  "neighbourhood",
+  "style",
+  "propertyClass",
+  "yearBuiltDecade",
+  "priceBracket",
+];
+
+export async function executeComputeCut(
+  userId: string,
+  args: ComputeCutArgs,
+): Promise<ComputeCutToolResult> {
+  const dimension = COMPUTE_CUT_DIMENSIONS.includes(args.dimension as CutDimension)
+    ? (args.dimension as CutDimension)
+    : null;
+  if (!dimension) {
+    return {
+      facts: [],
+      monthYear: null,
+      classification: "unavailable",
+      ok: false,
+      note: `Unknown cut dimension "${args.dimension}". Valid dimensions: ${COMPUTE_CUT_DIMENSIONS.join(", ")}.`,
+    };
+  }
+
+  const filters: CutFilter[] = [];
+  const pushFilter = (field: CutFilter["field"], value?: string) => {
+    const v = value?.trim();
+    if (v) filters.push({ field, value: v });
+  };
+  pushFilter("propertyClass", args.filterPropertyClass);
+  pushFilter("neighbourhood", args.filterNeighbourhood);
+  pushFilter("style", args.filterStyle);
+  pushFilter("priceBracket", args.filterPriceBracket);
+
+  const res = await runComputeCut({ userId, params: { dimension, filters } });
+  return {
+    facts: res.facts,
+    monthYear: res.monthYear,
+    classification: res.classification,
+    ok: res.ok,
+    note: res.note,
   };
 }
 
