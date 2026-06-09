@@ -13,6 +13,7 @@ import {
   runBuildScript,
   groundAssistantText,
 } from "@/lib/jarvis/tools";
+import { resolveAvailableCutDimensions } from "@/lib/tools/computeCut";
 import {
   JARVIS_SYSTEM_PREFIX,
   buildJarvisDynamicContext,
@@ -105,6 +106,14 @@ export async function runJarvisTurn(args: {
   const ledger = () => [...priorLedger, ...newLedgerFacts];
   const seenFactIds = new Set(priorLedger.map((f) => f.id));
 
+  // Proactively tell Jarvis which on-demand cuts THIS member's latest upload can
+  // actually answer — resolved from their real CSV headers via the same resolver
+  // the compute tool uses, so city shows up whenever a city/municipality column
+  // exists (even unmapped). Never throws; an empty list just omits the line.
+  const availableCutDimensions = (
+    await resolveAvailableCutDimensions({ userId })
+  ).labels;
+
   // System holds ONLY the static behavioural prefix so it stays prompt-cacheable
   // across every member and turn. Per-member dynamic context (name, market, fact
   // ledger) is injected on the USER side below — never in the cached system block.
@@ -137,6 +146,7 @@ export async function runJarvisTurn(args: {
           campaigns,
           recentVideos,
           researchSources,
+          availableCutDimensions,
         }),
       },
       { role: "assistant", content: "Understood — I'll use only these facts and my tools." },

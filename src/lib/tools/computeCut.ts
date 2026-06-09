@@ -819,6 +819,101 @@ function availableDimensionsFrom(cols: ResolvedColumns): CutDimension[] {
 }
 
 /**
+ * The ONE source of truth that turns a member's column mapping + the actual CSV
+ * headers into resolved cut columns. Both `runComputeCut` (the compute gate +
+ * row reader) and `resolveAvailableCutDimensions` (the signal Jarvis is told)
+ * call this, so availability, the gate, and the reader can never disagree on
+ * which header supplies city/property-class/price-bracket.
+ */
+function resolveColumns(
+  mapping: ColumnMapping,
+  headerLookup: Map<string, string>,
+): ResolvedColumns {
+  return {
+    neighbourhood: mappedHeaderResolves(mapping.neighbourhood, headerLookup),
+    cityHeader: resolveCityHeader(mapping.city, headerLookup),
+    style: mappedHeaderResolves(mapping.propertyType, headerLookup),
+    yearBuilt: mappedHeaderResolves(mapping.yearBuilt, headerLookup),
+    propertyClassHeader: resolveRawHeader(
+      headerLookup,
+      PROPERTY_CLASS_HEADER_CANDIDATES,
+    ),
+    priceBracketHeader: resolveRawHeader(
+      headerLookup,
+      PRICE_BRACKET_HEADER_CANDIDATES,
+    ),
+  };
+}
+
+export interface AvailableCutDimensions {
+  /** Machine dimensions the member's latest upload can actually be cut by. */
+  dimensions: CutDimension[];
+  /** Human labels (e.g. "year-built decade") for surfacing in prose/prompts. */
+  labels: string[];
+  /** The upload month these were resolved against, or null if none exists. */
+  monthYear: string | null;
+}
+
+/**
+ * Resolve which on-demand cut dimensions are genuinely available for a member's
+ * latest validated upload, using the SAME column resolver as the compute path.
+ * This is the proactive signal Jarvis is told about so it offers/calls cuts the
+ * member's data can actually answer (notably city, which self-resolves from a
+ * `city`/`municipality` header even when it was never explicitly mapped).
+ *
+ * Never throws: any load/parse failure degrades to an empty list, leaving the
+ * compute tool's own honest-refusal note as the backstop.
+ */
+export async function resolveAvailableCutDimensions(
+  input: { userId: string; monthYear?: string },
+  depsOverride?: Partial<ComputeCutDeps>,
+): Promise<AvailableCutDimensions> {
+  const empty: AvailableCutDimensions = {
+    dimensions: [],
+    labels: [],
+    monthYear: null,
+  };
+  try {
+    const deps = { ...defaultDeps(), ...depsOverride };
+    const wantMonth =
+      typeof input.monthYear === "string" && /^\d{4}-\d{2}$/.test(input.monthYear)
+        ? input.monthYear
+        : null;
+    const upload = await deps.prisma.marketDataUpload.findFirst({
+      where: {
+        userId: input.userId,
+        status: "validated",
+        ...(wantMonth ? { monthYear: wantMonth } : {}),
+      },
+      orderBy: [{ monthYear: "desc" }, { validatedAt: "desc" }],
+      select: { id: true, monthYear: true, csvStorageUrl: true },
+    });
+    if (!upload || !upload.csvStorageUrl) return empty;
+
+    const config = await deps.getMarketConfig(input.userId);
+    if (!config) return { ...empty, monthYear: upload.monthYear };
+
+    const mapping: ColumnMapping = config.columnMapping ?? {};
+    const buffer = await deps.readCsv(upload.csvStorageUrl);
+    const records = parseCsvRecords<Record<string, string>>(
+      buffer.toString("utf8"),
+      { columns: true },
+    );
+    const headers = records.length > 0 ? Object.keys(records[0]) : [];
+    const headerLookup = buildHeaderLookup(headers);
+    const cols = resolveColumns(mapping, headerLookup);
+    const dimensions = availableDimensionsFrom(cols);
+    return {
+      dimensions,
+      labels: dimensions.map(dimensionLabel),
+      monthYear: upload.monthYear,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+/**
  * Run a cut end-to-end: load the member's latest validated upload, re-parse the
  * RAW CSV, compute the cut, persist real facts (idempotent per scope), log the
  * call, and return LedgerFacts the orchestrator can cite. Never throws for the
@@ -881,23 +976,8 @@ export async function runComputeCut(
   const headers = records.length > 0 ? Object.keys(records[0]) : [];
   const headerLookup = buildHeaderLookup(headers);
 
-  const propertyClassHeader = resolveRawHeader(
-    headerLookup,
-    PROPERTY_CLASS_HEADER_CANDIDATES,
-  );
-  const priceBracketHeader = resolveRawHeader(
-    headerLookup,
-    PRICE_BRACKET_HEADER_CANDIDATES,
-  );
-  const cityHeader = resolveCityHeader(mapping.city, headerLookup);
-  const cols: ResolvedColumns = {
-    neighbourhood: mappedHeaderResolves(mapping.neighbourhood, headerLookup),
-    cityHeader,
-    style: mappedHeaderResolves(mapping.propertyType, headerLookup),
-    yearBuilt: mappedHeaderResolves(mapping.yearBuilt, headerLookup),
-    propertyClassHeader,
-    priceBracketHeader,
-  };
+  const cols = resolveColumns(mapping, headerLookup);
+  const { cityHeader, propertyClassHeader, priceBracketHeader } = cols;
 
   // Honesty gate 1 — the requested COLUMN is genuinely not in this upload.
   const missing: string[] = [];

@@ -4,6 +4,7 @@ import {
   computeCut,
   runComputeCut,
   runYoYCut,
+  resolveAvailableCutDimensions,
   yearBuiltDecadeLabel,
   type CutRow,
   type ComputeCutDeps,
@@ -913,6 +914,55 @@ test("runComputeCut: unmapped-but-present city disambiguates neighbourhood acros
   assert.ok(hoods.has("Downtown (Plano)"), "expected a Plano-scoped Downtown");
   assert.ok(hoods.has("Downtown (Frisco)"), "expected a Frisco-scoped Downtown");
   assert.ok(!hoods.has("Downtown"), "the bare merged Downtown must not appear");
+});
+
+test("resolveAvailableCutDimensions: INCLUDES city when it resolves via alias (Phil's path)", async () => {
+  // City present in the CSV header but NOT in the saved mapping — the signal
+  // Jarvis receives must still list city so Jarvis offers/calls the city cut.
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "Downtown", 500000, 20) +
+          soldCityRows("Frisco", "Uptown", 800000, 20),
+      ),
+    },
+    NO_CITY_MAPPING,
+  );
+  const res = await resolveAvailableCutDimensions({ userId: "u" }, deps);
+  assert.ok(
+    res.dimensions.includes("city"),
+    "city must be in the available-dimensions signal when its header resolves",
+  );
+  assert.ok(res.labels.includes("city"));
+  assert.equal(res.monthYear, "2026-05");
+});
+
+test("resolveAvailableCutDimensions: EXCLUDES city when there is genuinely no city column", async () => {
+  const { deps } = stubMultiMonth(
+    { "2026-05": soldNbhdCsv("All", 20) }, // neighbourhood only, no City/Municipality
+    NBHD_MAPPING,
+  );
+  const res = await resolveAvailableCutDimensions({ userId: "u" }, deps);
+  assert.ok(
+    !res.dimensions.includes("city"),
+    "city must NOT appear when the upload has no city/municipality column",
+  );
+  // neighbourhood is still available for this member.
+  assert.ok(res.dimensions.includes("neighbourhood"));
+});
+
+test("resolveAvailableCutDimensions: explicit city mapping also surfaces city", async () => {
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": cityCsv(
+        soldCityRows("Plano", "Downtown", 500000, 20) +
+          soldCityRows("Frisco", "Uptown", 800000, 20),
+      ),
+    },
+    CITY_MAPPING,
+  );
+  const res = await resolveAvailableCutDimensions({ userId: "u" }, deps);
+  assert.ok(res.dimensions.includes("city"));
 });
 
 test("runComputeCut: explicit city mapping wins over the alias header", async () => {

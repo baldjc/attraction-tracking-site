@@ -126,9 +126,21 @@ export function buildJarvisDynamicContext(args: {
   campaigns?: JarvisCampaignOption[];
   recentVideos?: JarvisRecentVideoOption[];
   researchSources?: JarvisResearchSource[];
+  /** Cut dimensions the member's latest upload can actually answer (resolved
+   *  from their real CSV headers). Tells Jarvis which on-demand cuts to offer —
+   *  notably city, which is available whenever a city/municipality column
+   *  resolves, even if it was never explicitly mapped. */
+  availableCutDimensions?: string[];
 }): string {
-  const { memberFullName, marketConfig, ledger, campaigns, recentVideos, researchSources } =
-    args;
+  const {
+    memberFullName,
+    marketConfig,
+    ledger,
+    campaigns,
+    recentVideos,
+    researchSources,
+    availableCutDimensions,
+  } = args;
   const lines: string[] = ["MEMBER & MARKET CONTEXT"];
   lines.push(`- Member: ${memberFullName ?? "(name not set)"}`);
   if (marketConfig) {
@@ -140,6 +152,11 @@ export function buildJarvisDynamicContext(args: {
     }
   } else {
     lines.push("- Market: not configured yet.");
+  }
+  if (availableCutDimensions && availableCutDimensions.length > 0) {
+    lines.push(
+      `- Available on-demand cuts (this member's latest upload can be broken down by): ${availableCutDimensions.join(", ")}. Use compute_cut / compute_yoy_cut with these dimensions; a dimension NOT listed here will honestly refuse.`,
+    );
   }
 
   // ── Pre-draft asset menus (see DRAFTING: propose before you draft) ──────────
