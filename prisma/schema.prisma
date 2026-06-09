@@ -219,6 +219,7 @@ model User {
   canonicalAreas         CanonicalArea[]
   areaAliases            AreaAlias[]
   mergeRuns              MergeRun[]
+  excludedNeighbourhoods ExcludedNeighbourhood[]
 
   // Wave 1.5 (data-first rebuild) — additive relations only
   neighbourhoodProfiles        NeighbourhoodProfile[]
@@ -2259,6 +2260,30 @@ model MergeRun {
   @@index([userId, status])
   @@index([userId, createdAt])
   @@map("merge_runs")
+}
+
+// Member-facing neighbourhood hygiene — names the member explicitly removed
+// from their Knowledge Base / market data (e.g. junk MLS area codes, "Unknown",
+// misspellings). This is the persistent exclusion list: once a name is here it
+// stays filtered out of cuts, the availability signal, and the vocab even after
+// a FRESH CSV upload that still contains it — so re-uploading a messy export
+// never resurrects the junk. `normName` is the case/space-insensitive match key
+// (trim + lowercase). Removing a row (un-exclude) lets future uploads include
+// the name again. Member-scoped; never touches another member's data.
+model ExcludedNeighbourhood {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Display form as it appeared when excluded (for the "excluded" UI list).
+  name      String
+  // Normalized match key — trim + toLowerCase. All ingest/read filters compare
+  // on this so casing/whitespace variants of the same junk name stay excluded.
+  normName  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, normName])
+  @@index([userId])
+  @@map("excluded_neighbourhoods")
 }
 
 // Per-member metric methodology settings — "How we calculate your stats".

@@ -18,6 +18,10 @@
 // do not exist on the real type).
 
 import prisma from "@/lib/prisma";
+import {
+  getExcludedNeighbourhoodKeys,
+  isExcluded,
+} from "@/lib/excluded-neighbourhoods";
 import type {
   AggregatedGroup,
   AggregatedTable,
@@ -211,8 +215,13 @@ export async function persistAggregatedMetrics(
   table: AggregatedTable,
 ): Promise<number> {
   const monthYear = table.meta.monthYear;
+  // Persistent exclusion list — skip metrics for any neighbourhood the member
+  // removed, so a re-upload never resurrects junk. Rollup labels are never
+  // excluded (the delete endpoint refuses them), so aggregates are safe.
+  const excludedKeys = await getExcludedNeighbourhoodKeys(userId);
   const allRows: MetricRow[] = [];
   for (const group of table.groups) {
+    if (isExcluded(excludedKeys, group.neighbourhood)) continue;
     allRows.push(...rowsFromGroup(group, monthYear));
   }
 

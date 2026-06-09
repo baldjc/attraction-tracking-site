@@ -119,6 +119,44 @@ async function main() {
   console.log(`\n-- case/space duplicate clusters: ${dupes.length}`);
   dupes.slice(0, 25).forEach((v) => console.log(`      ${v.map((x) => `"${x}"`).join(" == ")}`));
 
+  // ---- STORE C: MarketConfig.neighbourhoodVocab (drives the KB page cards) ---
+  const config = await prisma.marketConfig.findUnique({
+    where: { userId },
+    select: {
+      marketName: true,
+      mlsSource: true,
+      columnMapping: true,
+      neighbourhoodVocab: true,
+    },
+  });
+  console.log(`\n========== STORE C — MarketConfig.neighbourhoodVocab ==========`);
+  if (!config) {
+    console.log("no MarketConfig row");
+  } else {
+    console.log(`marketName: ${config.marketName}  mlsSource: ${config.mlsSource ?? "—"}`);
+    console.log(`columnMapping: ${JSON.stringify(config.columnMapping)}`);
+    const vocab = Array.isArray(config.neighbourhoodVocab)
+      ? (config.neighbourhoodVocab as unknown[]).filter((v): v is string => typeof v === "string")
+      : [];
+    const numeric = vocab.filter((v) => /^\d+$/.test(v.trim()));
+    console.log(`vocab count: ${vocab.length}  ALL-NUMERIC (junk): ${numeric.length}`);
+    console.log(`numeric sample: ${numeric.slice(0, 30).map((v) => `"${v}"`).join(", ")}`);
+    const nonNumeric = vocab.filter((v) => !/^\d+$/.test(v.trim()));
+    console.log(`non-numeric (${nonNumeric.length}): ${nonNumeric.slice(0, 40).map((v) => `"${v}"`).join(", ")}`);
+  }
+
+  // configSnapshot (the column mapping used at upload time) per upload.
+  const snaps = await prisma.marketDataUpload.findMany({
+    where: { userId },
+    select: { id: true, monthYear: true, configSnapshot: true },
+    orderBy: { uploadedAt: "desc" },
+  });
+  console.log(`\n-- per-upload configSnapshot.columnMapping (neighbourhood field):`);
+  for (const s of snaps) {
+    const cm = (s.configSnapshot as { columnMapping?: Record<string, unknown> } | null)?.columnMapping;
+    console.log(`   ${s.monthYear}: neighbourhood<-${JSON.stringify(cm?.neighbourhood)}  full=${JSON.stringify(cm)}`);
+  }
+
   // ---- Canonical / alias state ----------------------------------------------
   const canonCount = await prisma.canonicalArea.count({ where: { userId } });
   const aliasCount = await prisma.areaAlias.count({ where: { userId } });

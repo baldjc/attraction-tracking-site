@@ -34,6 +34,10 @@
  */
 import { randomUUID } from "node:crypto";
 import prismaDefault from "@/lib/prisma";
+import {
+  getExcludedNeighbourhoodKeys,
+  isExcluded,
+} from "@/lib/excluded-neighbourhoods";
 import { readUploadFile as realReadUploadFile } from "@/lib/market-csv";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
 import { normalizePropertyType, shiftMonthYear } from "@/lib/csv-aggregate";
@@ -1177,18 +1181,26 @@ export async function resolveAvailableCutDimensions(
     const cols = resolveColumns(mapping, headerLookup);
     const dimensions = availableDimensionsFrom(cols);
     const numericFilters = availableNumericFiltersFrom(cols);
+    // Persistent exclusion list — hide removed neighbourhood values from the
+    // availability signal so the member never sees junk they deleted.
+    const excludedKeys = await getExcludedNeighbourhoodKeys(input.userId);
+    const dimensionValues = surfaceDimensionValues(
+      records,
+      cols,
+      mapping,
+      headerLookup,
+      dimensions,
+    ).map((dv) =>
+      dv.dimension === "neighbourhood" && excludedKeys.size > 0
+        ? { ...dv, values: dv.values.filter((v) => !isExcluded(excludedKeys, v)) }
+        : dv,
+    );
     return {
       dimensions,
       labels: dimensions.map(dimensionLabel),
       numericFilters,
       numericFilterLabels: numericFilters.map(numericFieldLabel),
-      dimensionValues: surfaceDimensionValues(
-        records,
-        cols,
-        mapping,
-        headerLookup,
-        dimensions,
-      ),
+      dimensionValues,
       monthYear: upload.monthYear,
     };
   } catch {
@@ -1344,7 +1356,20 @@ export async function runComputeCut(
   ).sold;
   const headlineSoldFloor = Math.max(HEADLINE_SOLD_FLOOR, discloseFloor);
 
-  const core = computeCut(cutRows, params, { headlineSoldFloor, discloseFloor });
+  // Persistent exclusion list — drop rows whose neighbourhood the member
+  // removed so excluded junk pollutes neither neighbourhood cuts NOR the
+  // "All Neighbourhoods" aggregate. Applied to the mapped neighbourhood (incl.
+  // the "Unknown" fallback), so excluding "Unknown" cleans unmapped rows too.
+  const excludedKeys = await getExcludedNeighbourhoodKeys(userId);
+  const filteredCutRows =
+    excludedKeys.size === 0
+      ? cutRows
+      : cutRows.filter((r) => !isExcluded(excludedKeys, r.neighbourhood));
+
+  const core = computeCut(filteredCutRows, params, {
+    headlineSoldFloor,
+    discloseFloor,
+  });
 
   // Honesty gate 2 — column present, but the requested filter value isn't.
   if (core.classification === "no_match" || core.classification === "empty") {

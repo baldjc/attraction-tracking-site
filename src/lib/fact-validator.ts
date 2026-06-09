@@ -25,6 +25,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import Decimal from "decimal.js-light";
 import prisma from "@/lib/prisma";
+import {
+  getExcludedNeighbourhoodKeys,
+  isExcluded,
+} from "@/lib/excluded-neighbourhoods";
 import { Prisma } from "@/generated/prisma/client";
 import { buildFactValidatorSystemPrompt } from "@/lib/fact-validator-prompt";
 import {
@@ -1670,6 +1674,17 @@ async function persistResults(
     }),
   );
 
+  // Persistent exclusion list — drop any fact whose neighbourhood the member
+  // explicitly removed, so a re-upload of a messy export never resurrects junk
+  // (raw MLS codes, "Unknown", misspellings). Rollup labels like
+  // "All Neighbourhoods" are never in the exclusion set (the delete endpoint
+  // refuses to exclude them), so this can't strip aggregate rows.
+  const excludedKeys = await getExcludedNeighbourhoodKeys(userId);
+  const factRows =
+    excludedKeys.size === 0
+      ? allFactRows
+      : allFactRows.filter((r) => !isExcluded(excludedKeys, r.neighbourhood));
+
   // Idempotent replace. Because the bulk inserts below run OUTSIDE a transaction
   // (see why immediately after), a persist that dies mid-way can leave facts/
   // leads on the row while the upload stays "failed". Retries (member retry +
@@ -1692,8 +1707,8 @@ async function persistResults(
   // simply re-writes them (cheap, and — when rawValidatorOutput is reused —
   // with no new AI cost). createMany is a single statement, so it is not
   // subject to the interactive-transaction budget.
-  if (allFactRows.length > 0) {
-    await prisma.marketFact.createMany({ data: allFactRows });
+  if (factRows.length > 0) {
+    await prisma.marketFact.createMany({ data: factRows });
   }
   if (leads.length > 0) {
     // Story Lead → Video carry-over: persist the source MarketFact PKs on each
@@ -1817,10 +1832,16 @@ async function seedNeighbourhoodVocabFromUpload(
       )
     : [];
 
+  // Persistent exclusion list — never re-seed a name the member removed, and
+  // self-heal by dropping any excluded name that somehow lingered in existing
+  // vocab. The `changed` check below then writes the pruned list.
+  const excludedKeys = await getExcludedNeighbourhoodKeys(userId);
+
   // Dedupe by normalized key; keep the first-seen display form (existing
   // entries win over new ones so a member's curated casing is preserved).
   const seen = new Map<string, string>();
   for (const name of [...existing, ...cleaned]) {
+    if (isExcluded(excludedKeys, name)) continue;
     const key = normKey(name);
     if (!key) continue;
     if (!seen.has(key)) seen.set(key, name.trim());

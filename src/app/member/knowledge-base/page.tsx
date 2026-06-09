@@ -4,6 +4,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getMarketConfigForUser } from "@/lib/market-config-server";
 import KnowledgeBaseClient from "@/components/knowledge-base/KnowledgeBaseClient";
+import ManageNeighbourhoods from "@/components/knowledge-base/ManageNeighbourhoods";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +97,8 @@ export default async function KnowledgeBasePage() {
             : [],
         }))}
       />
+
+      <ManageNeighbourhoods />
     </div>
   );
 }
