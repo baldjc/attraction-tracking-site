@@ -68,6 +68,8 @@ function soldRow(over: Partial<CutRow>): CutRow {
     listPrice: 610000,
     daysOnMarket: 20,
     sqft: 2000,
+    bedrooms: 3,
+    bathrooms: 2,
     spLpRatio: null,
     ...over,
   };
@@ -200,6 +202,120 @@ test("honesty: townhouse filter → no_match listing available classes, no style
   assert.deepEqual(result.availableValues.propertyClass, ["Condo", "Single Family"]);
   // ...and the style column is NOT used as a townhouse proxy.
   assert.ok(!result.availableValues.propertyClass.includes("townhouse"));
+});
+
+test("numeric: sqft >= 3000 filter restricts the subset and re-applies honesty bands", () => {
+  const rows: CutRow[] = [];
+  // 20 big homes (>= 3000 sqft) → above a 15-floor → headline-safe subset.
+  for (let i = 0; i < 20; i++) {
+    rows.push(soldRow({ sqft: 3200, salePrice: 800000, listPrice: 800000 }));
+  }
+  // 50 small homes excluded by the filter (must NOT inflate the count).
+  for (let i = 0; i < 50; i++) {
+    rows.push(soldRow({ sqft: 1800, salePrice: 400000 }));
+  }
+  const result = computeCut(
+    rows,
+    {
+      dimension: "style",
+      numericFilters: [{ field: "sqft", min: 3000 }],
+    },
+    { headlineSoldFloor: 15 },
+  );
+  assert.equal(result.classification, "computed");
+  // Only the 20 big homes are in scope.
+  assert.equal(result.scopedRowCount, 20);
+  const grp = result.groups.find((g) => g.bucket === "2 Storey");
+  assert.ok(grp);
+  assert.equal(grp!.soldCount, 20);
+  assert.equal(grp!.headlineSafe, true);
+});
+
+test("numeric: composes with a categorical filter AND with the groupBy dimension", () => {
+  const rows: CutRow[] = [];
+  // Single Family, 4 bed → 18 sold (headline). Different cities to group by.
+  for (let i = 0; i < 18; i++) {
+    rows.push(
+      soldRow({
+        propertyClass: "Single Family",
+        bedrooms: 4,
+        city: i < 12 ? "Plano" : "Frisco",
+      }),
+    );
+  }
+  // Single Family, 2 bed → excluded by the bedrooms>=4 filter.
+  for (let i = 0; i < 30; i++) {
+    rows.push(soldRow({ propertyClass: "Single Family", bedrooms: 2, city: "Plano" }));
+  }
+  // Condo, 4 bed → excluded by the propertyClass filter.
+  for (let i = 0; i < 30; i++) {
+    rows.push(soldRow({ propertyClass: "Condo", bedrooms: 4, city: "Plano" }));
+  }
+  const result = computeCut(
+    rows,
+    {
+      dimension: "city",
+      filters: [{ field: "propertyClass", value: "Single Family" }],
+      numericFilters: [{ field: "bedrooms", min: 4 }],
+    },
+    { headlineSoldFloor: 15 },
+  );
+  assert.equal(result.classification, "computed");
+  assert.equal(result.scopedRowCount, 18);
+  const plano = result.groups.find((g) => g.bucket === "Plano");
+  const frisco = result.groups.find((g) => g.bucket === "Frisco");
+  assert.equal(plano!.soldCount, 12);
+  assert.equal(frisco!.soldCount, 6);
+});
+
+test("numeric: a too-narrow range matches nothing → computed with zero groups (honest count, NOT no_match)", () => {
+  const rows: CutRow[] = [];
+  for (let i = 0; i < 40; i++) rows.push(soldRow({ sqft: 2000 }));
+  const result = computeCut(
+    rows,
+    {
+      dimension: "style",
+      numericFilters: [{ field: "sqft", min: 100000 }],
+    },
+    { headlineSoldFloor: 15 },
+  );
+  // Column + values are valid; the range just excludes everything. This is a
+  // real computed result with zero groups, never a no_match column error.
+  assert.equal(result.classification, "computed");
+  assert.equal(result.groups.length, 0);
+  assert.equal(result.scopedRowCount, 0);
+});
+
+test("numeric: a null value never coerces to 0 (rows missing the field are excluded, not matched)", () => {
+  const rows: CutRow[] = [];
+  for (let i = 0; i < 20; i++) rows.push(soldRow({ salePrice: null }));
+  const result = computeCut(
+    rows,
+    {
+      dimension: "style",
+      numericFilters: [{ field: "salePrice", max: 1000000 }],
+    },
+    { headlineSoldFloor: 15 },
+  );
+  // No row carries a sale price, so none match a <= filter (null !-> 0).
+  assert.equal(result.classification, "computed");
+  assert.equal(result.scopedRowCount, 0);
+});
+
+test("numeric: swapped bounds are normalized (min > max becomes a valid range)", () => {
+  const rows: CutRow[] = [];
+  for (let i = 0; i < 20; i++) rows.push(soldRow({ sqft: 2500 }));
+  const result = computeCut(
+    rows,
+    {
+      dimension: "style",
+      // Deliberately swapped: min=3000, max=2000 → normalized to [2000, 3000].
+      numericFilters: [{ field: "sqft", min: 3000, max: 2000 }],
+    },
+    { headlineSoldFloor: 15 },
+  );
+  assert.equal(result.classification, "computed");
+  assert.equal(result.scopedRowCount, 20);
 });
 
 test("zero-sold group → metrics null, never headline", () => {
@@ -396,6 +512,108 @@ test("runComputeCut: properly mapped headers resolve and compute (sanity)", asyn
   // "unavailable".)
   assert.notEqual(res.classification, "unavailable");
   assert.notEqual(res.classification, "no_upload");
+});
+
+// ── Numeric filtering through the full runComputeCut executor path ────────────
+
+/** A CSV with sqft + bedrooms so numeric filters resolve against real headers. */
+const NUMERIC_CSV =
+  "Community,Status,Sale Price,List Price,SqFt,Bedrooms\n" +
+  // 18 big 4-bed homes in Bridgeland (>= 3000 sqft, >= 4 bed).
+  Array.from(
+    { length: 18 },
+    (_, i) => `Bridgeland,Sold,${800000 + i * 1000},${800000 + i * 1000},3200,4`,
+  ).join("\n") +
+  "\n" +
+  // 40 small 2-bed homes that any sqft>=3000 / bed>=4 filter must exclude.
+  Array.from(
+    { length: 40 },
+    (_, i) => `Bridgeland,Sold,${400000 + i * 1000},${410000 + i * 1000},1800,2`,
+  ).join("\n") +
+  "\n";
+
+const NUMERIC_MAPPING: ColumnMapping = {
+  neighbourhood: "Community",
+  status: "Status",
+  salePrice: "Sale Price",
+  listPrice: "List Price",
+  sqft: "SqFt",
+  bedrooms: "Bedrooms",
+};
+
+test("runComputeCut: numericFilters flow end-to-end and restrict the scoped subset", async () => {
+  const { deps } = stubDeps(NUMERIC_CSV, NUMERIC_MAPPING);
+  const res = await runComputeCut(
+    {
+      userId: "u",
+      params: {
+        dimension: "neighbourhood",
+        filters: [],
+        numericFilters: [{ field: "sqft", min: 3000 }],
+      },
+    },
+    deps,
+  );
+  // Column resolved + range matched the 18 big homes → a real computed cut.
+  assert.notEqual(res.classification, "unavailable");
+  assert.equal(res.classification, "computed");
+  // The 40 small homes are excluded; the median sale price reflects only the
+  // 18 big homes (>= $800k), proving the filter actually scoped the rows.
+  const med = res.facts.find((f) => /median sale price/i.test(f.label));
+  assert.ok(med, "expected a median sale price fact");
+  // The 18 big homes sell for >= $800k (median $808,500); the excluded small
+  // homes would drag the median to ~$419k. An $8xx,xxx median proves the
+  // sqft>=3000 filter actually scoped the rows.
+  assert.match(
+    String(med!.value),
+    /\$8\d{2},\d{3}/,
+    `median should reflect only the >=3000sqft subset, got ${med!.value}`,
+  );
+});
+
+test("runComputeCut: a numeric filter mapped to a missing header → honest unavailable", async () => {
+  // bedrooms is NOT mapped here, so a bedrooms filter cannot be honored.
+  const { deps, logged } = stubDeps(NUMERIC_CSV, {
+    neighbourhood: "Community",
+    status: "Status",
+    salePrice: "Sale Price",
+    listPrice: "List Price",
+  });
+  const res = await runComputeCut(
+    {
+      userId: "u",
+      params: {
+        dimension: "neighbourhood",
+        filters: [],
+        numericFilters: [{ field: "bedrooms", min: 4 }],
+      },
+    },
+    deps,
+  );
+  assert.equal(res.classification, "unavailable");
+  assert.match(res.note, /bedroom/i);
+  assert.deepEqual(logged, ["unavailable"]);
+});
+
+test("runComputeCut: a too-narrow numeric filter → honest zero, NOT unavailable", async () => {
+  const { deps, createdFacts } = stubDeps(NUMERIC_CSV, NUMERIC_MAPPING);
+  const res = await runComputeCut(
+    {
+      userId: "u",
+      params: {
+        dimension: "neighbourhood",
+        filters: [],
+        numericFilters: [{ field: "sqft", min: 100000 }],
+      },
+    },
+    deps,
+  );
+  // The column exists and is mapped — the range simply excludes every row.
+  // That is an honest computed-zero, never an availability error.
+  assert.notEqual(res.classification, "unavailable");
+  assert.equal(res.facts.length, 0);
+  assert.equal(createdFacts.length, 0, "no facts to persist when nothing matches");
+  assert.match(res.note, /match/i);
 });
 
 // ── Sample-size honesty bands ────────────────────────────────────────────────
@@ -963,6 +1181,42 @@ test("resolveAvailableCutDimensions: explicit city mapping also surfaces city", 
   );
   const res = await resolveAvailableCutDimensions({ userId: "u" }, deps);
   assert.ok(res.dimensions.includes("city"));
+});
+
+test("resolveAvailableCutDimensions: surfaces property CLASSES under the style dimension when mapped to Style (Phil's path)", async () => {
+  // Phil has NO raw 'Property Type' column — his property classes live in the
+  // Style column (propertyType→"Style"). The surfaced dimensionValues must put
+  // 'Single Family'/'Condo' under the STYLE dimension, most-frequent first, so
+  // Jarvis routes a "single family" request to filterStyle — never proxied
+  // through propertyClass in the engine, only advertised to the model.
+  const csv =
+    "Style,Community,Status,Sale Price,List Price\n" +
+    Array.from({ length: 30 }, () => "Single Family,A,Sold,500000,500000").join(
+      "\n",
+    ) +
+    "\n" +
+    Array.from({ length: 10 }, () => "Condo,A,Sold,300000,300000").join("\n") +
+    "\n";
+  const { deps } = stubDeps(csv, {
+    neighbourhood: "Community",
+    status: "Status",
+    salePrice: "Sale Price",
+    listPrice: "List Price",
+    propertyType: "Style",
+  });
+  const res = await resolveAvailableCutDimensions({ userId: "u" }, deps);
+  const styleVals = res.dimensionValues.find((d) => d.dimension === "style");
+  assert.ok(styleVals, "style dimension values must be surfaced");
+  // Most-frequent first (30 Single Family > 10 Condo). Values pass through the
+  // SAME normalizePropertyType the row reader uses, so "Condo" surfaces as its
+  // canonical bucket "Apartment" — exactly the label a real cut would group by.
+  assert.deepEqual(styleVals!.values, ["Single Family", "Apartment"]);
+  assert.equal(styleVals!.truncated, false);
+  // propertyClass has no raw header here → it is NOT surfaced (honest, no proxy).
+  assert.ok(
+    !res.dimensionValues.some((d) => d.dimension === "propertyClass"),
+    "propertyClass must NOT be surfaced when there is no raw Property Type column",
+  );
 });
 
 test("runComputeCut: explicit city mapping wins over the alias header", async () => {

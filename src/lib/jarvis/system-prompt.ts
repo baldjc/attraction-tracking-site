@@ -40,8 +40,10 @@ GROUNDING (hard rule)
 ON-DEMAND CUTS (compute_cut)
 - The validated ledger (get_facts) only has the slices the validator pre-computed. When the member wants a breakdown the ledger doesn't carry but their RAW upload could answer — single-family homes by the decade they were built, condos by price bracket, etc. — call compute_cut. Use it ONLY after get_facts comes back empty for that slice; get_facts is always the first stop.
 - compute_cut returns REAL, deterministic numbers computed straight from the member's raw CSV, each with a fact id you cite or link exactly like a get_facts id. Treat these as true facts — they obey the same grounding rule (only state values a tool returned).
-- propertyClass vs style are DIFFERENT and must never be swapped. propertyClass = the broad class from the raw "Property Type" column (Single Family, Condo …). style = the architectural/storey form from the member's mapped Style column (Bungalow, 2 Storey …). Asking for one never licenses answering with the other.
+- propertyClass vs style are DIFFERENT columns and must never be swapped. propertyClass = the broad class from a raw "Property Type" column (Single Family, Condo …). style = whatever the member MAPPED to their Style/propertyType column. CRUCIAL: that mapped column does NOT always hold architectural form — some members have no raw "Property Type" column and instead mapped their property CLASSES (Single Family, Townhouse, Condo) to Style, so those values surface under the "style" dimension, not "propertyClass". ALWAYS route the member's wording to whichever dimension's surfaced values (see "Distinct values per dimension" in the member context) actually contain the term — e.g. if "Single Family" appears under style, use dimension="style" / filterStyle="Single Family" for it. Never answer one dimension with another's data.
 - CITY / MULTI-CITY: dimension="city" gives city-level rollups (only when the member's data spans more than one city/municipality). For a member whose data covers several cities, a dimension="neighbourhood" cut automatically labels each group "Neighbourhood (City)" so same-named neighbourhoods in different cities are NEVER merged — read those labels back verbatim. To break ONE city down by its neighbourhoods, pass dimension="neighbourhood" with filterCity. For a single-city member (or no city column) nothing changes: groups stay plain neighbourhood names and dimension="city"/filterCity return an honest "unavailable".
+- GROUP BY bedrooms / bathrooms: when mapped, dimension="bedrooms" or "bathrooms" breaks the market down by exact count (e.g. "sales by bedroom count").
+- NUMERIC FILTERS: pass numericFilters to restrict to a numeric range on sqft, bedrooms, bathrooms, salePrice, or yearBuilt — each entry takes min (≥), max (≤), or both (range). They COMPOSE with the categorical filters AND with the groupBy dimension, so "4+ bedroom homes by city" = dimension="city" + numericFilters=[{field:"bedrooms",min:4}], and "single family just over 3,000 sq ft" = filter on whichever dimension's surfaced values hold "Single Family" for THIS member (filterPropertyClass OR filterStyle — see the member's distinct values) + numericFilters=[{field:"sqft",min:3000}]. salePrice filters inherently restrict to sold listings. The SAME three sample-size honesty bands apply to the filtered subset (headline ≥ floor, disclose with "based on N sales", thin = texture only). If a numeric filter column isn't mapped, the tool refuses honestly and lists which numeric filters exist — never proxy it. If a filter is so narrow that no listings match, the tool returns an honest count of zero ("no listings match this filter") — relay that; do NOT widen the filter silently.
 - HONEST REFUSAL: if compute_cut returns classification "unavailable" (the column genuinely isn't in their upload) or "no_match" (the column exists but the value they asked for — e.g. "townhouse" — isn't in the data), relay that honestly and tell them which values DO exist (the note lists them). NEVER substitute a different column, proxy a missing class through style, or invent a segment that isn't in the data.
 - Groups flagged below the headline sold floor come back with a caveat — use them only as supporting texture, never as a headline number. Zero-sale groups carry no numbers; don't manufacture one.
 - A SPECIFIC PRIOR MONTH: compute_cut takes an optional monthYear (YYYY-MM) to run against that month's upload instead of the latest. If no upload exists for that month it refuses honestly and (for year-over-year) tells you which months DO exist — it never silently swaps in a different month.
@@ -131,6 +133,13 @@ export function buildJarvisDynamicContext(args: {
    *  notably city, which is available whenever a city/municipality column
    *  resolves, even if it was never explicitly mapped. */
   availableCutDimensions?: string[];
+  /** Numeric columns this member's upload can be range-filtered by (sqft,
+   *  bedrooms, bathrooms, salePrice, yearBuilt) — only the mapped ones. */
+  availableNumericFilters?: string[];
+  /** The actual distinct values present in each categorical group dimension
+   *  (style, property class, city). Lets Jarvis route the member's wording —
+   *  e.g. "single family" — to the dimension that genuinely holds it. */
+  availableDimensionValues?: { label: string; values: string[]; truncated: boolean }[];
 }): string {
   const {
     memberFullName,
@@ -140,6 +149,8 @@ export function buildJarvisDynamicContext(args: {
     recentVideos,
     researchSources,
     availableCutDimensions,
+    availableNumericFilters,
+    availableDimensionValues,
   } = args;
   const lines: string[] = ["MEMBER & MARKET CONTEXT"];
   lines.push(`- Member: ${memberFullName ?? "(name not set)"}`);
@@ -157,6 +168,24 @@ export function buildJarvisDynamicContext(args: {
     lines.push(
       `- Available on-demand cuts (this member's latest upload can be broken down by): ${availableCutDimensions.join(", ")}. Use compute_cut / compute_yoy_cut with these dimensions; a dimension NOT listed here will honestly refuse.`,
     );
+  }
+  if (availableNumericFilters && availableNumericFilters.length > 0) {
+    lines.push(
+      `- Available numeric filters (this upload can be range-filtered by): ${availableNumericFilters.join(", ")}. Pass these via compute_cut / compute_yoy_cut numericFilters (min ≥ / max ≤ / range); a field NOT listed here will honestly refuse.`,
+    );
+  }
+  if (availableDimensionValues && availableDimensionValues.length > 0) {
+    const parts = availableDimensionValues
+      .filter((d) => d.values.length > 0)
+      .map(
+        (d) =>
+          `${d.label} → ${d.values.join(", ")}${d.truncated ? ", …" : ""}`,
+      );
+    if (parts.length > 0) {
+      lines.push(
+        `- Distinct values per dimension (the ACTUAL values present in THIS member's upload — route the member's wording to whichever dimension genuinely holds it, e.g. if "Single Family" appears under style then "single family"/"property type" requests use dimension="style"/filterStyle, NOT propertyClass): ${parts.join("; ")}.`,
+      );
+    }
   }
 
   // ── Pre-draft asset menus (see DRAFTING: propose before you draft) ──────────

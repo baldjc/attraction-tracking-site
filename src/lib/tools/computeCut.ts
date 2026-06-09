@@ -65,7 +65,9 @@ export type CutDimension =
   | "style"
   | "propertyClass"
   | "yearBuiltDecade"
-  | "priceBracket";
+  | "priceBracket"
+  | "bedrooms"
+  | "bathrooms";
 
 export type CutFilterField =
   | "neighbourhood"
@@ -79,9 +81,31 @@ export interface CutFilter {
   value: string;
 }
 
+/** Mapped numeric columns that can be range-filtered (>=, <=, between). */
+export type CutNumericField =
+  | "sqft"
+  | "bedrooms"
+  | "bathrooms"
+  | "salePrice"
+  | "yearBuilt";
+
+/**
+ * A numeric range filter on one mapped numeric column. `min`/`max` are inclusive;
+ * supplying only one expresses an open-ended `>=`/`<=`, both expresses a between.
+ * Rows whose value is null (column blank for that row) never match a numeric
+ * filter — they are excluded, never coerced to 0.
+ */
+export interface CutNumericFilter {
+  field: CutNumericField;
+  min?: number;
+  max?: number;
+}
+
 export interface ComputeCutParams {
   dimension: CutDimension;
   filters?: CutFilter[];
+  /** Numeric range filters; compose with `filters` and the groupBy dimension. */
+  numericFilters?: CutNumericFilter[];
   /**
    * Optional YYYY-MM. When set, the cut runs against THAT validated upload
    * instead of the member's latest one — the mechanism behind prior-period and
@@ -110,6 +134,8 @@ export interface CutRow {
   listPrice: number | null;
   daysOnMarket: number | null;
   sqft: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
   spLpRatio: number | null;
 }
 
@@ -156,6 +182,7 @@ export interface ComputeCutCoreResult {
   classification: CutClassification;
   dimension: CutDimension;
   appliedFilters: CutFilter[];
+  appliedNumericFilters: CutNumericFilter[];
   groups: CutGroup[];
   headlineSoldFloor: number;
   /** Distinct dimension values observed AFTER filters (for messaging). */
@@ -255,7 +282,54 @@ function dimensionValueOf(row: CutRow, dim: CutDimension): string | null {
       return emptyToNull(row.priceBracket);
     case "yearBuiltDecade":
       return yearBuiltDecadeLabel(row.yearBuilt);
+    case "bedrooms":
+      return row.bedrooms != null ? String(row.bedrooms) : null;
+    case "bathrooms":
+      return row.bathrooms != null ? String(row.bathrooms) : null;
   }
+}
+
+const NUMERIC_FIELDS: CutNumericField[] = [
+  "sqft",
+  "bedrooms",
+  "bathrooms",
+  "salePrice",
+  "yearBuilt",
+];
+
+function numericValueOf(row: CutRow, field: CutNumericField): number | null {
+  switch (field) {
+    case "sqft":
+      return row.sqft;
+    case "bedrooms":
+      return row.bedrooms;
+    case "bathrooms":
+      return row.bathrooms;
+    case "salePrice":
+      return row.salePrice;
+    case "yearBuilt":
+      return row.yearBuilt;
+  }
+}
+
+/** Normalize a numeric filter so min <= max (defensive against swapped bounds). */
+function normalizeNumericFilter(nf: CutNumericFilter): CutNumericFilter {
+  if (nf.min != null && nf.max != null && nf.min > nf.max) {
+    return { field: nf.field, min: nf.max, max: nf.min };
+  }
+  return nf;
+}
+
+/**
+ * A row matches a numeric filter only when it HAS a value (null is never coerced
+ * to 0) AND that value falls inside the inclusive [min, max] bounds supplied.
+ */
+function numericMatch(row: CutRow, nf: CutNumericFilter): boolean {
+  const v = numericValueOf(row, nf.field);
+  if (v == null) return false;
+  if (nf.min != null && v < nf.min) return false;
+  if (nf.max != null && v > nf.max) return false;
+  return true;
 }
 
 function filterValueOf(row: CutRow, field: CutFilterField): string | null {
@@ -437,6 +511,9 @@ export function computeCut(
   // to the platform sold floor; runComputeCut passes the per-member floor.
   const discloseFloor = opts.discloseFloor ?? MIN_SOLD_SAMPLE;
   const appliedFilters = params.filters ?? [];
+  const appliedNumericFilters = (params.numericFilters ?? []).map(
+    normalizeNumericFilter,
+  );
 
   const availableValues = FILTER_FIELDS.reduce(
     (m, f) => {
@@ -451,6 +528,7 @@ export function computeCut(
       classification: "empty",
       dimension: params.dimension,
       appliedFilters,
+      appliedNumericFilters,
       groups: [],
       headlineSoldFloor,
       dimensionValues: [],
@@ -459,21 +537,44 @@ export function computeCut(
     };
   }
 
-  // Apply filters (case-insensitive exact match per field).
-  const scoped = rows.filter((row) =>
+  // Apply CATEGORICAL filters first (case-insensitive exact match per field).
+  const catScoped = rows.filter((row) =>
     appliedFilters.every((f) => {
       const v = filterValueOf(row, f.field);
       return v != null && v.toLowerCase() === f.value.trim().toLowerCase();
     }),
   );
 
-  if (scoped.length === 0) {
-    // Column(s) present, but the requested filter value(s) aren't in the data.
+  if (catScoped.length === 0) {
+    // A categorical column is present but the requested VALUE isn't in the data.
     // Honest refusal path — caller surfaces availableValues; NEVER a proxy.
     return {
       classification: "no_match",
       dimension: params.dimension,
       appliedFilters,
+      appliedNumericFilters,
+      groups: [],
+      headlineSoldFloor,
+      dimensionValues: [],
+      availableValues,
+      scopedRowCount: 0,
+    };
+  }
+
+  // Then apply NUMERIC range filters. A numeric range zeroing the set is NOT a
+  // column/value error — the columns and values are valid, just nothing falls in
+  // the requested range. Return a real "computed" result with zero groups so the
+  // caller reports an honest count ("no listings match …"), never a no_match.
+  const scoped = catScoped.filter((row) =>
+    appliedNumericFilters.every((nf) => numericMatch(row, nf)),
+  );
+
+  if (scoped.length === 0) {
+    return {
+      classification: "computed",
+      dimension: params.dimension,
+      appliedFilters,
+      appliedNumericFilters,
       groups: [],
       headlineSoldFloor,
       dimensionValues: [],
@@ -539,6 +640,7 @@ export function computeCut(
     classification: "computed",
     dimension: params.dimension,
     appliedFilters,
+    appliedNumericFilters,
     groups,
     headlineSoldFloor,
     dimensionValues: groups.map((g) => g.bucket),
@@ -717,6 +819,10 @@ function dimensionLabel(dim: CutDimension): string {
       return "year-built decade";
     case "priceBracket":
       return "price bracket";
+    case "bedrooms":
+      return "bedrooms";
+    case "bathrooms":
+      return "bathrooms";
   }
 }
 
@@ -735,16 +841,59 @@ function filterFieldLabel(field: CutFilterField): string {
   }
 }
 
-/** Human scope suffix for labels, e.g. " — Single Family · built 1990s". */
+function numericFieldLabel(field: CutNumericField): string {
+  switch (field) {
+    case "sqft":
+      return "sq ft";
+    case "bedrooms":
+      return "bedrooms";
+    case "bathrooms":
+      return "bathrooms";
+    case "salePrice":
+      return "sale price";
+    case "yearBuilt":
+      return "year built";
+  }
+}
+
+/** Human label for a numeric range, e.g. "sq ft ≥ 3000", "sale price ≤ $400,000". */
+function numericFilterLabel(nf: CutNumericFilter): string {
+  const label = numericFieldLabel(nf.field);
+  const fmt = (n: number) =>
+    nf.field === "salePrice"
+      ? `$${Math.round(n).toLocaleString("en-US")}`
+      : String(n);
+  if (nf.min != null && nf.max != null)
+    return `${label} ${fmt(nf.min)}–${fmt(nf.max)}`;
+  if (nf.min != null) return `${label} ≥ ${fmt(nf.min)}`;
+  if (nf.max != null) return `${label} ≤ ${fmt(nf.max)}`;
+  return label;
+}
+
+/** Stable signature fragment for a numeric filter (idempotent deletes). */
+function numericFilterSig(nf: CutNumericFilter): string {
+  const parts: string[] = [];
+  if (nf.min != null) parts.push(`>=${nf.min}`);
+  if (nf.max != null) parts.push(`<=${nf.max}`);
+  return `${nf.field}${parts.join("&")}`;
+}
+
+/** Human scope suffix for labels, e.g. " — Single Family · sq ft ≥ 3000 · built 1990s". */
 function scopeSuffix(
   filters: CutFilter[],
+  numericFilters: CutNumericFilter[],
   dimension: CutDimension,
   bucket: string,
 ): string {
   const parts: string[] = [];
   for (const f of filters) parts.push(f.value);
+  for (const nf of numericFilters) parts.push(numericFilterLabel(nf));
   if (dimension === "yearBuiltDecade") {
     parts.push(bucket === "Unknown" ? "year built unknown" : `built ${bucket}`);
+  } else if (dimension === "bedrooms") {
+    parts.push(bucket === "Unknown" ? "bedrooms unknown" : `${bucket}-bed`);
+  } else if (dimension === "bathrooms") {
+    parts.push(bucket === "Unknown" ? "bathrooms unknown" : `${bucket}-bath`);
   } else {
     parts.push(bucket);
   }
@@ -754,6 +903,7 @@ function scopeSuffix(
 /** Deterministic scope signature used in metricName + for idempotent deletes. */
 function scopeSignature(
   filters: CutFilter[],
+  numericFilters: CutNumericFilter[],
   dimension: CutDimension,
   bucket: string,
 ): string {
@@ -761,7 +911,9 @@ function scopeSignature(
     .map((f) => `${f.field}=${f.value.trim().toLowerCase()}`)
     .sort()
     .join("&");
-  return `${dimension}=${bucket}${fsig ? `;${fsig}` : ""}`;
+  const nsig = numericFilters.map(numericFilterSig).sort().join("&");
+  const extra = [fsig, nsig].filter(Boolean).join("&");
+  return `${dimension}=${bucket}${extra ? `;${extra}` : ""}`;
 }
 
 /** dimension/filter column availability against the resolved CSV headers. */
@@ -770,6 +922,10 @@ interface ResolvedColumns {
   cityHeader: string | null;
   style: boolean;
   yearBuilt: boolean;
+  sqft: boolean;
+  bedrooms: boolean;
+  bathrooms: boolean;
+  salePrice: boolean;
   propertyClassHeader: string | null;
   priceBracketHeader: string | null;
 }
@@ -788,6 +944,10 @@ function dimensionAvailable(dim: CutDimension, cols: ResolvedColumns): boolean {
       return cols.propertyClassHeader != null;
     case "priceBracket":
       return cols.priceBracketHeader != null;
+    case "bedrooms":
+      return cols.bedrooms;
+    case "bathrooms":
+      return cols.bathrooms;
   }
 }
 
@@ -806,6 +966,24 @@ function filterAvailable(field: CutFilterField, cols: ResolvedColumns): boolean 
   }
 }
 
+function numericFilterAvailable(
+  field: CutNumericField,
+  cols: ResolvedColumns,
+): boolean {
+  switch (field) {
+    case "sqft":
+      return cols.sqft;
+    case "bedrooms":
+      return cols.bedrooms;
+    case "bathrooms":
+      return cols.bathrooms;
+    case "salePrice":
+      return cols.salePrice;
+    case "yearBuilt":
+      return cols.yearBuilt;
+  }
+}
+
 function availableDimensionsFrom(cols: ResolvedColumns): CutDimension[] {
   const all: CutDimension[] = [
     "neighbourhood",
@@ -814,8 +992,14 @@ function availableDimensionsFrom(cols: ResolvedColumns): CutDimension[] {
     "propertyClass",
     "yearBuiltDecade",
     "priceBracket",
+    "bedrooms",
+    "bathrooms",
   ];
   return all.filter((d) => dimensionAvailable(d, cols));
+}
+
+function availableNumericFiltersFrom(cols: ResolvedColumns): CutNumericField[] {
+  return NUMERIC_FIELDS.filter((f) => numericFilterAvailable(f, cols));
 }
 
 /**
@@ -834,6 +1018,10 @@ function resolveColumns(
     cityHeader: resolveCityHeader(mapping.city, headerLookup),
     style: mappedHeaderResolves(mapping.propertyType, headerLookup),
     yearBuilt: mappedHeaderResolves(mapping.yearBuilt, headerLookup),
+    sqft: mappedHeaderResolves(mapping.sqft, headerLookup),
+    bedrooms: mappedHeaderResolves(mapping.bedrooms, headerLookup),
+    bathrooms: mappedHeaderResolves(mapping.bathrooms, headerLookup),
+    salePrice: mappedHeaderResolves(mapping.salePrice, headerLookup),
     propertyClassHeader: resolveRawHeader(
       headerLookup,
       PROPERTY_CLASS_HEADER_CANDIDATES,
@@ -845,13 +1033,95 @@ function resolveColumns(
   };
 }
 
+/** The actual distinct values present in one categorical cut dimension. */
+export interface DimensionValueSet {
+  dimension: CutDimension;
+  label: string;
+  /** Distinct values present, most frequent first (capped). */
+  values: string[];
+  /** True when more distinct values exist than the cap surfaced. */
+  truncated: boolean;
+}
+
 export interface AvailableCutDimensions {
   /** Machine dimensions the member's latest upload can actually be cut by. */
   dimensions: CutDimension[];
   /** Human labels (e.g. "year-built decade") for surfacing in prose/prompts. */
   labels: string[];
+  /** Mapped numeric columns this upload can be range-filtered by. */
+  numericFilters: CutNumericField[];
+  /** Human labels for the numeric filters (e.g. "sq ft", "sale price"). */
+  numericFilterLabels: string[];
+  /**
+   * The actual distinct VALUES present in each categorical group dimension
+   * (style, propertyClass, city) for THIS member's upload. Lets Jarvis route a
+   * request to the right dimension — e.g. a member who mapped their property
+   * classes (Single Family / Condo) to the Style column surfaces them under
+   * "style", not "propertyClass", so "single family" must filter on style.
+   */
+  dimensionValues: DimensionValueSet[];
   /** The upload month these were resolved against, or null if none exists. */
   monthYear: string | null;
+}
+
+/** Categorical group dimensions whose distinct values are worth surfacing so
+ *  Jarvis can route the member's wording to the dimension that holds it.
+ *  Neighbourhood is deliberately omitted (already listed in market config and
+ *  often hundreds of values); numeric/derived dimensions speak for themselves. */
+const VALUE_SURFACED_DIMENSIONS: CutDimension[] = ["style", "propertyClass", "city"];
+const MAX_SURFACED_VALUES = 12;
+
+/**
+ * Compute the distinct values present in each surfaced categorical dimension,
+ * using the SAME cell-reading + normalization the row reader uses so the
+ * surfaced values match the buckets a real cut would produce. Most-frequent
+ * first; capped at MAX_SURFACED_VALUES with a `truncated` flag.
+ */
+function surfaceDimensionValues(
+  records: Record<string, string>[],
+  cols: ResolvedColumns,
+  mapping: ColumnMapping,
+  headerLookup: Map<string, string>,
+  available: CutDimension[],
+): DimensionValueSet[] {
+  const dims = VALUE_SURFACED_DIMENSIONS.filter((d) => available.includes(d));
+  if (dims.length === 0) return [];
+  const counts = new Map<CutDimension, Map<string, number>>();
+  for (const d of dims) counts.set(d, new Map());
+  for (const raw of records) {
+    for (const d of dims) {
+      let val: string | null = null;
+      if (d === "style") {
+        val = normalizePropertyType(
+          readMappedCell(raw, headerLookup, mapping.propertyType),
+        ).type;
+      } else if (d === "propertyClass") {
+        val = cols.propertyClassHeader
+          ? emptyToNull(raw[cols.propertyClassHeader] ?? null)
+          : null;
+      } else if (d === "city") {
+        val = cols.cityHeader ? emptyToNull(raw[cols.cityHeader] ?? null) : null;
+      }
+      val = emptyToNull(val);
+      if (!val || val.toLowerCase() === "unknown") continue;
+      const m = counts.get(d)!;
+      m.set(val, (m.get(val) ?? 0) + 1);
+    }
+  }
+  const out: DimensionValueSet[] = [];
+  for (const d of dims) {
+    const sorted = [...counts.get(d)!.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([v]) => v);
+    if (sorted.length === 0) continue;
+    out.push({
+      dimension: d,
+      label: dimensionLabel(d),
+      values: sorted.slice(0, MAX_SURFACED_VALUES),
+      truncated: sorted.length > MAX_SURFACED_VALUES,
+    });
+  }
+  return out;
 }
 
 /**
@@ -871,6 +1141,9 @@ export async function resolveAvailableCutDimensions(
   const empty: AvailableCutDimensions = {
     dimensions: [],
     labels: [],
+    numericFilters: [],
+    numericFilterLabels: [],
+    dimensionValues: [],
     monthYear: null,
   };
   try {
@@ -903,9 +1176,19 @@ export async function resolveAvailableCutDimensions(
     const headerLookup = buildHeaderLookup(headers);
     const cols = resolveColumns(mapping, headerLookup);
     const dimensions = availableDimensionsFrom(cols);
+    const numericFilters = availableNumericFiltersFrom(cols);
     return {
       dimensions,
       labels: dimensions.map(dimensionLabel),
+      numericFilters,
+      numericFilterLabels: numericFilters.map(numericFieldLabel),
+      dimensionValues: surfaceDimensionValues(
+        records,
+        cols,
+        mapping,
+        headerLookup,
+        dimensions,
+      ),
       monthYear: upload.monthYear,
     };
   } catch {
@@ -927,6 +1210,7 @@ export async function runComputeCut(
   const { userId, params } = input;
   const { dimension } = params;
   const filters = params.filters ?? [];
+  const numericFilters = (params.numericFilters ?? []).map(normalizeNumericFilter);
 
   // Period-aware: when params.monthYear is set, target that exact validated
   // upload (the mechanism behind prior-period + YoY cuts); otherwise the latest.
@@ -985,15 +1269,24 @@ export async function runComputeCut(
   for (const f of filters) {
     if (!filterAvailable(f.field, cols)) missing.push(filterFieldLabel(f.field));
   }
+  for (const nf of numericFilters) {
+    if (!numericFilterAvailable(nf.field, cols))
+      missing.push(numericFieldLabel(nf.field));
+  }
   if (missing.length > 0) {
     const avail = availableDimensionsFrom(cols);
+    const availNumeric = availableNumericFiltersFrom(cols);
+    const numericNote =
+      availNumeric.length > 0
+        ? ` Numeric filters available: ${availNumeric.map(numericFieldLabel).join(", ")}.`
+        : "";
     await logCall(deps, userId, upload.id, params, "unavailable", null);
     return {
       ok: false,
       classification: "unavailable",
       monthYear: upload.monthYear,
       dimension,
-      note: `That column isn't in this member's upload (${[...new Set(missing)].join(", ")}). Cuts available from this upload: ${avail.map(dimensionLabel).join(", ")}.`,
+      note: `That column isn't in this member's upload (${[...new Set(missing)].join(", ")}). Cuts available from this upload: ${avail.map(dimensionLabel).join(", ")}.${numericNote}`,
       facts: [],
       availableDimensions: avail,
     };
@@ -1032,6 +1325,10 @@ export async function runComputeCut(
         readMappedCell(raw, headerLookup, mapping.daysOnMarket),
       ),
       sqft: parseNumber(readMappedCell(raw, headerLookup, mapping.sqft)),
+      bedrooms: parseNumber(readMappedCell(raw, headerLookup, mapping.bedrooms)),
+      bathrooms: parseNumber(
+        readMappedCell(raw, headerLookup, mapping.bathrooms),
+      ),
       spLpRatio: parseRatio(
         readMappedCell(raw, headerLookup, mapping.saleToListRatio),
       ),
@@ -1090,8 +1387,8 @@ export async function runComputeCut(
 
   for (const group of core.groups) {
     if (group.metrics.length === 0) continue;
-    const sig = scopeSignature(filters, dimension, group.bucket);
-    const suffix = scopeSuffix(filters, dimension, group.bucket);
+    const sig = scopeSignature(filters, numericFilters, dimension, group.bucket);
+    const suffix = scopeSuffix(filters, numericFilters, dimension, group.bucket);
     // neighbourhood column: actual neighbourhood when that's the scope, else "All".
     const factNeighbourhood =
       dimension === "neighbourhood"
@@ -1160,15 +1457,27 @@ export async function runComputeCut(
     }
   }
 
-  // All groups had zero usable metrics (e.g. zero sold across the scope).
+  // All groups had zero usable metrics (e.g. zero sold across the scope), OR a
+  // numeric filter excluded every row (0 groups). Both are honest "nothing to
+  // cite" outcomes — surface the active scope (incl. numeric filters) so the
+  // member learns the filter was too narrow, not that the column is missing.
   if (pending.length === 0) {
+    const scopeBits = [
+      ...filters.map((f) => f.value),
+      ...numericFilters.map(numericFilterLabel),
+    ];
+    const scopeText = scopeBits.length ? ` (${scopeBits.join(" · ")})` : "";
+    const note =
+      core.groups.length === 0
+        ? `No listings in ${monthYear} match this filter${scopeText}, so there is nothing to cite. The filter is genuinely too narrow for this upload — say so honestly rather than widening it silently.`
+        : `The ${dimensionLabel(dimension)} cut${scopeText} produced groups but none had any closed sales to summarize, so there is nothing citable.`;
     await logCall(deps, userId, upload.id, params, "sample_too_small", null);
     return {
       ok: true,
       classification: "sample_too_small",
       monthYear,
       dimension,
-      note: `The ${dimensionLabel(dimension)} cut produced groups but none had any closed sales to summarize, so there is nothing citable.`,
+      note,
       facts: [],
     };
   }
@@ -1201,9 +1510,13 @@ export async function runComputeCut(
   // Both headline and disclose groups are usable (disclose only WITH disclosure).
   const anyUsable = headlineBuckets.length + discloseBuckets.length > 0;
 
+  const scopeBits = [
+    ...filters.map((f) => f.value),
+    ...numericFilters.map(numericFilterLabel),
+  ];
   const noteParts: string[] = [];
   noteParts.push(
-    `Computed ${dimensionLabel(dimension)} cut${filters.length ? ` for ${filters.map((f) => f.value).join(" · ")}` : ""} from ${monthYear} data.`,
+    `Computed ${dimensionLabel(dimension)} cut${scopeBits.length ? ` for ${scopeBits.join(" · ")}` : ""} from ${monthYear} data.`,
   );
   if (headlineBuckets.length) {
     noteParts.push(`Headline-safe (≥${headlineSoldFloor} sold): ${headlineBuckets.join(", ")}.`);
@@ -1438,7 +1751,15 @@ export async function runYoYCut(
 
   // 4. Run the same cut for both periods (each persists its own citable facts).
   const baseRes = await runComputeCut(
-    { userId, params: { dimension, filters: params.filters, monthYear: baseMonth } },
+    {
+      userId,
+      params: {
+        dimension,
+        filters: params.filters,
+        numericFilters: params.numericFilters,
+        monthYear: baseMonth,
+      },
+    },
     depsOverride,
   );
   if (!baseRes.ok) {
@@ -1472,7 +1793,15 @@ export async function runYoYCut(
   }
 
   const priorRes = await runComputeCut(
-    { userId, params: { dimension, filters: params.filters, monthYear: comparisonMonth } },
+    {
+      userId,
+      params: {
+        dimension,
+        filters: params.filters,
+        numericFilters: params.numericFilters,
+        monthYear: comparisonMonth,
+      },
+    },
     depsOverride,
   );
 

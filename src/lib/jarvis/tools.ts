@@ -49,6 +49,8 @@ import {
   runYoYCut,
   type CutDimension,
   type CutFilter,
+  type CutNumericField,
+  type CutNumericFilter,
   type RunCutClassification,
   type YoYCutClassification,
   type YoYGroupDelta,
@@ -165,9 +167,14 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       "get_facts id (cite or link to a script). Use this ONLY after get_facts " +
       "returns nothing for the requested slice. " +
       "TWO PROPERTY DIMENSIONS THAT ARE NOT THE SAME — never swap one for the " +
-      "other: `propertyClass` is the broad class from the raw 'Property Type' " +
-      "column (e.g. Single Family, Condo); `style` is the architectural/storey " +
-      "form from the member's mapped Style column (e.g. Bungalow, 2 Storey). " +
+      "other: `propertyClass` is the broad class from a raw 'Property Type' " +
+      "column; `style` is whatever the member MAPPED to their Style column — for " +
+      "some members that is architectural/storey form (Bungalow, 2 Storey), but " +
+      "for members with no raw 'Property Type' column it holds their property " +
+      "CLASSES (Single Family, Townhouse, Condo). Route the member's wording to " +
+      "whichever dimension's surfaced 'Distinct values per dimension' (in the " +
+      "member context) actually contains the term — do NOT assume style means " +
+      "architectural form. " +
       "If the member asks about a class or value the data doesn't contain (e.g. " +
       "'townhouse' when the data only has Single Family and Condo), this tool " +
       "returns a refusal that LISTS the values that DO exist — relay that " +
@@ -186,6 +193,8 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
             "propertyClass",
             "yearBuiltDecade",
             "priceBracket",
+            "bedrooms",
+            "bathrooms",
           ],
           description:
             "What to break the market down BY. city = the mapped City/" +
@@ -193,9 +202,11 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
             "member's upload spans multiple cities); propertyClass = raw " +
             "'Property Type' class; style = mapped Style column; yearBuiltDecade " +
             "= decade the home was built; priceBracket = raw price-bracket " +
-            "column. NOTE: when a member's data spans 2+ cities, neighbourhood " +
-            "groups are automatically labelled 'Neighbourhood (City)' so same-" +
-            "named neighbourhoods in different cities are never merged.",
+            "column; bedrooms / bathrooms = group by exact bedroom/bathroom " +
+            "count (only when the member mapped that column). NOTE: when a " +
+            "member's data spans 2+ cities, neighbourhood groups are " +
+            "automatically labelled 'Neighbourhood (City)' so same-named " +
+            "neighbourhoods in different cities are never merged.",
         },
         filterPropertyClass: {
           type: "string",
@@ -216,11 +227,38 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         filterStyle: {
           type: "string",
           description:
-            "Optional. Restrict to one mapped STYLE value (e.g. 'Bungalow').",
+            "Optional. Restrict to one mapped STYLE value (use a value from the " +
+            "member's surfaced style list — e.g. 'Single Family' or 'Bungalow').",
         },
         filterPriceBracket: {
           type: "string",
           description: "Optional. Restrict to one raw price-bracket value.",
+        },
+        numericFilters: {
+          type: "array",
+          description:
+            "Optional NUMERIC range filters. They compose with each other, with " +
+            "the categorical filters above, and with the groupBy dimension " +
+            "(e.g. dimension='city' + numericFilters=[{field:'bedrooms',min:4}] " +
+            "= '4+ bedroom homes by city'; or [{field:'sqft',min:3000}] for " +
+            "'just over 3,000 sq ft'). Each entry keeps rows whose value is in " +
+            "[min, max] inclusive: supply min for >=, max for <=, or both for a " +
+            "range. Fields: sqft, bedrooms, bathrooms, salePrice, yearBuilt — " +
+            "available ONLY when the member mapped that column (else the tool " +
+            "refuses honestly and lists which numeric filters exist). salePrice " +
+            "restricts to sold listings (only sold rows carry a sale price).",
+          items: {
+            type: "object",
+            properties: {
+              field: {
+                type: "string",
+                enum: ["sqft", "bedrooms", "bathrooms", "salePrice", "yearBuilt"],
+              },
+              min: { type: "number", description: "Inclusive lower bound (>=)." },
+              max: { type: "number", description: "Inclusive upper bound (<=)." },
+            },
+            required: ["field"],
+          },
         },
         monthYear: {
           type: "string",
@@ -245,8 +283,11 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       "member asks about change over a year, growth/decline vs last year, or a " +
       "prior-year comparison — get_facts only carries the current period. " +
       "Same two property dimensions as compute_cut, never swapped: " +
-      "`propertyClass` is the broad class from the raw 'Property Type' column; " +
-      "`style` is the member's mapped Style column. GROUNDING: if the member " +
+      "`propertyClass` is the broad class from a raw 'Property Type' column; " +
+      "`style` is whatever the member mapped to their Style column (architectural " +
+      "form for some, but property CLASSES like Single Family/Condo for members " +
+      "with no raw 'Property Type' column) — route by the surfaced 'Distinct " +
+      "values per dimension', not by assuming style means storey form. GROUNDING: if the member " +
       "hasn't uploaded a comparable prior period, or that older upload doesn't " +
       "contain the column, the tool returns 'no_comparison' and tells you which " +
       "months DO exist — relay that honestly and do NOT invent a prior-year " +
@@ -266,15 +307,18 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
             "propertyClass",
             "yearBuiltDecade",
             "priceBracket",
+            "bedrooms",
+            "bathrooms",
           ],
           description:
             "What to break the year-over-year comparison down BY. city = mapped " +
             "City/municipality column (per-city YoY rollups; only when the data " +
             "spans multiple cities); propertyClass = raw 'Property Type' class; " +
             "style = mapped Style column; yearBuiltDecade = decade built; " +
-            "priceBracket = raw price-bracket. When the data spans 2+ cities, " +
-            "neighbourhood groups are labelled 'Neighbourhood (City)' so same-" +
-            "named neighbourhoods in different cities never merge.",
+            "priceBracket = raw price-bracket; bedrooms / bathrooms = exact " +
+            "bedroom/bathroom count (only when mapped). When the data spans 2+ " +
+            "cities, neighbourhood groups are labelled 'Neighbourhood (City)' so " +
+            "same-named neighbourhoods in different cities never merge.",
         },
         filterPropertyClass: {
           type: "string",
@@ -294,11 +338,34 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         filterStyle: {
           type: "string",
           description:
-            "Optional. Restrict to one mapped STYLE value (e.g. 'Bungalow').",
+            "Optional. Restrict to one mapped STYLE value (use a value from the " +
+            "member's surfaced style list — e.g. 'Single Family' or 'Bungalow').",
         },
         filterPriceBracket: {
           type: "string",
           description: "Optional. Restrict to one raw price-bracket value.",
+        },
+        numericFilters: {
+          type: "array",
+          description:
+            "Optional NUMERIC range filters applied to BOTH periods identically " +
+            "(compose with the categorical filters and the groupBy dimension). " +
+            "Each entry keeps rows whose value is in [min, max] inclusive: min " +
+            "for >=, max for <=, or both for a range. Fields: sqft, bedrooms, " +
+            "bathrooms, salePrice, yearBuilt — available only when the member " +
+            "mapped that column (else the tool refuses honestly).",
+          items: {
+            type: "object",
+            properties: {
+              field: {
+                type: "string",
+                enum: ["sqft", "bedrooms", "bathrooms", "salePrice", "yearBuilt"],
+              },
+              min: { type: "number", description: "Inclusive lower bound (>=)." },
+              max: { type: "number", description: "Inclusive upper bound (<=)." },
+            },
+            required: ["field"],
+          },
         },
         monthYear: {
           type: "string",
@@ -651,6 +718,7 @@ export interface ComputeCutArgs {
   filterCity?: string;
   filterStyle?: string;
   filterPriceBracket?: string;
+  numericFilters?: unknown;
   monthYear?: string;
 }
 
@@ -669,7 +737,38 @@ const COMPUTE_CUT_DIMENSIONS: CutDimension[] = [
   "propertyClass",
   "yearBuiltDecade",
   "priceBracket",
+  "bedrooms",
+  "bathrooms",
 ];
+
+const COMPUTE_CUT_NUMERIC_FIELDS: CutNumericField[] = [
+  "sqft",
+  "bedrooms",
+  "bathrooms",
+  "salePrice",
+  "yearBuilt",
+];
+
+/** Parse + sanitize the raw numericFilters arg from the model into typed filters. */
+function parseNumericFilters(raw: unknown): CutNumericFilter[] {
+  if (!Array.isArray(raw)) return [];
+  const out: CutNumericFilter[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    const field = e.field;
+    if (
+      typeof field !== "string" ||
+      !COMPUTE_CUT_NUMERIC_FIELDS.includes(field as CutNumericField)
+    )
+      continue;
+    const min = typeof e.min === "number" && Number.isFinite(e.min) ? e.min : undefined;
+    const max = typeof e.max === "number" && Number.isFinite(e.max) ? e.max : undefined;
+    if (min == null && max == null) continue;
+    out.push({ field: field as CutNumericField, min, max });
+  }
+  return out;
+}
 
 export async function executeComputeCut(
   userId: string,
@@ -699,13 +798,15 @@ export async function executeComputeCut(
   pushFilter("style", args.filterStyle);
   pushFilter("priceBracket", args.filterPriceBracket);
 
+  const numericFilters = parseNumericFilters(args.numericFilters);
+
   const monthYear =
     typeof args.monthYear === "string" && /^\d{4}-\d{2}$/.test(args.monthYear.trim())
       ? args.monthYear.trim()
       : undefined;
   const res = await runComputeCut({
     userId,
-    params: { dimension, filters, monthYear },
+    params: { dimension, filters, numericFilters, monthYear },
   });
   return {
     facts: res.facts,
@@ -725,6 +826,7 @@ export interface ComputeYoYCutArgs {
   filterCity?: string;
   filterStyle?: string;
   filterPriceBracket?: string;
+  numericFilters?: unknown;
   monthYear?: string;
 }
 
@@ -772,13 +874,15 @@ export async function executeComputeYoYCut(
   pushFilter("style", args.filterStyle);
   pushFilter("priceBracket", args.filterPriceBracket);
 
+  const numericFilters = parseNumericFilters(args.numericFilters);
+
   const monthYear =
     typeof args.monthYear === "string" && /^\d{4}-\d{2}$/.test(args.monthYear.trim())
       ? args.monthYear.trim()
       : undefined;
   const res = await runYoYCut({
     userId,
-    params: { dimension, filters, monthYear },
+    params: { dimension, filters, numericFilters, monthYear },
   });
   return {
     facts: res.facts,

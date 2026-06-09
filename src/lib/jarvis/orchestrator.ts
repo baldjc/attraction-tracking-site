@@ -110,9 +110,14 @@ export async function runJarvisTurn(args: {
   // actually answer — resolved from their real CSV headers via the same resolver
   // the compute tool uses, so city shows up whenever a city/municipality column
   // exists (even unmapped). Never throws; an empty list just omits the line.
-  const availableCutDimensions = (
-    await resolveAvailableCutDimensions({ userId })
-  ).labels;
+  const resolvedCuts = await resolveAvailableCutDimensions({ userId });
+  const availableCutDimensions = resolvedCuts.labels;
+  const availableNumericFilters = resolvedCuts.numericFilterLabels;
+  const availableDimensionValues = resolvedCuts.dimensionValues.map((d) => ({
+    label: d.label,
+    values: d.values,
+    truncated: d.truncated,
+  }));
 
   // System holds ONLY the static behavioural prefix so it stays prompt-cacheable
   // across every member and turn. Per-member dynamic context (name, market, fact
@@ -147,6 +152,8 @@ export async function runJarvisTurn(args: {
           recentVideos,
           researchSources,
           availableCutDimensions,
+          availableNumericFilters,
+          availableDimensionValues,
         }),
       },
       { role: "assistant", content: "Understood — I'll use only these facts and my tools." },
@@ -320,6 +327,7 @@ async function runTool(ctx: {
         filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
         filterPriceBracket:
           typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,
+        numericFilters: input.numericFilters,
         monthYear: typeof input.monthYear === "string" ? input.monthYear : undefined,
       });
       for (const f of res.facts) onFact(f);
@@ -363,6 +371,7 @@ async function runTool(ctx: {
         filterStyle: typeof input.filterStyle === "string" ? input.filterStyle : undefined,
         filterPriceBracket:
           typeof input.filterPriceBracket === "string" ? input.filterPriceBracket : undefined,
+        numericFilters: input.numericFilters,
         monthYear: typeof input.monthYear === "string" ? input.monthYear : undefined,
       });
       for (const f of res.facts) onFact(f);
