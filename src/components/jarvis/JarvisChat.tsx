@@ -113,6 +113,12 @@ export interface JarvisContextItem {
   label: string;
   /** Longer description shown in the panel. */
   detail: string;
+  /**
+   * Optional short bullet points shown in the panel INSTEAD of `detail`. Used by
+   * the avatar row so the popover shows ~3–4 concise takeaways rather than the
+   * full multi-thousand-character avatar spec. Presentation only.
+   */
+  bullets?: string[];
 }
 
 /** Real ContentProfile context for the header chips + panel (read-only). */
@@ -204,6 +210,7 @@ export default function JarvisChat({
   initialMessages,
   memberFirstName,
   context,
+  resumeEligible = false,
 }: {
   memberId: string;
   threadId: string | null;
@@ -213,6 +220,12 @@ export default function JarvisChat({
   initialMessages: InitialMessage[];
   memberFirstName: string | null;
   context: JarvisContext;
+  /**
+   * True only on a bare (no `?thread=`) page load — NOT on `?thread=new`. When
+   * set, the client may resume the conversation last active in THIS browser
+   * session (sessionStorage), but a cold/fresh login (no marker) stays empty.
+   */
+  resumeEligible?: boolean;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -504,6 +517,37 @@ export default function JarvisChat({
     void send(prompt);
   }, [memberId, initialMessages.length, send]);
 
+  // Session-gated resume. On a BARE page load (resumeEligible — never the
+  // explicit `?thread=new` fresh start), reopen the thread this browser session
+  // last had active IF it still exists. A cold/fresh login has no marker, so it
+  // stays empty instead of dumping a stale, weeks-old thread. Mount-only.
+  const resumeCheckedRef = useRef(false);
+  useEffect(() => {
+    if (resumeCheckedRef.current) return;
+    resumeCheckedRef.current = true;
+    if (!resumeEligible || threadId) return;
+    let last: string | null = null;
+    try {
+      last = sessionStorage.getItem(`jarvis:lastThread:${memberId}`);
+    } catch {
+      return; // storage disabled → stay empty
+    }
+    if (last && initialThreads.some((t) => t.id === last)) {
+      router.replace(`/member/jarvis?thread=${last}`);
+    }
+  }, [resumeEligible, threadId, memberId, initialThreads, router]);
+
+  // Mark the active thread for THIS session so a same-session reload can resume
+  // it (above). Cleared on "+ New conversation" for a guaranteed-empty start.
+  useEffect(() => {
+    if (!threadId) return;
+    try {
+      sessionStorage.setItem(`jarvis:lastThread:${memberId}`, threadId);
+    } catch {
+      /* private mode / storage disabled — resume just won't persist */
+    }
+  }, [threadId, memberId]);
+
   // Snapshot live tool rows into the persisted assistant message.
   const liveToolsRef = useRef<ToolRow[]>([]);
   liveToolsRef.current = liveTools;
@@ -567,6 +611,12 @@ export default function JarvisChat({
     // Drop any pending dashboard seed so an explicit fresh start is ALWAYS
     // empty — a "+ New conversation" must never auto-fire a leftover prompt.
     clearJarvisSeed();
+    // Forget the session resume marker so a later reload also stays empty.
+    try {
+      sessionStorage.removeItem(`jarvis:lastThread:${memberId}`);
+    } catch {
+      /* ignore */
+    }
     setThreadId(null);
     setMessages([]);
     setResearchChips([]);
@@ -580,7 +630,7 @@ export default function JarvisChat({
     // bare URL would rehydrate the latest thread). page.tsx keys the component
     // on this, so it remounts clean.
     router.replace("/member/jarvis?thread=new");
-  }, [busy, router]);
+  }, [busy, router, memberId]);
 
   // Open the history switcher and refresh the thread list so conversations
   // started this session (created on first send) show up immediately.

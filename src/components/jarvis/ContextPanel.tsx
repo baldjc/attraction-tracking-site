@@ -69,9 +69,25 @@ export default function ContextPanel({
                     {label}
                   </p>
                   <p className="text-sm font-medium text-abv-text">{item.label}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-abv-text-secondary">
-                    {item.detail}
-                  </p>
+                  {item.bullets && item.bullets.length > 0 ? (
+                    <ul className="mt-1 flex flex-col gap-1">
+                      {item.bullets.map((b, i) => (
+                        <li
+                          key={i}
+                          className="flex gap-1.5 text-xs leading-relaxed text-abv-text-secondary"
+                        >
+                          <span aria-hidden className="text-abv-ai-tools">
+                            •
+                          </span>
+                          <span className="min-w-0">{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-0.5 text-xs leading-relaxed text-abv-text-secondary">
+                      {item.detail}
+                    </p>
+                  )}
                 </div>
               </div>
             );

@@ -77,9 +77,9 @@ export async function extractTextFromUpload(
   }
 
   if (name.endsWith(".pdf")) {
-    const mod: any = await import("pdf-parse");
-    const pdfParse = mod.default ?? mod.pdf ?? mod;
-    const result = await pdfParse(buf);
+    const { PDFParse } = await import("pdf-parse");
+    const parser = new PDFParse({ data: new Uint8Array(buf) });
+    const result = await parser.getText();
     return result?.text ?? "";
   }
 

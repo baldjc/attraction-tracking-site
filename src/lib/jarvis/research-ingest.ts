@@ -361,14 +361,15 @@ export async function fetchArticleText(url: string): Promise<string> {
     const buf = Buffer.from((await res.arrayBuffer()).slice(0, URL_MAX_BYTES));
 
     if (ctype.includes("application/pdf")) {
-      const mod = (await import("pdf-parse")) as unknown as {
-        default?: unknown;
-        pdf?: unknown;
-      };
-      const pdfParse = (mod.default ?? mod.pdf ?? mod) as (b: Buffer) => Promise<{ text?: string }>;
-      const result = await pdfParse(buf);
+      const { PDFParse } = await import("pdf-parse");
+      const parser = new PDFParse({ data: new Uint8Array(buf) });
+      const result = await parser.getText();
       const text = (result?.text ?? "").trim();
-      if (!text) throw new Error("the linked PDF had no extractable text");
+      if (!text) {
+        throw new Error(
+          "the linked PDF has no selectable text — it looks scanned or image-only",
+        );
+      }
       return text;
     }
 
@@ -439,7 +440,14 @@ export async function ingestResearchItems(args: {
         } else {
           if (!item.file) throw new Error("no file provided");
           raw = (await extractTextFromUpload(item.file)).trim();
-          if (!raw) throw new Error("no readable text found in the file");
+          if (!raw) {
+            const isPdf = item.file.name.toLowerCase().endsWith(".pdf");
+            throw new Error(
+              isPdf
+                ? "this PDF has no selectable text — it looks scanned or image-only. Paste the text, or attach it as an image instead."
+                : "no readable text found in the file",
+            );
+          }
         }
 
         if (combinedChars >= COMBINED_CHAR_CAP) {

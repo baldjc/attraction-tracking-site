@@ -56,6 +56,45 @@ function deriveVoiceDescriptor(raw: string): string {
   return firstSentence && firstSentence.length > 0 ? firstSentence : cleaned;
 }
 
+/**
+ * Derive up to 4 SHORT bullets from the member's avatar spec for the context
+ * panel — so the popover shows concise takeaways instead of the full
+ * multi-thousand-character spec wall. Deterministic (no model call → nothing to
+ * regenerate or cache): prefers the spec's own list items, falling back to its
+ * leading sentences. Presentation only; the orchestrator loads the raw avatar
+ * server-side and is untouched by this.
+ */
+function deriveAvatarBullets(raw: string): string[] {
+  const clean = (s: string) =>
+    s
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/[*_`>#]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const bullets: string[] = [];
+  for (const line of raw.split("\n")) {
+    const m = /^\s*(?:[-*+]|\d+\.)\s+(.*)$/.exec(line);
+    if (!m) continue;
+    const text = clean(m[1]);
+    if (text.length < 3) continue;
+    bullets.push(truncateText(text, 110));
+    if (bullets.length >= 4) break;
+  }
+  if (bullets.length > 0) return bullets;
+
+  // No list items — fall back to the first few sentences.
+  const prose = clean(
+    raw.replace(/```[\s\S]*?```/g, " ").replace(/^\s{0,3}#{1,6}\s+/gm, ""),
+  );
+  return prose
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 2)
+    .slice(0, 3)
+    .map((s) => truncateText(s, 110));
+}
+
 export default async function JarvisPage({
   searchParams,
 }: {
@@ -98,6 +137,7 @@ export default async function JarvisPage({
   const avatarSummary = avatarData.avatarSummary?.trim() || null;
   const currentMonthLabel = formatMonthLabel(currentDataMonth);
   const voiceDescriptor = voiceGuide ? deriveVoiceDescriptor(voiceGuide) : "";
+  const avatarBullets = avatarSummary ? deriveAvatarBullets(avatarSummary) : [];
   const context: JarvisContext = {
     voice: {
       label: voiceDescriptor ? truncateText(voiceDescriptor, 60) : "Not set yet",
@@ -107,11 +147,13 @@ export default async function JarvisPage({
     },
     avatar: {
       label: avatarName ?? "Not set yet",
+      bullets: avatarBullets.length > 0 ? avatarBullets : undefined,
       detail:
-        avatarSummary ??
-        (avatarName
-          ? "Your ideal-viewer avatar."
-          : "Build your ideal-viewer avatar so Jarvis can target the right buyer or seller."),
+        avatarBullets.length > 0
+          ? "Who Jarvis writes for."
+          : avatarName
+            ? "Your ideal-viewer avatar."
+            : "Build your ideal-viewer avatar so Jarvis can target the right buyer or seller.",
     },
     market: {
       label: marketName ?? "Not set yet",
@@ -129,16 +171,15 @@ export default async function JarvisPage({
   //    empty context (never falls back to a past thread).
   //  - an owned `?thread=<id>` wins.
   //  - an unknown/unowned `?thread=` falls back to the most-recent thread.
-  //  - no param → most-recent thread, so history survives reloads.
+  //  - no param → EMPTY. A cold/fresh login starts clean instead of dumping a
+  //    stale most-recent thread. The client (resumeEligible) may still reopen the
+  //    thread THIS browser session last had active, so reloads mid-session resume.
   const isNewConversation = requestedThreadId === "new";
+  const resumeEligible = !isNewConversation && !requestedThreadId;
   let activeThread: ThreadSummary | null = null;
-  if (!isNewConversation) {
-    if (requestedThreadId) {
-      activeThread =
-        threads.find((t) => t.id === requestedThreadId) ?? threads[0] ?? null;
-    } else {
-      activeThread = threads[0] ?? null;
-    }
+  if (!isNewConversation && requestedThreadId) {
+    activeThread =
+      threads.find((t) => t.id === requestedThreadId) ?? threads[0] ?? null;
   }
 
   // Key the client component so a thread switch (query-param navigation)
@@ -190,6 +231,7 @@ export default async function JarvisPage({
       initialMessages={initialMessages}
       memberFirstName={memberFirstName}
       context={context}
+      resumeEligible={resumeEligible}
     />
   );
 }
