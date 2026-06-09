@@ -211,6 +211,11 @@ export default function JarvisChat({
   memberFirstName,
   context,
   resumeEligible = false,
+  initialVoiceMode = "custom",
+  hasCustomGuide = false,
+  customVoiceLabel = "Your custom voice",
+  voiceDefaultSummary = "Jarvis writes in the built-in default voice register.",
+  voiceManageHref = "/member/market-data/setup",
 }: {
   memberId: string;
   threadId: string | null;
@@ -226,6 +231,16 @@ export default function JarvisChat({
    * session (sessionStorage), but a cold/fresh login (no marker) stays empty.
    */
   resumeEligible?: boolean;
+  /** Member's active voice selection (server-rendered initial state). */
+  initialVoiceMode?: "default" | "custom";
+  /** Whether a substantive voice guide is on file (gates the "My voice" option). */
+  hasCustomGuide?: boolean;
+  /** Label for the custom voice (source filename or a neutral fallback). */
+  customVoiceLabel?: string;
+  /** Summary of the built-in default register, shown when default is active. */
+  voiceDefaultSummary?: string;
+  /** Where the member uploads / manages their voice guide. */
+  voiceManageHref?: string;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -260,10 +275,62 @@ export default function JarvisChat({
   const [researchBusy, setResearchBusy] = useState(false);
   const [showResearchPanel, setShowResearchPanel] = useState(false);
   const [researchText, setResearchText] = useState("");
+  // Voice selection — the member's ACTIVE voice (default register vs. their
+  // uploaded guide). Switching persists via PATCH so the Script Builder reads it
+  // on the next generation; we update locally so the chip reflects it instantly.
+  const [voiceMode, setVoiceMode] = useState<"default" | "custom">(
+    initialVoiceMode,
+  );
+  const [voiceBusy, setVoiceBusy] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleVoiceSelect = useCallback(
+    async (mode: "default" | "custom") => {
+      if (voiceBusy || mode === voiceMode) return;
+      if (mode === "custom" && !hasCustomGuide) {
+        toast.info("Upload a voice doc first to write in your own voice.");
+        return;
+      }
+      const prev = voiceMode;
+      setVoiceMode(mode); // optimistic — the chip updates instantly
+      setVoiceBusy(true);
+      try {
+        const res = await fetch("/api/member/voice-guide/upload", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voiceMode: mode }),
+        });
+        if (!res.ok) throw new Error("switch failed");
+        toast.success(
+          mode === "custom"
+            ? "Jarvis will write in your voice."
+            : "Jarvis will use the default voice.",
+        );
+      } catch {
+        setVoiceMode(prev); // roll back on failure
+        toast.error("Couldn't switch voice. Try again.");
+      } finally {
+        setVoiceBusy(false);
+      }
+    },
+    [voiceBusy, voiceMode, hasCustomGuide, toast],
+  );
+
+  // The voice chip + panel reflect the LIVE selection (local state), not just
+  // the server-rendered context. Custom is shown only when a guide is on file.
+  const customVoiceActive = hasCustomGuide && voiceMode === "custom";
+  const displayContext: JarvisContext = {
+    ...context,
+    voice: {
+      label: customVoiceActive ? customVoiceLabel : "Default voice",
+      detail: customVoiceActive
+        ? "Jarvis writes in your uploaded voice. Switch back to the default register anytime."
+        : voiceDefaultSummary,
+    },
+  };
 
   const ingestResearch = useCallback(
     async (build: (fd: FormData) => boolean) => {
@@ -666,7 +733,7 @@ export default function JarvisChat({
               <ContextChip
                 icon={MicrophoneIcon}
                 label="Voice"
-                value={context.voice.label}
+                value={displayContext.voice.label}
                 onClick={() => setContextOpen((v) => !v)}
               />
               <ContextChip
@@ -693,7 +760,17 @@ export default function JarvisChat({
               Context
             </button>
             {contextOpen && (
-              <ContextPanel context={context} onClose={() => setContextOpen(false)} />
+              <ContextPanel
+                context={displayContext}
+                onClose={() => setContextOpen(false)}
+                voiceControl={{
+                  mode: voiceMode,
+                  hasCustomGuide,
+                  busy: voiceBusy,
+                  manageHref: voiceManageHref,
+                  onSelect: handleVoiceSelect,
+                }}
+              />
             )}
             <div className="relative">
               <button

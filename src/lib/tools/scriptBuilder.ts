@@ -611,7 +611,13 @@ function buildInitialUserMessage(args: {
     typeof marketConfig.voiceGuide === "string"
       ? marketConfig.voiceGuide.trim()
       : "";
-  if (voiceGuide.length >= 500) {
+  // The member chooses their active voice in the Content Manager. "custom" (or
+  // null — the legacy default) applies their uploaded guide; "default" keeps the
+  // guide on file but writes in the built-in register from the system prompt. We
+  // only push the override when custom mode is active AND a substantive guide
+  // exists, so flipping to "default" cleanly drops the override.
+  const useCustomVoice = marketConfig.voiceMode !== "default";
+  if (useCustomVoice && voiceGuide.length >= 500) {
     lines.push(
       "## MEMBER VOICE OVERRIDES — applies on top of default voice register",
     );

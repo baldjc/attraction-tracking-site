@@ -33,28 +33,9 @@ function truncateText(s: string, n: number): string {
   return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
 }
 
-/**
- * Derive a SHORT human descriptor from the member's voice guide markdown — the
- * first real sentence, with markdown furniture (headings, list markers, emphasis,
- * links, code fences) stripped. Presentation only; this is never fed to the
- * generation loop (the orchestrator loads the raw voice guide server-side). The
- * chip shows this descriptor (or "Not set yet") instead of a vague
- * "Custom/Default voice" label so the member sees what Jarvis actually knows.
- */
-function deriveVoiceDescriptor(raw: string): string {
-  const cleaned = raw
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/[*_`>#]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!cleaned) return "";
-  const firstSentence = cleaned.split(/(?<=[.!?])\s+/)[0]?.trim();
-  return firstSentence && firstSentence.length > 0 ? firstSentence : cleaned;
-}
+/** The built-in default voice register, summarised for the context chip. */
+const DEFAULT_VOICE_SUMMARY =
+  "Jarvis writes in a warm, plain-spoken, lightly-dry default style — clear and confident, never hypey. Want it to sound exactly like you? Upload your own voice doc.";
 
 /**
  * Derive up to 4 SHORT bullets from the member's avatar spec for the context
@@ -134,16 +115,44 @@ export default async function JarvisPage({
   const voiceGuide = marketConfig?.voiceGuide?.trim() || null;
   const marketName = marketConfig?.marketName?.trim() || null;
   const avatarName = avatarData.avatarName?.trim() || null;
-  const avatarSummary = avatarData.avatarSummary?.trim() || null;
+  // Prefer the avatar's own SHORT summary field (a 2–3 sentence paragraph) over
+  // the avatarSummary column, and NEVER the full_document spec wall. The bullets
+  // are derived from this short source so the chip can never dump the raw spec.
+  const avatarProfileSummary =
+    typeof (avatarData.avatarProfile as { avatar_summary?: unknown } | null)
+      ?.avatar_summary === "string"
+      ? (
+          avatarData.avatarProfile as { avatar_summary: string }
+        ).avatar_summary.trim()
+      : "";
+  const avatarSummary =
+    avatarProfileSummary || avatarData.avatarSummary?.trim() || null;
   const currentMonthLabel = formatMonthLabel(currentDataMonth);
-  const voiceDescriptor = voiceGuide ? deriveVoiceDescriptor(voiceGuide) : "";
   const avatarBullets = avatarSummary ? deriveAvatarBullets(avatarSummary) : [];
+
+  // Voice chip — reflects the member's ACTIVE choice, never their name. Custom
+  // is active only when a guide is on file AND voiceMode isn't "default". The
+  // label shows the source file (or a neutral "Your custom voice"), never a
+  // derived sentence. The live switcher lives in JarvisChat (this is the
+  // server-rendered initial state).
+  const voiceMode: "default" | "custom" =
+    marketConfig?.voiceMode === "default" ? "default" : "custom";
+  // Match the Script Builder gate's threshold (voiceGuide.length >= 500): a
+  // shorter "guide" never produces an override, so for display/selection it does
+  // NOT count as a custom voice. This keeps the chip, the selector, and what the
+  // generation loop actually applies in agreement.
+  const hasCustomGuide = !!voiceGuide && voiceGuide.length >= 500;
+  const customVoiceActive = hasCustomGuide && voiceMode === "custom";
+  const voiceSourceLabel =
+    marketConfig?.voiceGuideSourceFile?.trim() || "Your custom voice";
   const context: JarvisContext = {
     voice: {
-      label: voiceDescriptor ? truncateText(voiceDescriptor, 60) : "Not set yet",
-      detail: voiceDescriptor
-        ? truncateText(voiceDescriptor, 200)
-        : "No voice guide yet — Jarvis writes in Attraction by Video's default register. Add one so scripts sound like you.",
+      label: customVoiceActive
+        ? truncateText(voiceSourceLabel, 60)
+        : "Default voice",
+      detail: customVoiceActive
+        ? "Jarvis writes in your uploaded voice. Switch back to the default register anytime."
+        : DEFAULT_VOICE_SUMMARY,
     },
     avatar: {
       label: avatarName ?? "Not set yet",
@@ -232,6 +241,11 @@ export default async function JarvisPage({
       memberFirstName={memberFirstName}
       context={context}
       resumeEligible={resumeEligible}
+      initialVoiceMode={customVoiceActive ? "custom" : "default"}
+      hasCustomGuide={hasCustomGuide}
+      customVoiceLabel={truncateText(voiceSourceLabel, 60)}
+      voiceDefaultSummary={DEFAULT_VOICE_SUMMARY}
+      voiceManageHref="/member/market-data/setup"
     />
   );
 }

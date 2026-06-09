@@ -17,17 +17,34 @@ const ROWS = [
 ] as const;
 
 /**
- * "What Jarvis knows about you" — read-only popover surfacing the member's real
- * Voice / Avatar / Market context with an "Update my context" action. Purely
- * presentational: it never mutates anything and the orchestrator loads its own
- * context server-side, so this can't drift the generation loop.
+ * Live control for the member's ACTIVE voice. The selector switches between the
+ * built-in default register and the member's uploaded guide; the change persists
+ * server-side and the Script Builder reads it on the next generation. This is the
+ * ONLY interactive part of the panel — everything else is read-only display.
+ */
+export interface VoiceControl {
+  mode: "default" | "custom";
+  hasCustomGuide: boolean;
+  busy?: boolean;
+  manageHref: string;
+  onSelect: (mode: "default" | "custom") => void;
+}
+
+/**
+ * "What Jarvis knows about you" — popover surfacing the member's real
+ * Voice / Avatar / Market context with an "Update my context" action. The Voice
+ * row also carries a live Default/My-voice selector (the rest is read-only; the
+ * orchestrator loads its own context server-side, so display can't drift the
+ * generation loop).
  */
 export default function ContextPanel({
   context,
   onClose,
+  voiceControl,
 }: {
   context: JarvisContext;
   onClose: () => void;
+  voiceControl?: VoiceControl;
 }) {
   return (
     <>
@@ -88,6 +105,9 @@ export default function ContextPanel({
                       {item.detail}
                     </p>
                   )}
+                  {key === "voice" && voiceControl ? (
+                    <VoiceSelector control={voiceControl} />
+                  ) : null}
                 </div>
               </div>
             );
@@ -105,5 +125,60 @@ export default function ContextPanel({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * Default vs. custom voice toggle. The "My voice" option is only selectable when
+ * a guide is on file; otherwise it links to the upload page instead. Switching is
+ * persisted by the parent (optimistic), so the only local concern is layout.
+ */
+function VoiceSelector({ control }: { control: VoiceControl }) {
+  const { mode, hasCustomGuide, busy, manageHref, onSelect } = control;
+  const options: { value: "default" | "custom"; label: string }[] = [
+    { value: "default", label: "Default" },
+    { value: "custom", label: "My voice" },
+  ];
+  return (
+    <div className="mt-2">
+      <div
+        role="group"
+        aria-label="Active voice"
+        className="inline-flex rounded-lg border border-abv-border bg-abv-bg p-0.5"
+      >
+        {options.map(({ value, label }) => {
+          const active = mode === value && (value === "default" || hasCustomGuide);
+          // "My voice" is only selectable once a substantive guide is on file;
+          // until then it's disabled (the upload link below is the way in).
+          const unavailable = value === "custom" && !hasCustomGuide;
+          return (
+            <button
+              key={value}
+              type="button"
+              disabled={busy || unavailable}
+              aria-pressed={active}
+              title={unavailable ? "Upload a voice doc to use your own voice" : undefined}
+              onClick={() => onSelect(value)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                active
+                  ? "bg-abv-ai-tools text-white"
+                  : "text-abv-text-secondary hover:text-abv-text"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {!hasCustomGuide ? (
+        <Link
+          href={manageHref}
+          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-abv-ai-tools hover:underline"
+        >
+          Upload your voice doc
+          <ArrowUpRightIcon className="h-3 w-3" aria-hidden />
+        </Link>
+      ) : null}
+    </div>
   );
 }

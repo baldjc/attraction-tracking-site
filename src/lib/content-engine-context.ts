@@ -178,6 +178,12 @@ export interface MarketConfigSummary {
   // Ship B — member-uploaded voice guide markdown. Null when the member is on
   // Foundations tier (no upload UI), or DWY but hasn't uploaded yet.
   voiceGuide: string | null;
+  // Active voice selection. "custom"/null → apply voiceGuide above (legacy
+  // default); "default" → write in the built-in register, keeping the guide on
+  // file. The Script Builder gates the voiceGuide push on this.
+  voiceMode: string | null;
+  // Original filename of the uploaded voice guide, for display only.
+  voiceGuideSourceFile: string | null;
   // B1 — onboarding Step 5 team-credibility numbers, read STRICTLY from this
   // member's own MarketConfig. The Script Builder uses these for credibility
   // moments and NEVER falls back to a hardcoded presenter. All null until the
@@ -236,6 +242,8 @@ export async function loadMarketConfigSummary(
       subPersonas: true,
       moiThresholds: true,
       voiceGuide: true,
+      voiceMode: true,
+      voiceGuideSourceFile: true,
       teamYearsInBusiness: true,
       teamFamiliesHelped: true,
       teamAnnualTransactionCount: true,
@@ -252,6 +260,8 @@ export async function loadMarketConfigSummary(
     subPersonas: cfg.subPersonas,
     moiThresholds: cfg.moiThresholds,
     voiceGuide: cfg.voiceGuide,
+    voiceMode: cfg.voiceMode,
+    voiceGuideSourceFile: cfg.voiceGuideSourceFile,
     teamCredibility: {
       yearsInBusiness: cfg.teamYearsInBusiness,
       familiesHelped: cfg.teamFamiliesHelped,

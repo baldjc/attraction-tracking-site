@@ -68,6 +68,8 @@ function makeMarketConfig(c: GoldenCase): MarketConfigSummary {
     subPersonas: null,
     moiThresholds: null,
     voiceGuide: null,
+    voiceMode: null,
+    voiceGuideSourceFile: null,
     teamCredibility: {
       yearsInBusiness: null,
       familiesHelped: null,

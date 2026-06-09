@@ -2002,6 +2002,12 @@ model MarketConfig {
   voiceGuide                 String?   @db.Text
   voiceGuideUploadedAt       DateTime?
   voiceGuideSourceFile       String?
+  // Active voice selection for the Content Manager / Script Builder. "custom"
+  // (or null — the legacy default) → use the uploaded voiceGuide above; "default"
+  // → keep the guide on file but write in the built-in register baked into
+  // script-builder-mode-prompt.ts. Toggled from the Content Manager voice chip
+  // so a member can switch without deleting (and re-uploading) their guide.
+  voiceMode                  String?   @default("custom")
   // Onboarding Wizard Step 5 — Team credibility numbers. Used by Script Builder
   // for credibility-moment lines so it never has to invent stats like
   // "after helping 4,000 families". Auto-fill formula on the wizard:

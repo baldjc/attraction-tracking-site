@@ -112,6 +112,8 @@ export async function POST(req: NextRequest) {
         voiceGuide,
         voiceGuideUploadedAt: new Date(),
         voiceGuideSourceFile: sourceFile,
+        // A fresh upload becomes the active voice immediately.
+        voiceMode: "custom",
       },
     });
   } catch {
@@ -132,6 +134,49 @@ export async function POST(req: NextRequest) {
   });
 }
 
+// PATCH: switch the ACTIVE voice without deleting the uploaded guide. Body:
+// `{ voiceMode: "default" | "custom" }`. "custom" only takes effect in the
+// Script Builder when a substantive guide is actually on file; we persist the
+// choice regardless (so it sticks once they upload) and report whether a guide
+// is present so the UI can prompt an upload.
+export async function PATCH(req: NextRequest) {
+  const access = await gate();
+  if (!access.ok) return access.response;
+
+  let body: { voiceMode?: unknown };
+  try {
+    body = (await req.json()) as { voiceMode?: unknown };
+  } catch {
+    return Response.json(
+      { error: "Expected a JSON body with a `voiceMode` field." },
+      { status: 400 },
+    );
+  }
+  const mode = body.voiceMode;
+  if (mode !== "default" && mode !== "custom") {
+    return Response.json(
+      { error: "voiceMode must be 'default' or 'custom'." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const cfg = await prisma.marketConfig.update({
+      where: { userId: access.userId },
+      data: { voiceMode: mode },
+      select: { voiceGuide: true },
+    });
+    const hasCustomGuide =
+      typeof cfg.voiceGuide === "string" && cfg.voiceGuide.trim().length >= 500;
+    return Response.json({ ok: true, voiceMode: mode, hasCustomGuide });
+  } catch {
+    return Response.json(
+      { error: "Set up your market first, then choose a voice." },
+      { status: 409 },
+    );
+  }
+}
+
 export async function DELETE() {
   const access = await gate();
   if (!access.ok) return access.response;
@@ -143,6 +188,8 @@ export async function DELETE() {
         voiceGuide: null,
         voiceGuideUploadedAt: null,
         voiceGuideSourceFile: null,
+        // No guide on file → there is nothing to apply, so revert to default.
+        voiceMode: "default",
       },
     });
   } catch (e) {
