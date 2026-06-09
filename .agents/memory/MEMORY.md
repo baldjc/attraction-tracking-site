@@ -3,6 +3,7 @@
 - [ABV brand foundation already done](abv-brand-foundation-done.md) — canonical design system is installed app-wide; `#6BA3C7` `--abv-ai-tools` is the preserved feature tint (not residue); don't rewrite components into prototype class names.
 - [Deploy + GitHub topology](deploy-and-github-topology.md) — prod is a Replit VM publish (members.attractionbyvideo.com); GitHub main is source-of-record only (no auto-deploy); non-force push works despite a local tracking-ref lock; 404→307 proves a member route shipped.
 - [Dark-mode token remapping](dark-mode-token-remap.md) — `--abv-text` flips for dark but `--abv-ink` does NOT; using `--abv-ink` as foreground over a remapped surface = dark-on-dark.
+- [Undefined abv token = transparent](abv-undefined-token-transparent.md) — `bg-abv-surface` (not in globals.css @theme) renders transparent with NO error → bleed-through; opaque card is `bg-abv-card`.
 - [Fact validator market lock-in](fact-validator-market-lockin.md) — the validator prompt hardcodes one market's schema, so wide off-market uploads extract far fewer facts.
 - [Sample-size honesty bands](sample-size-honesty-bands.md) — headline/disclose/thin by sale count; HEADLINE_SOLD_FLOOR is a global constant but the per-member hard floor must defer to the methodology block (cached-per-market prompt can't hold it).
 - [Validator 200K-context overflow](market-validator-overflow.md) — the unsplittable SUMMARY+LEADS call overflows on ultra-wide markets; its rollups must be hard-bounded to the char budget.

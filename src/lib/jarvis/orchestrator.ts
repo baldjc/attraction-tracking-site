@@ -443,6 +443,17 @@ async function runTool(ctx: {
           ? (input.researchSourceIds as unknown[]).filter((x): x is string => typeof x === "string")
           : [],
         onToken: (text) => emit("script_token", { text }),
+        // Surface REAL build stages as they happen (load → intro → body → hook →
+        // validate → re-prompt) so the member sees progress instead of a silent
+        // pause. Presentation only — the generation loop is unchanged.
+        onPhase: (key, label) => emit("script_phase", { key, label }),
+        // Honest retry signal: a failed attempt that WILL be retried.
+        onViolation: (info) =>
+          emit("script_retry", {
+            attempt: info.attempt,
+            count: info.violations.length,
+            willRetry: info.willRetry,
+          }),
         signal,
       });
 

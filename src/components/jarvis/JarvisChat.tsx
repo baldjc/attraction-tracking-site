@@ -334,6 +334,17 @@ export default function JarvisChat({
           prev.map((m) => (m.id === assistantId ? { ...m, ...patch } : m)),
         );
 
+      // Live-update the build_script tool pill's summary so the member watches
+      // the real drafting stages roll by instead of a frozen "Drafting…".
+      const updateBuildPill = (summary: string) =>
+        setLiveTools((prev) => {
+          const next = [...prev];
+          const i = next.findIndex((t) => t.name === "build_script");
+          if (i >= 0) next[i] = { ...next[i], status: "running", summary };
+          else next.push({ name: "build_script", status: "running", summary });
+          return next;
+        });
+
       try {
         const resp = await fetch("/api/jarvis", {
           method: "POST",
@@ -415,6 +426,20 @@ export default function JarvisChat({
               case "script_token":
                 draftBuf += String(data.text ?? "");
                 patchAssistant({ draft: draftBuf, draftStatus: "streaming" });
+                break;
+              case "script_phase":
+                // Surface the REAL build stage on the build_script pill instead
+                // of a silent pause (load → intro → body → hook → validate).
+                updateBuildPill(String(data.label ?? "Working…"));
+                break;
+              case "script_retry":
+                // Be honest when a draft failed its content rules and is being
+                // retried, rather than hiding it behind "…".
+                updateBuildPill(
+                  `Tightening the draft — fixing ${Number(data.count ?? 0)} content-rule issue${
+                    Number(data.count ?? 0) === 1 ? "" : "s"
+                  } (attempt ${Number(data.attempt ?? 0) + 2})…`,
+                );
                 break;
               case "script_done":
                 patchAssistant({ draft: draftBuf, draftStatus: "done" });
@@ -639,7 +664,7 @@ export default function JarvisChat({
                     onClick={() => setHistoryOpen(false)}
                     aria-hidden
                   />
-                  <div className="absolute right-0 z-20 mt-2 flex max-h-[26rem] w-[min(20rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-abv-border bg-abv-surface shadow-lg">
+                  <div className="absolute right-0 z-20 mt-2 flex max-h-[26rem] w-[min(20rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-abv-border bg-abv-card shadow-lg">
                     <div className="border-b border-abv-border px-3 py-2.5">
                       <p className="text-sm font-semibold text-abv-text">
                         Your conversations
@@ -698,6 +723,13 @@ export default function JarvisChat({
                         })
                       )}
                     </div>
+                    <div className="border-t border-abv-border px-3 py-2">
+                      <p className="text-[10.5px] leading-snug text-abv-text-secondary">
+                        Conversations are kept for 30 days, then cleared
+                        automatically. Saved scripts and your Planner are never
+                        affected.
+                      </p>
+                    </div>
                   </div>
                 </>
               )}
@@ -744,7 +776,7 @@ export default function JarvisChat({
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
           {messages.length === 0 && (
-            <div className="rounded-2xl border border-abv-border bg-abv-surface p-6">
+            <div className="rounded-2xl border border-abv-border bg-abv-card p-6">
               <p className="text-base font-medium text-abv-text">{greeting} 👋</p>
               <p className="mt-1 text-sm text-abv-text-secondary">
                 Ask about your market or have me draft a script. Try:
@@ -826,7 +858,7 @@ export default function JarvisChat({
           </div>
         )}
         {showResearchPanel && (
-          <div className="mx-auto mb-2 max-w-3xl rounded-xl border border-abv-border bg-abv-surface p-3">
+          <div className="mx-auto mb-2 max-w-3xl rounded-xl border border-abv-border bg-abv-card p-3">
             <textarea
               value={researchText}
               onChange={(e) => setResearchText(e.target.value)}
@@ -875,7 +907,7 @@ export default function JarvisChat({
               type="button"
               disabled={busy}
               onClick={() => send(q)}
-              className="rounded-full border border-abv-border bg-abv-surface px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+              className="rounded-full border border-abv-border bg-abv-card px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
             >
               {q}
             </button>
@@ -901,7 +933,7 @@ export default function JarvisChat({
             Add link/text
           </button>
         </div>
-        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-surface px-2 py-1.5 transition focus-within:border-abv-border-strong">
+        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-card px-2 py-1.5 transition focus-within:border-abv-border-strong">
           <button
             type="button"
             onClick={() => toast.info("Voice input is coming soon.")}
@@ -985,7 +1017,7 @@ function MessageBubble({
           <JarvisAvatar size="sm" />
           <div className="min-w-0 flex-1">
             <p className="mb-1 text-xs font-semibold text-abv-text-secondary">Jarvis</p>
-            <div className="max-w-[92%] rounded-2xl rounded-tl-sm border border-abv-border bg-abv-surface px-4 py-3 text-sm text-abv-text">
+            <div className="max-w-[92%] rounded-2xl rounded-tl-sm border border-abv-border bg-abv-card px-4 py-3 text-sm text-abv-text">
               {showTyping ? <TypingDots /> : <Markdown>{message.text}</Markdown>}
             </div>
           </div>
@@ -1054,7 +1086,7 @@ function ProposalCard({
   }
   if (proposal.status === "declined") {
     return (
-      <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-surface px-4 py-3 text-sm text-abv-text-secondary">
+      <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-card px-4 py-3 text-sm text-abv-text-secondary">
         <p>Draft dismissed. Changed your mind?</p>
         <button
           onClick={() => onAction(messageId, "reopen")}
@@ -1068,7 +1100,7 @@ function ProposalCard({
   }
 
   return (
-    <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-surface px-4 py-4">
+    <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-card px-4 py-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-abv-ai-tools">
         Draft script · Not saved yet
       </p>
@@ -1148,7 +1180,7 @@ function ToolStatusRow({ row }: { row: ToolRow }) {
   const [head, ...rest] = (row.summary || toolLabel(row.name)).split(" · ");
   const detail = rest.join(" · ");
   return (
-    <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-abv-border bg-abv-surface px-3 py-1.5 text-xs text-abv-text-secondary">
+    <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-abv-border bg-abv-card px-3 py-1.5 text-xs text-abv-text-secondary">
       {error ? (
         <XCircleIcon className="h-3.5 w-3.5 shrink-0 text-abv-crimson" aria-hidden />
       ) : running ? (

@@ -35,7 +35,7 @@ export default function ContextPanel({
       <div
         role="dialog"
         aria-label="What Jarvis knows about you"
-        className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-abv-border bg-abv-surface shadow-abv-lg"
+        className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-abv-border bg-abv-card shadow-abv-lg"
       >
         <div className="flex items-start justify-between gap-3 border-b border-abv-border px-4 py-3">
           <div className="min-w-0">

@@ -5,6 +5,8 @@
  *   event: assistant_token   data: { text }      // live chat prose
  *   event: tool              data: { name, status, summary }
  *   event: script_start      data: {}
+ *   event: script_phase      data: { key, label } // live build stage (load…validate)
+ *   event: script_retry      data: { attempt, count, willRetry } // honest retry
  *   event: script_token      data: { text }      // live draft script
  *   event: script_done       data: {}
  *   event: script_error      data: { message }
@@ -26,6 +28,7 @@ import {
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { runJarvisTurn, type JarvisHistoryTurn } from "@/lib/jarvis/orchestrator";
+import { isBingeTargetUsable } from "@/lib/binge-target";
 import { coerceExtractedClaims } from "@/lib/jarvis/research-ingest";
 import {
   JARVIS_TOOL_TYPE,
@@ -151,7 +154,7 @@ export async function POST(req: NextRequest) {
         where: { userId, deletedAt: null },
         orderBy: { updatedAt: "desc" },
         take: 8,
-        select: { id: true, title: true, status: true, theme: true },
+        select: { id: true, title: true, status: true, theme: true, rotationSlot: true },
       }),
       // Research Reader — the EXTERNAL sources the member attached in THIS thread
       // (ownership + thread scoped). Surfaced to Jarvis as the outside lens; the
@@ -181,6 +184,11 @@ export async function POST(req: NextRequest) {
     title: v.title,
     status: v.status,
     theme: v.theme ?? null,
+    rotationSlot: v.rotationSlot ?? null,
+    // A video can only be teased as a "watch this next" once the member has
+    // committed to making it (not still an idea). Shared definition with the
+    // Script Builder so the smart-binge default never offers an idea-stage plan.
+    eligibleAsBinge: isBingeTargetUsable(v.status),
   }));
   const researchSources = researchRows.map((r) => {
     const claims = coerceExtractedClaims(r.extractedClaims);

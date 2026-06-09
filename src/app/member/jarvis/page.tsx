@@ -33,6 +33,29 @@ function truncateText(s: string, n: number): string {
   return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
 }
 
+/**
+ * Derive a SHORT human descriptor from the member's voice guide markdown — the
+ * first real sentence, with markdown furniture (headings, list markers, emphasis,
+ * links, code fences) stripped. Presentation only; this is never fed to the
+ * generation loop (the orchestrator loads the raw voice guide server-side). The
+ * chip shows this descriptor (or "Not set yet") instead of a vague
+ * "Custom/Default voice" label so the member sees what Jarvis actually knows.
+ */
+function deriveVoiceDescriptor(raw: string): string {
+  const cleaned = raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`>#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return "";
+  const firstSentence = cleaned.split(/(?<=[.!?])\s+/)[0]?.trim();
+  return firstSentence && firstSentence.length > 0 ? firstSentence : cleaned;
+}
+
 export default async function JarvisPage({
   searchParams,
 }: {
@@ -74,12 +97,13 @@ export default async function JarvisPage({
   const avatarName = avatarData.avatarName?.trim() || null;
   const avatarSummary = avatarData.avatarSummary?.trim() || null;
   const currentMonthLabel = formatMonthLabel(currentDataMonth);
+  const voiceDescriptor = voiceGuide ? deriveVoiceDescriptor(voiceGuide) : "";
   const context: JarvisContext = {
     voice: {
-      label: voiceGuide ? "Custom voice" : "Default voice",
-      detail: voiceGuide
-        ? truncateText(voiceGuide, 280)
-        : "Jarvis writes in Attraction by Video's default voice register. Add a voice guide so scripts sound like you.",
+      label: voiceDescriptor ? truncateText(voiceDescriptor, 60) : "Not set yet",
+      detail: voiceDescriptor
+        ? truncateText(voiceDescriptor, 200)
+        : "No voice guide yet — Jarvis writes in Attraction by Video's default register. Add one so scripts sound like you.",
     },
     avatar: {
       label: avatarName ?? "Not set yet",

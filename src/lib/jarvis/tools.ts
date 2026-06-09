@@ -1043,9 +1043,17 @@ export async function runBuildScript(args: {
    */
   researchSourceIds?: string[];
   onToken: (text: string) => void;
+  /** Build-stage transitions (orchestrator maps to an SSE `script_phase` frame). */
+  onPhase?: (key: string, label: string) => void;
+  /** A failed attempt that will be retried (orchestrator maps to `script_retry`). */
+  onViolation?: (info: {
+    attempt: number;
+    violations: unknown[];
+    willRetry: boolean;
+  }) => void;
   signal?: AbortSignal;
 }): Promise<RunBuildScriptResult> {
-  const { userId, ideaCard, onToken, signal } = args;
+  const { userId, ideaCard, onToken, onPhase, onViolation, signal } = args;
 
   const rotationSlot = ideaCard.rotationSlot as RotationSlotKey;
   if (!ROTATION_SLOTS.includes(rotationSlot)) {
@@ -1426,7 +1434,7 @@ export async function runBuildScript(args: {
     bingeTargetConfigured,
     bingeTargetTitle,
     signal,
-    callbacks: { onToken },
+    callbacks: { onToken, onPhase, onViolation },
   });
 
   return {

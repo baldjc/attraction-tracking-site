@@ -65,8 +65,36 @@ function deriveDisplayTitle(args: {
   return month ? `${month} conversation` : `Conversation · ${day}`;
 }
 
+/** Conversations are retained for 30 days of inactivity, then auto-pruned. */
+export const JARVIS_RETENTION_DAYS = 30;
+
+/**
+ * Delete the member's Jarvis conversations untouched for more than
+ * {@link JARVIS_RETENTION_DAYS} days (by `updatedAt`, i.e. last activity).
+ * Messages cascade with the thread (schema onDelete: Cascade). This ONLY ever
+ * touches `ContentManagerThread`/`ContentManagerMessage` — never the member's
+ * Planner videos, saved drafts, or market facts (separate tables). Best-effort:
+ * a delete failure must never block listing, so callers swallow errors.
+ */
+export async function pruneExpiredThreads(userId: string): Promise<number> {
+  const cutoff = new Date(Date.now() - JARVIS_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const res = await prisma.contentManagerThread.deleteMany({
+    where: { userId, updatedAt: { lt: cutoff } },
+  });
+  return res.count;
+}
+
 /** List a member's Jarvis conversations, newest first, with derived titles. */
 export async function listThreadSummaries(userId: string): Promise<ThreadSummaryData[]> {
+  // Enforce retention wherever threads are listed (SSR page + threads API) so
+  // expired conversations are cleared exactly once, consistently. Best-effort —
+  // never let a prune failure break the history list.
+  try {
+    await pruneExpiredThreads(userId);
+  } catch {
+    /* retention is best-effort; listing must still succeed */
+  }
+
   const rows = await prisma.contentManagerThread.findMany({
     where: { userId, messages: { some: {} } },
     orderBy: { updatedAt: "desc" },

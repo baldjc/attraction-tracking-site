@@ -64,7 +64,7 @@ DRAFTING
 - A good script needs an angle, a rotation slot (market_update, neighbourhood_fact, contrarian_take, do_not, should_you), a one-line title promise, and at least one linked fact id.
 - PROPOSE THE REFERENCES BEFORE YOU DRAFT. A script is only as good as the real assets it points to, so BEFORE calling build_script, settle two things with the member using the lists in their context:
   1. Lead magnet — from AVAILABLE LEAD MAGNETS, pick the single best-fit campaign for this video's angle and say which one you'll use and why, in one short line (e.g. "I'll point this at your 'Relocation Guide' lead magnet — it fits a market-update for movers."). Pass its id as build_script's campaignId.
-  2. Watch-this-next — from RECENT VIDEOS, pick the best follow-on video and name it as the binge target the same way. Pass its id as build_script's bingeVideoId.
+  2. Watch-this-next — from RECENT VIDEOS, follow the SMART BINGE DEFAULT below: prefer the most-recent READY video of the SAME type (rotation slot) as this script and say so; if none matches, offer a short pick-list of recent ready videos instead of forcing a mismatch. Pass the chosen id as build_script's bingeVideoId. Never tease an idea-stage video and never invent one.
 - Offer these as SMART DEFAULTS the member can accept in one tap — not an interrogation. Propose your best pick for each, make it obvious they can swap to any other item in the list, and if they say "just go" / "looks good" the defaults stand. One short message proposing both is ideal; don't drag it out.
 - When the member swaps, use the id of the item THEY named from the lists. Only the ids present in AVAILABLE LEAD MAGNETS / RECENT VIDEOS are valid — NEVER invent a campaign, a video, or an id, and never reference an asset that isn't in those lists.
 - Fallbacks (never fabricate): if AVAILABLE LEAD MAGNETS is empty, draft without a campaignId (the script uses generic pitch language) and let them know they can add a lead magnet later for a sharper CTA. If RECENT VIDEOS is empty, draft without a bingeVideoId (the close is a generic forward-looking line). Don't block drafting on either — propose, confirm, then draft.
@@ -103,6 +103,28 @@ export interface JarvisRecentVideoOption {
   title: string;
   status: string;
   theme: string | null;
+  /** Structured content type — used for the type-aware binge default. */
+  rotationSlot: string | null;
+  /** True only when the plan is committed enough to be teased (not idea-stage). */
+  eligibleAsBinge: boolean;
+}
+
+/** Human label for a ContentPlan rotation slot (mirrors the chat UI labels). */
+function labelForRotationSlot(slot: string): string {
+  switch (slot) {
+    case "market_update":
+      return "Market update";
+    case "neighbourhood_fact":
+      return "Neighbourhood fact";
+    case "contrarian_take":
+      return "Contrarian take";
+    case "do_not":
+      return "Do-not warning";
+    case "should_you":
+      return "Should-you question";
+    default:
+      return slot;
+  }
 }
 
 /**
@@ -207,12 +229,27 @@ export function buildJarvisDynamicContext(args: {
   lines.push("");
   if (recentVideos && recentVideos.length > 0) {
     lines.push(
-      "RECENT VIDEOS (the member's own plans — pick the best 'watch this next' and pass its id as build_script bingeVideoId; never invent one):",
+      "RECENT VIDEOS (the member's own plans — pick the best 'watch this next' and pass its id as build_script bingeVideoId; never invent one). Each line shows the video's TYPE and whether it's ready to be teased:",
     );
     for (const v of recentVideos.slice(0, 8)) {
-      const meta = [v.status, v.theme?.trim()].filter(Boolean).join(" · ");
+      const typeLabel = v.rotationSlot ? labelForRotationSlot(v.rotationSlot) : null;
+      const readiness = v.eligibleAsBinge
+        ? "ready as binge target"
+        : "still an idea — NOT teasable";
+      const meta = [
+        typeLabel ? `type: ${typeLabel}` : null,
+        v.status,
+        v.theme?.trim(),
+        readiness,
+      ]
+        .filter(Boolean)
+        .join(" · ");
       lines.push(`- [${v.id}] ${v.title}${meta ? ` (${meta})` : ""}`);
     }
+    lines.push("");
+    lines.push(
+      "SMART BINGE DEFAULT (watch-this-next): default to the MOST RECENT video marked \"ready as binge target\" whose TYPE matches the rotation slot you'll use for THIS script — name it and say it's the same type (e.g. \"I'll point this at your last market-update video, '…', since it's the same type.\"). If no ready video shares this script's type, DON'T force a mismatch — show the member a short pick-list of their most recent ready videos (up to 6) and ask which to point to (they can also say \"just pick one\"). Only \"ready as binge target\" videos can be teased — NEVER tease an idea-stage video and NEVER invent a title. If none are ready, draft without a bingeVideoId (generic forward-looking close) and mention they can add one later. The member can always swap to any ready video in this list.",
+    );
   } else {
     lines.push(
       "RECENT VIDEOS: none yet. Draft without a bingeVideoId (generic forward-looking close).",
