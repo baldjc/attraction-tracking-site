@@ -4,11 +4,24 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ClockIcon } from "@heroicons/react/24/outline";
+import {
+  ClockIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  MicrophoneIcon,
+  PaperAirplaneIcon,
+  PlusIcon,
+  UserCircleIcon,
+  MapPinIcon,
+} from "@heroicons/react/24/outline";
 import { useToast } from "@/components/ToastProvider";
 import type { ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
 import { buildMlsVerifyLine } from "@/lib/mls-verify-reminder";
 import { clearJarvisSeed, consumeJarvisSeed } from "@/lib/jarvis/seed";
+import ContextPanel from "@/components/jarvis/ContextPanel";
 
 // Markdown rendering for assistant turns + draft-script cards. react-markdown
 // does NOT render raw HTML by default (no rehype-raw), so embedded HTML is
@@ -94,6 +107,23 @@ export interface ThreadSummary {
   updatedAt: string;
 }
 
+/** One row in the "What Jarvis knows about you" context panel. */
+export interface JarvisContextItem {
+  /** Short value shown on the chip (e.g. the market name, "Custom voice"). */
+  label: string;
+  /** Longer description shown in the panel. */
+  detail: string;
+}
+
+/** Real ContentProfile context for the header chips + panel (read-only). */
+export interface JarvisContext {
+  voice: JarvisContextItem;
+  avatar: JarvisContextItem;
+  market: JarvisContextItem;
+  /** Where "Update my context" routes (the member's settings surface). */
+  updateHref: string;
+}
+
 /** "2026-05" → "May 2026". Falls back to the raw value if unparseable. */
 function formatDataMonth(monthYear: string | null): string | null {
   if (!monthYear) return null;
@@ -158,6 +188,13 @@ const SUGGESTIONS = [
   "Give me a contrarian-take video idea",
 ];
 
+/** Compact quick-reply chips shown above the composer. */
+const QUICK_REPLIES = [
+  "What's happening in my market?",
+  "Draft a market update",
+  "Give me a contrarian take",
+];
+
 export default function JarvisChat({
   memberId,
   threadId: initialThreadId,
@@ -166,6 +203,7 @@ export default function JarvisChat({
   threads: initialThreads,
   initialMessages,
   memberFirstName,
+  context,
 }: {
   memberId: string;
   threadId: string | null;
@@ -174,12 +212,14 @@ export default function JarvisChat({
   threads: ThreadSummary[];
   initialMessages: InitialMessage[];
   memberFirstName: string | null;
+  context: JarvisContext;
 }) {
   const toast = useToast();
   const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(initialThreadId);
   const [threads, setThreads] = useState<ThreadSummary[]>(initialThreads);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   // The active thread was started under an OLDER data month than the current
   // latest validated upload → offer (never force) a fresh thread for the new
   // month. Dismissible; reappears only if the mismatch persists on next load.
@@ -536,15 +576,50 @@ export default function JarvisChat({
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <header className="border-b border-abv-border px-4 py-4 sm:px-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold text-abv-text">AI Content Manager</h1>
-            <p className="hidden text-sm text-abv-text-secondary sm:block">
-              Plan and draft a video from your real market numbers. Approved drafts land in your
-              Content Planner — nothing is ever published.
-            </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <JarvisAvatar online />
+            <div className="min-w-0">
+              <h1 className="font-display text-base font-bold leading-none text-abv-text">
+                Jarvis
+              </h1>
+              <p className="mt-1 text-xs text-abv-text-secondary">your Content Manager</p>
+            </div>
           </div>
           <div className="relative flex shrink-0 items-center gap-2">
+            <div className="hidden items-center gap-1.5 lg:flex">
+              <ContextChip
+                icon={MicrophoneIcon}
+                label="Voice"
+                value={context.voice.label}
+                onClick={() => setContextOpen((v) => !v)}
+              />
+              <ContextChip
+                icon={UserCircleIcon}
+                label="Avatar"
+                value={context.avatar.label}
+                onClick={() => setContextOpen((v) => !v)}
+              />
+              <ContextChip
+                icon={MapPinIcon}
+                label="Market"
+                value={context.market.label}
+                onClick={() => setContextOpen((v) => !v)}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setContextOpen((v) => !v)}
+              aria-haspopup="dialog"
+              aria-expanded={contextOpen}
+              className="flex items-center gap-1.5 rounded-lg border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong lg:hidden"
+            >
+              <SparklesIcon className="h-3.5 w-3.5 text-abv-ai-tools" aria-hidden />
+              Context
+            </button>
+            {contextOpen && (
+              <ContextPanel context={context} onClose={() => setContextOpen(false)} />
+            )}
             <div className="relative">
               <button
                 type="button"
@@ -793,35 +868,49 @@ export default function JarvisChat({
             </div>
           </div>
         )}
+        <div className="mx-auto mb-2 flex max-w-3xl flex-wrap gap-1.5">
+          {QUICK_REPLIES.map((q) => (
+            <button
+              key={q}
+              type="button"
+              disabled={busy}
+              onClick={() => send(q)}
+              className="rounded-full border border-abv-border bg-abv-surface px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
         <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2">
           <button
             type="button"
             disabled={busy || researchBusy}
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
           >
-            {researchBusy ? "Reading…" : "+ Attach file/image"}
+            <PlusIcon className="h-3.5 w-3.5" aria-hidden />
+            {researchBusy ? "Reading…" : "Attach file/image"}
           </button>
           <button
             type="button"
             disabled={busy || researchBusy}
             onClick={() => setShowResearchPanel((v) => !v)}
-            className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
           >
-            + Add link/text
+            <PlusIcon className="h-3.5 w-3.5" aria-hidden />
+            Add link/text
           </button>
-          {messages.length > 0 && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={newConversation}
-              className="ml-auto rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
-            >
-              + New conversation
-            </button>
-          )}
         </div>
-        <div className="mx-auto flex max-w-3xl items-end gap-2">
+        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-surface px-2 py-1.5 transition focus-within:border-abv-border-strong">
+          <button
+            type="button"
+            onClick={() => toast.info("Voice input is coming soon.")}
+            title="Voice input coming soon"
+            aria-label="Voice input coming soon"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-abv-text-secondary transition hover:bg-abv-bg hover:text-abv-text"
+          >
+            <MicrophoneIcon className="h-5 w-5" aria-hidden />
+          </button>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -834,16 +923,24 @@ export default function JarvisChat({
             rows={1}
             placeholder="Message your content manager…"
             disabled={busy}
-            className="min-h-[44px] max-h-40 flex-1 resize-none rounded-xl border border-abv-border bg-abv-surface px-4 py-2.5 text-sm text-abv-text outline-none focus:border-abv-border-strong disabled:opacity-60"
+            className="max-h-40 min-h-[36px] flex-1 resize-none border-0 bg-transparent px-1 py-2 text-sm text-abv-text outline-none disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            className="h-[44px] rounded-xl bg-abv-ai-tools px-5 text-sm font-medium text-white transition disabled:opacity-50"
+            aria-label="Send"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-abv-ai-tools text-white transition hover:opacity-90 disabled:opacity-40"
           >
-            {busy ? "…" : "Send"}
+            {busy ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <PaperAirplaneIcon className="h-4 w-4" aria-hidden />
+            )}
           </button>
         </div>
+        <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] leading-relaxed text-abv-text-secondary">
+          Jarvis proposes. You approve. Nothing is created or posted without your say-so.
+        </p>
       </form>
     </div>
   );
@@ -861,12 +958,21 @@ function MessageBubble({
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-abv-ai-tools px-4 py-2.5 text-sm text-white">
+        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-abv-text px-4 py-2.5 text-sm text-abv-bg">
           {message.text}
         </div>
       </div>
     );
   }
+
+  // A freshly-created assistant turn before any token/tool/draft arrives →
+  // show the typing indicator in place of an empty bubble.
+  const showTyping =
+    !message.text &&
+    !message.draft &&
+    !message.draftStatus &&
+    !message.proposal &&
+    (message.toolCalls?.length ?? 0) === 0;
 
   return (
     <div className="flex flex-col gap-2">
@@ -874,9 +980,15 @@ function MessageBubble({
         <ToolStatusRow key={`${t.name}-${i}`} row={{ name: t.name, status: t.status, summary: t.summary }} />
       ))}
 
-      {message.text && (
-        <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-surface px-4 py-3 text-sm text-abv-text">
-          <Markdown>{message.text}</Markdown>
+      {(message.text || showTyping) && (
+        <div className="flex gap-2.5">
+          <JarvisAvatar size="sm" />
+          <div className="min-w-0 flex-1">
+            <p className="mb-1 text-xs font-semibold text-abv-text-secondary">Jarvis</p>
+            <div className="max-w-[92%] rounded-2xl rounded-tl-sm border border-abv-border bg-abv-surface px-4 py-3 text-sm text-abv-text">
+              {showTyping ? <TypingDots /> : <Markdown>{message.text}</Markdown>}
+            </div>
+          </div>
         </div>
       )}
 
@@ -956,18 +1068,27 @@ function ProposalCard({
   }
 
   return (
-    <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-surface px-4 py-3">
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-        Not saved yet
-      </span>
-      <p className="mt-2 text-sm font-medium text-abv-text">“{proposal.title}”</p>
-      <p className="mt-0.5 text-xs text-abv-text-secondary">
-        {labelForSlot(proposal.rotationSlot)} · {sourceCount} source
-        {sourceCount === 1 ? "" : "s"} cited
+    <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-surface px-4 py-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-abv-ai-tools">
+        Draft script · Not saved yet
       </p>
+      <p className="mt-1.5 font-display text-lg font-bold leading-tight text-abv-text">
+        “{proposal.title}”
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center rounded-full bg-abv-ai-tools/10 px-2 py-0.5 text-xs font-medium text-abv-ai-tools">
+          {labelForSlot(proposal.rotationSlot)}
+        </span>
+        {sourceCount > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-abv-border px-2 py-0.5 text-xs text-abv-text-secondary">
+            <ShieldCheckIcon className="h-3.5 w-3.5 text-green-600" aria-hidden />
+            {sourceCount} source{sourceCount === 1 ? "" : "s"} cited
+          </span>
+        )}
+      </div>
 
       {sourceCount > 0 && (
-        <p className="mt-2 rounded-lg border border-abv-border bg-abv-bg-warm px-3 py-2 text-xs leading-relaxed text-abv-text-secondary">
+        <p className="mt-3 rounded-lg border border-abv-border bg-abv-bg-warm px-3 py-2 text-xs leading-relaxed text-abv-text-secondary">
           {buildMlsVerifyLine(proposal.dataPeriod)}
         </p>
       )}
@@ -1023,18 +1144,25 @@ function ProposalCard({
 function ToolStatusRow({ row }: { row: ToolRow }) {
   const running = row.status === "running";
   const error = row.status === "error";
+  // Split a trailing " · detail" (e.g. "· CREB May 2026") into a mono tail.
+  const [head, ...rest] = (row.summary || toolLabel(row.name)).split(" · ");
+  const detail = rest.join(" · ");
   return (
-    <div className="flex items-center gap-2 px-1 text-xs text-abv-text-secondary">
-      <span
-        className={
-          error
-            ? "h-1.5 w-1.5 rounded-full bg-red-500"
-            : running
-              ? "h-1.5 w-1.5 animate-pulse rounded-full bg-abv-ai-tools"
-              : "h-1.5 w-1.5 rounded-full bg-green-500"
-        }
-      />
-      <span>{row.summary || toolLabel(row.name)}</span>
+    <div className="inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-abv-border bg-abv-surface px-3 py-1.5 text-xs text-abv-text-secondary">
+      {error ? (
+        <XCircleIcon className="h-3.5 w-3.5 shrink-0 text-abv-crimson" aria-hidden />
+      ) : running ? (
+        <ArrowPathIcon
+          className="h-3.5 w-3.5 shrink-0 animate-spin text-abv-ai-tools"
+          aria-hidden
+        />
+      ) : (
+        <CheckCircleIcon className="h-3.5 w-3.5 shrink-0 text-green-600" aria-hidden />
+      )}
+      <span className="truncate text-abv-text">{head}</span>
+      {detail && (
+        <span className="shrink-0 font-mono text-abv-text-secondary">· {detail}</span>
+      )}
     </div>
   );
 }
@@ -1044,6 +1172,72 @@ function toolLabel(name: string): string {
   if (name === "build_script") return "Drafting your script…";
   if (name === "save_script") return "Saving…";
   return name;
+}
+
+/** Jarvis identity avatar — gradient disc + optional online dot. */
+function JarvisAvatar({
+  online = false,
+  size = "md",
+}: {
+  online?: boolean;
+  size?: "sm" | "md";
+}) {
+  const dim = size === "sm" ? "h-7 w-7" : "h-9 w-9";
+  const icon = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  return (
+    <span className="relative inline-flex shrink-0">
+      <span
+        className={`${dim} inline-flex items-center justify-center rounded-full bg-abv-ai-tools text-white`}
+      >
+        <SparklesIcon className={icon} aria-hidden />
+      </span>
+      {online && (
+        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-abv-bg bg-green-500" />
+      )}
+    </span>
+  );
+}
+
+/** A single context chip in the header (desktop): icon + label + value. */
+function ContextChip({
+  icon: Icon,
+  label,
+  value,
+  onClick,
+}: {
+  icon: typeof MicrophoneIcon;
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={`${label}: ${value}`}
+      aria-haspopup="dialog"
+      className="inline-flex max-w-[11rem] items-center gap-1.5 rounded-full border border-abv-border bg-abv-bg px-2.5 py-1 text-xs text-abv-text transition hover:border-abv-border-strong"
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 text-abv-ai-tools" aria-hidden />
+      <span className="shrink-0 text-abv-text-secondary">{label}</span>
+      <span className="truncate font-medium">{value}</span>
+    </button>
+  );
+}
+
+/** Three-dot typing indicator shown while an assistant turn is forming. */
+function TypingDots() {
+  return (
+    <span className="flex items-center gap-1 py-0.5" aria-label="Jarvis is typing">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="h-1.5 w-1.5 animate-bounce rounded-full bg-abv-text-secondary"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </span>
+  );
 }
 
 function labelForSlot(slot: string): string {

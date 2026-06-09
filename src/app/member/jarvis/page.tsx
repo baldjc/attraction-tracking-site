@@ -2,15 +2,36 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import { loadLatestValidatedUpload } from "@/lib/content-engine-context";
+import {
+  loadLatestValidatedUpload,
+  loadMarketConfigSummary,
+} from "@/lib/content-engine-context";
+import { getAvatarData } from "@/lib/avatar-utils";
 import JarvisChat, {
   type InitialMessage,
   type ThreadSummary,
+  type JarvisContext,
 } from "@/components/jarvis/JarvisChat";
 import { listThreadSummaries } from "@/lib/jarvis/thread-summaries";
 import type { MessageContent, ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
 
 export const dynamic = "force-dynamic";
+
+/** "2026-05" → "May 2026" (deterministic en-US). Null-safe. */
+function formatMonthLabel(monthYear: string | null): string | null {
+  if (!monthYear) return null;
+  const m = /^(\d{4})-(\d{2})$/.exec(monthYear);
+  if (!m) return monthYear;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, 1);
+  if (Number.isNaN(d.getTime())) return monthYear;
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+/** Collapse whitespace and clip to a single-line preview for the context panel. */
+function truncateText(s: string, n: number): string {
+  const t = s.replace(/\s+/g, " ").trim();
+  return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
+}
 
 export default async function JarvisPage({
   searchParams,
@@ -25,20 +46,59 @@ export default async function JarvisPage({
 
   const { thread: requestedThreadId } = await searchParams;
 
-  const [memberRecord, threads, latestUpload] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: { fullName: true },
-    }),
-    // Threads with at least one message — newest first, content-titled — for the
-    // history switcher and to resolve the active thread.
-    listThreadSummaries(user.id),
-    loadLatestValidatedUpload(user.id),
-  ]);
+  const [memberRecord, threads, latestUpload, avatarData, marketConfig] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: user.id },
+        select: { fullName: true },
+      }),
+      // Threads with at least one message — newest first, content-titled — for the
+      // history switcher and to resolve the active thread.
+      listThreadSummaries(user.id),
+      loadLatestValidatedUpload(user.id),
+      // Impersonation-aware: getAvatarData resolves the borrowed member's avatar
+      // when an admin is testing. loadMarketConfigSummary holds voice + market.
+      getAvatarData(user.id),
+      loadMarketConfigSummary(user.id),
+    ]);
 
   const memberFirstName =
     (memberRecord?.fullName ?? "").trim().split(/\s+/)[0] || null;
   const currentDataMonth = latestUpload?.monthYear ?? null;
+
+  // Context header chips — real ContentProfile data, never fabricated. Each chip
+  // shows a short label; the panel shows the detail. This is read-only display;
+  // it does not feed the orchestrator (that loads its own context server-side).
+  const voiceGuide = marketConfig?.voiceGuide?.trim() || null;
+  const marketName = marketConfig?.marketName?.trim() || null;
+  const avatarName = avatarData.avatarName?.trim() || null;
+  const avatarSummary = avatarData.avatarSummary?.trim() || null;
+  const currentMonthLabel = formatMonthLabel(currentDataMonth);
+  const context: JarvisContext = {
+    voice: {
+      label: voiceGuide ? "Custom voice" : "Default voice",
+      detail: voiceGuide
+        ? truncateText(voiceGuide, 280)
+        : "Jarvis writes in Attraction by Video's default voice register. Add a voice guide so scripts sound like you.",
+    },
+    avatar: {
+      label: avatarName ?? "Not set yet",
+      detail:
+        avatarSummary ??
+        (avatarName
+          ? "Your ideal-viewer avatar."
+          : "Build your ideal-viewer avatar so Jarvis can target the right buyer or seller."),
+    },
+    market: {
+      label: marketName ?? "Not set yet",
+      detail: marketName
+        ? currentMonthLabel
+          ? `Grounded in your ${currentMonthLabel} market data.`
+          : "No validated market data uploaded yet."
+        : "Set your market so Jarvis can ground scripts in your numbers.",
+    },
+    updateHref: "/member/settings",
+  };
 
   // Resolve the active thread:
   //  - `?thread=new` is the explicit "fresh conversation" sentinel → no thread,
@@ -105,6 +165,7 @@ export default async function JarvisPage({
       threads={threads}
       initialMessages={initialMessages}
       memberFirstName={memberFirstName}
+      context={context}
     />
   );
 }
