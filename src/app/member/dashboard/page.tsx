@@ -10,12 +10,12 @@ export default async function DashboardPage() {
 
   // If a member, always show personal dashboard
   if (role === "foundations_member") {
-    return <MemberDashboard />;
+    return <MemberDashboard memberId={resolved!.id} />;
   }
 
   // If an admin/editor is actively impersonating a member, show that member's personal dashboard
   if (resolved?.isImpersonating) {
-    return <MemberDashboard />;
+    return <MemberDashboard memberId={resolved.id} />;
   }
 
   // Editors/admins with no impersonation → member selector view

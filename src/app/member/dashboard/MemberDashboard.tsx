@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
 import { LinkButton } from "@/components/ui/Button";
-import { JARVIS_SEED_KEY } from "@/components/jarvis/JarvisChat";
+import { writeJarvisSeed } from "@/lib/jarvis/seed";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ function JarvisAvatar() {
 
 // ── Component ─────────────────────────────────────────────────
 
-export default function MemberDashboard() {
+export default function MemberDashboard({ memberId }: { memberId: string }) {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -212,12 +212,15 @@ export default function MemberDashboard() {
         (idea.pattern ? `Pattern: ${idea.pattern}\n` : "") +
         (threads.length ? `Data: ${threads.join("; ")}\n` : "") +
         (idea.fact ? `Lead with this stat: ${idea.fact.stat} — ${idea.fact.label} (${idea.fact.source}).` : "");
-      try { sessionStorage.setItem(JARVIS_SEED_KEY, seed); } catch { /* ignore */ }
-      router.push("/member/jarvis");
+      // Member-scoped, one-shot seed. Route to the explicit fresh-thread
+      // sentinel so the chat lands genuinely empty and consumes the seed once
+      // (never injecting into a pre-existing conversation).
+      writeJarvisSeed(memberId, seed);
+      router.push("/member/jarvis?thread=new");
     } else {
       router.push(`/member/content-planner/wizard?step=3&storyLeadId=${encodeURIComponent(idea.leadId)}`);
     }
-  }, [jarvisEnabled, router]);
+  }, [jarvisEnabled, router, memberId]);
 
   const firstName = data?.firstName ?? null;
   const nextCoachingCall = data?.nextCoachingCall;

@@ -4,17 +4,11 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ClockIcon } from "@heroicons/react/24/outline";
 import { useToast } from "@/components/ToastProvider";
 import type { ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
 import { buildMlsVerifyLine } from "@/lib/mls-verify-reminder";
-
-/**
- * sessionStorage key for the Dashboard → Jarvis "Build a script" hand-off.
- * The dashboard writes a one-shot prompt here then routes to /member/jarvis,
- * where JarvisChat reads + clears it and auto-sends once. Exported so the
- * dashboard sets the exact same key.
- */
-export const JARVIS_SEED_KEY = "jarvis:seedPrompt";
+import { clearJarvisSeed, consumeJarvisSeed } from "@/lib/jarvis/seed";
 
 // Markdown rendering for assistant turns + draft-script cards. react-markdown
 // does NOT render raw HTML by default (no rehype-raw), so embedded HTML is
@@ -110,6 +104,30 @@ function formatDataMonth(monthYear: string | null): string | null {
   return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
+/** ISO timestamp → coarse relative label ("just now", "2 days ago"). */
+function formatRelative(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const sec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day} day${day === 1 ? "" : "s"} ago`;
+  if (day < 30) {
+    const w = Math.floor(day / 7);
+    return `${w} week${w === 1 ? "" : "s"} ago`;
+  }
+  if (day < 365) {
+    const mo = Math.floor(day / 30);
+    return `${mo} month${mo === 1 ? "" : "s"} ago`;
+  }
+  const yr = Math.floor(day / 365);
+  return `${yr} year${yr === 1 ? "" : "s"} ago`;
+}
+
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -141,6 +159,7 @@ const SUGGESTIONS = [
 ];
 
 export default function JarvisChat({
+  memberId,
   threadId: initialThreadId,
   activeThreadMonth,
   currentDataMonth,
@@ -148,6 +167,7 @@ export default function JarvisChat({
   initialMessages,
   memberFirstName,
 }: {
+  memberId: string;
   threadId: string | null;
   activeThreadMonth: string | null;
   currentDataMonth: string | null;
@@ -403,27 +423,21 @@ export default function JarvisChat({
     [busy, threadId, toast],
   );
 
-  // Dashboard "Build a script" hand-off. When the member clicks an idea card's
-  // Build-a-script CTA we stash a one-shot prompt in sessionStorage and route
-  // here; on mount we read it, auto-send it once (ref-guarded so React 18
-  // double-invoke / re-renders can't double-fire), and clear it so a refresh
-  // doesn't replay it. Only seeds a fresh thread (no prior messages) so we
-  // never inject into an existing conversation.
+  // Dashboard "Build a script" hand-off. The dashboard stashes a one-shot,
+  // member-scoped prompt and routes here with ?thread=new. On mount we READ +
+  // REMOVE it (one-shot, ref-guarded against React double-invoke), but only
+  // auto-send when it belongs to THIS member and the thread is genuinely empty.
+  // Consuming unconditionally means a stale/foreign seed is cleared either way
+  // and can never linger into a later "+ New conversation" or another member.
   const seededRef = useRef(false);
   useEffect(() => {
     if (seededRef.current) return;
-    if (initialMessages.length > 0) return;
-    let seed: string | null = null;
-    try {
-      seed = sessionStorage.getItem(JARVIS_SEED_KEY);
-      if (seed) sessionStorage.removeItem(JARVIS_SEED_KEY);
-    } catch {
-      seed = null;
-    }
-    if (!seed || !seed.trim()) return;
     seededRef.current = true;
-    void send(seed);
-  }, [initialMessages.length, send]);
+    const prompt = consumeJarvisSeed(memberId);
+    if (!prompt) return;
+    if (initialMessages.length > 0) return; // never inject into an existing convo
+    void send(prompt);
+  }, [memberId, initialMessages.length, send]);
 
   // Snapshot live tool rows into the persisted assistant message.
   const liveToolsRef = useRef<ToolRow[]>([]);
@@ -485,11 +499,16 @@ export default function JarvisChat({
   const newConversation = useCallback(() => {
     if (busy) return;
     abortRef.current?.abort();
+    // Drop any pending dashboard seed so an explicit fresh start is ALWAYS
+    // empty — a "+ New conversation" must never auto-fire a leftover prompt.
+    clearJarvisSeed();
     setThreadId(null);
     setMessages([]);
     setResearchChips([]);
     setLiveTools([]);
     setInput("");
+    setShowResearchPanel(false);
+    setResearchText("");
     setHistoryOpen(false);
     setMonthBannerDismissed(true);
     // Navigate to the explicit "fresh" sentinel so a reload stays empty (the
@@ -530,8 +549,12 @@ export default function JarvisChat({
               <button
                 type="button"
                 onClick={openHistory}
-                className="rounded-lg border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong"
+                aria-haspopup="menu"
+                aria-expanded={historyOpen}
+                title="Your past conversations with Jarvis"
+                className="flex items-center gap-1.5 rounded-lg border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong"
               >
+                <ClockIcon className="h-3.5 w-3.5" aria-hidden />
                 History
               </button>
               {historyOpen && (
@@ -541,40 +564,65 @@ export default function JarvisChat({
                     onClick={() => setHistoryOpen(false)}
                     aria-hidden
                   />
-                  <div className="absolute right-0 z-20 mt-2 max-h-80 w-72 overflow-y-auto rounded-xl border border-abv-border bg-abv-surface p-1.5 shadow-lg">
-                    {threads.length === 0 ? (
-                      <p className="px-3 py-2 text-xs text-abv-text-secondary">
-                        No past conversations yet.
+                  <div className="absolute right-0 z-20 mt-2 flex max-h-[26rem] w-[min(20rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-abv-border bg-abv-surface shadow-lg">
+                    <div className="border-b border-abv-border px-3 py-2.5">
+                      <p className="text-sm font-semibold text-abv-text">
+                        Your conversations
                       </p>
-                    ) : (
-                      threads.map((t) => {
-                        const monthLabel = formatDataMonth(t.dataMonth);
-                        const isActive = t.id === threadId;
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => {
-                              setHistoryOpen(false);
-                              if (t.id === threadId) return;
-                              router.push(`/member/jarvis?thread=${t.id}`);
-                            }}
-                            className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition hover:bg-abv-bg ${
-                              isActive ? "bg-abv-bg" : ""
-                            }`}
-                          >
-                            <span className="line-clamp-1 text-sm text-abv-text">
-                              {t.title || "Untitled conversation"}
-                            </span>
-                            {monthLabel && (
-                              <span className="text-[11px] text-abv-text-secondary">
-                                {monthLabel}
+                      <p className="mt-0.5 text-[11px] leading-snug text-abv-text-secondary">
+                        Pick up where you left off with Jarvis.
+                      </p>
+                    </div>
+                    <div className="overflow-y-auto p-1.5">
+                      {threads.length === 0 ? (
+                        <p className="px-3 py-6 text-center text-xs leading-relaxed text-abv-text-secondary">
+                          No past conversations yet — start chatting and they’ll
+                          appear here.
+                        </p>
+                      ) : (
+                        threads.map((t) => {
+                          const monthLabel = formatDataMonth(t.dataMonth);
+                          const relative = formatRelative(t.updatedAt);
+                          const meta = [relative, monthLabel]
+                            .filter(Boolean)
+                            .join(" · ");
+                          const isActive = t.id === threadId;
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              aria-current={isActive ? "true" : undefined}
+                              onClick={() => {
+                                setHistoryOpen(false);
+                                if (t.id === threadId) return;
+                                router.push(`/member/jarvis?thread=${t.id}`);
+                              }}
+                              className={`flex w-full flex-col items-start gap-0.5 rounded-lg border-l-2 px-3 py-2 text-left transition hover:bg-abv-bg ${
+                                isActive
+                                  ? "border-abv-ai-tools bg-abv-bg"
+                                  : "border-transparent"
+                              }`}
+                            >
+                              <span className="flex w-full items-center gap-2">
+                                <span className="line-clamp-1 flex-1 text-sm font-medium text-abv-text">
+                                  {t.title || "Untitled conversation"}
+                                </span>
+                                {isActive && (
+                                  <span className="shrink-0 rounded-full bg-abv-ai-tools/15 px-1.5 py-0.5 text-[10px] font-medium text-abv-ai-tools">
+                                    Active
+                                  </span>
+                                )}
                               </span>
-                            )}
-                          </button>
-                        );
-                      })
-                    )}
+                              {meta && (
+                                <span className="text-[11px] text-abv-text-secondary">
+                                  {meta}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </>
               )}

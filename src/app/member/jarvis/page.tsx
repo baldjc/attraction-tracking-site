@@ -7,6 +7,7 @@ import JarvisChat, {
   type InitialMessage,
   type ThreadSummary,
 } from "@/components/jarvis/JarvisChat";
+import { listThreadSummaries } from "@/lib/jarvis/thread-summaries";
 import type { MessageContent, ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
 
 export const dynamic = "force-dynamic";
@@ -24,32 +25,20 @@ export default async function JarvisPage({
 
   const { thread: requestedThreadId } = await searchParams;
 
-  const [memberRecord, threadRows, latestUpload] = await Promise.all([
+  const [memberRecord, threads, latestUpload] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: { fullName: true },
     }),
-    // Threads with at least one message — newest first — for the history
-    // switcher and to resolve the active thread.
-    prisma.contentManagerThread.findMany({
-      where: { userId: user.id, messages: { some: {} } },
-      orderBy: { updatedAt: "desc" },
-      take: 100,
-      select: { id: true, title: true, dataMonth: true, updatedAt: true },
-    }),
+    // Threads with at least one message — newest first, content-titled — for the
+    // history switcher and to resolve the active thread.
+    listThreadSummaries(user.id),
     loadLatestValidatedUpload(user.id),
   ]);
 
   const memberFirstName =
     (memberRecord?.fullName ?? "").trim().split(/\s+/)[0] || null;
   const currentDataMonth = latestUpload?.monthYear ?? null;
-
-  const threads: ThreadSummary[] = threadRows.map((t) => ({
-    id: t.id,
-    title: t.title,
-    dataMonth: t.dataMonth,
-    updatedAt: t.updatedAt.toISOString(),
-  }));
 
   // Resolve the active thread:
   //  - `?thread=new` is the explicit "fresh conversation" sentinel → no thread,
@@ -58,15 +47,13 @@ export default async function JarvisPage({
   //  - an unknown/unowned `?thread=` falls back to the most-recent thread.
   //  - no param → most-recent thread, so history survives reloads.
   const isNewConversation = requestedThreadId === "new";
-  let activeThread: (typeof threadRows)[number] | null = null;
+  let activeThread: ThreadSummary | null = null;
   if (!isNewConversation) {
     if (requestedThreadId) {
       activeThread =
-        threadRows.find((t) => t.id === requestedThreadId) ??
-        threadRows[0] ??
-        null;
+        threads.find((t) => t.id === requestedThreadId) ?? threads[0] ?? null;
     } else {
-      activeThread = threadRows[0] ?? null;
+      activeThread = threads[0] ?? null;
     }
   }
 
@@ -111,6 +98,7 @@ export default async function JarvisPage({
   return (
     <JarvisChat
       key={activeKey}
+      memberId={user.id}
       threadId={activeThread?.id ?? null}
       activeThreadMonth={activeThread?.dataMonth ?? null}
       currentDataMonth={currentDataMonth}

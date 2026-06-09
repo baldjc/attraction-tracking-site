@@ -11,7 +11,7 @@
  */
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
-import prisma from "@/lib/prisma";
+import { listThreadSummaries } from "@/lib/jarvis/thread-summaries";
 
 export const runtime = "nodejs";
 
@@ -33,19 +33,7 @@ export async function GET() {
     });
   }
 
-  const rows = await prisma.contentManagerThread.findMany({
-    where: { userId, messages: { some: {} } },
-    orderBy: { updatedAt: "desc" },
-    take: 100,
-    select: { id: true, title: true, dataMonth: true, updatedAt: true },
-  });
-
-  const threads = rows.map((t) => ({
-    id: t.id,
-    title: t.title,
-    dataMonth: t.dataMonth,
-    updatedAt: t.updatedAt.toISOString(),
-  }));
+  const threads = await listThreadSummaries(userId);
 
   return new Response(JSON.stringify({ threads }), {
     status: 200,
