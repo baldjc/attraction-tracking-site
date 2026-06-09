@@ -19,7 +19,10 @@ import { type NextRequest } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, isHardCapExempt, logUsage } from "@/lib/ai-tool-cost";
-import { loadMarketConfigSummary } from "@/lib/content-engine-context";
+import {
+  loadMarketConfigSummary,
+  loadLatestValidatedUpload,
+} from "@/lib/content-engine-context";
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { runJarvisTurn, type JarvisHistoryTurn } from "@/lib/jarvis/orchestrator";
@@ -80,8 +83,15 @@ export async function POST(req: NextRequest) {
     });
     if (!owned) return jsonError(404, "thread_not_found");
   } else {
+    // Stamp the new thread with the member's current data month so the UI can
+    // default to it and offer a fresh thread when a new month validates.
+    const latestUpload = await loadLatestValidatedUpload(userId);
     const created = await prisma.contentManagerThread.create({
-      data: { userId, title: message.slice(0, 60) },
+      data: {
+        userId,
+        title: message.slice(0, 60),
+        dataMonth: latestUpload?.monthYear ?? null,
+      },
       select: { id: true },
     });
     threadId = created.id;

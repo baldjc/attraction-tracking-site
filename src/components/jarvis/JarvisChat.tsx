@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useToast } from "@/components/ToastProvider";
@@ -91,6 +92,24 @@ export interface InitialMessage {
   proposal?: ProposalState;
 }
 
+/** A past conversation, shown in the history switcher. */
+export interface ThreadSummary {
+  id: string;
+  title: string;
+  dataMonth: string | null;
+  updatedAt: string;
+}
+
+/** "2026-05" → "May 2026". Falls back to the raw value if unparseable. */
+function formatDataMonth(monthYear: string | null): string | null {
+  if (!monthYear) return null;
+  const m = /^(\d{4})-(\d{2})$/.exec(monthYear);
+  if (!m) return monthYear;
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, 1);
+  if (Number.isNaN(date.getTime())) return monthYear;
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -123,15 +142,32 @@ const SUGGESTIONS = [
 
 export default function JarvisChat({
   threadId: initialThreadId,
+  activeThreadMonth,
+  currentDataMonth,
+  threads: initialThreads,
   initialMessages,
   memberFirstName,
 }: {
   threadId: string | null;
+  activeThreadMonth: string | null;
+  currentDataMonth: string | null;
+  threads: ThreadSummary[];
   initialMessages: InitialMessage[];
   memberFirstName: string | null;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(initialThreadId);
+  const [threads, setThreads] = useState<ThreadSummary[]>(initialThreads);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // The active thread was started under an OLDER data month than the current
+  // latest validated upload → offer (never force) a fresh thread for the new
+  // month. Dismissible; reappears only if the mismatch persists on next load.
+  const monthMismatch =
+    !!activeThreadMonth &&
+    !!currentDataMonth &&
+    activeThreadMonth !== currentDataMonth;
+  const [monthBannerDismissed, setMonthBannerDismissed] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages.map((m) => ({
       id: m.id,
@@ -441,16 +477,145 @@ export default function JarvisChat({
     [threadId, pendingAction, toast],
   );
 
+  // Start a genuinely fresh conversation: drop the active thread + all local
+  // state so the next send creates a NEW thread (the route rebuilds context
+  // per-thread, so an empty thread = clean model context — no carry-over of any
+  // earlier refusal). Never deletes past threads; they stay in history. We also
+  // clear the `?thread=` URL param so a reload doesn't reopen a stale thread.
+  const newConversation = useCallback(() => {
+    if (busy) return;
+    abortRef.current?.abort();
+    setThreadId(null);
+    setMessages([]);
+    setResearchChips([]);
+    setLiveTools([]);
+    setInput("");
+    setHistoryOpen(false);
+    setMonthBannerDismissed(true);
+    // Navigate to the explicit "fresh" sentinel so a reload stays empty (the
+    // bare URL would rehydrate the latest thread). page.tsx keys the component
+    // on this, so it remounts clean.
+    router.replace("/member/jarvis?thread=new");
+  }, [busy, router]);
+
+  // Open the history switcher and refresh the thread list so conversations
+  // started this session (created on first send) show up immediately.
+  const openHistory = useCallback(async () => {
+    setHistoryOpen((v) => !v);
+    try {
+      const resp = await fetch("/api/jarvis/threads");
+      if (!resp.ok) return;
+      const data = (await resp.json()) as { threads?: ThreadSummary[] };
+      if (Array.isArray(data.threads)) setThreads(data.threads);
+    } catch {
+      /* keep the SSR list on failure */
+    }
+  }, []);
+
   const greeting = memberFirstName ? `Hi ${memberFirstName}` : "Hi there";
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <header className="border-b border-abv-border px-6 py-4">
-        <h1 className="text-lg font-semibold text-abv-text">AI Content Manager</h1>
-        <p className="text-sm text-abv-text-secondary">
-          Plan and draft a video from your real market numbers. Approved drafts land in your Content
-          Planner — nothing is ever published.
-        </p>
+      <header className="border-b border-abv-border px-4 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold text-abv-text">AI Content Manager</h1>
+            <p className="hidden text-sm text-abv-text-secondary sm:block">
+              Plan and draft a video from your real market numbers. Approved drafts land in your
+              Content Planner — nothing is ever published.
+            </p>
+          </div>
+          <div className="relative flex shrink-0 items-center gap-2">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={openHistory}
+                className="rounded-lg border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong"
+              >
+                History
+              </button>
+              {historyOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setHistoryOpen(false)}
+                    aria-hidden
+                  />
+                  <div className="absolute right-0 z-20 mt-2 max-h-80 w-72 overflow-y-auto rounded-xl border border-abv-border bg-abv-surface p-1.5 shadow-lg">
+                    {threads.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-abv-text-secondary">
+                        No past conversations yet.
+                      </p>
+                    ) : (
+                      threads.map((t) => {
+                        const monthLabel = formatDataMonth(t.dataMonth);
+                        const isActive = t.id === threadId;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              setHistoryOpen(false);
+                              if (t.id === threadId) return;
+                              router.push(`/member/jarvis?thread=${t.id}`);
+                            }}
+                            className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition hover:bg-abv-bg ${
+                              isActive ? "bg-abv-bg" : ""
+                            }`}
+                          >
+                            <span className="line-clamp-1 text-sm text-abv-text">
+                              {t.title || "Untitled conversation"}
+                            </span>
+                            {monthLabel && (
+                              <span className="text-[11px] text-abv-text-secondary">
+                                {monthLabel}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={newConversation}
+              disabled={busy}
+              className="rounded-lg bg-abv-ai-tools px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50"
+            >
+              + New conversation
+            </button>
+          </div>
+        </div>
+
+        {monthMismatch && !monthBannerDismissed && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-abv-border bg-abv-bg-warm px-4 py-2.5">
+            <p className="text-xs text-abv-text">
+              New market data for{" "}
+              <span className="font-medium">{formatDataMonth(currentDataMonth)}</span> is in. Start a
+              fresh conversation so I plan from the latest numbers.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={newConversation}
+                disabled={busy}
+                className="rounded-lg bg-abv-ai-tools px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50"
+              >
+                Start fresh
+              </button>
+              <button
+                type="button"
+                onClick={() => setMonthBannerDismissed(true)}
+                className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong"
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
@@ -597,6 +762,16 @@ export default function JarvisChat({
           >
             + Add link/text
           </button>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={newConversation}
+              className="ml-auto rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+            >
+              + New conversation
+            </button>
+          )}
         </div>
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea

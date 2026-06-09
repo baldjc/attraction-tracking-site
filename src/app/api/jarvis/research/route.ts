@@ -25,6 +25,7 @@ import {
   ingestResearchItems,
   type ResearchInputItem,
 } from "@/lib/jarvis/research-ingest";
+import { loadLatestValidatedUpload } from "@/lib/content-engine-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -142,8 +143,13 @@ export async function POST(req: NextRequest) {
     });
     if (!owned) return jsonError(404, "thread_not_found");
   } else {
+    const latestUpload = await loadLatestValidatedUpload(userId);
     const created = await prisma.contentManagerThread.create({
-      data: { userId, title: "Research" },
+      data: {
+        userId,
+        title: "Research",
+        dataMonth: latestUpload?.monthYear ?? null,
+      },
       select: { id: true },
     });
     threadId = created.id;
