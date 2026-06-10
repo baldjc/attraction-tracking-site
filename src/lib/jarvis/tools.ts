@@ -627,6 +627,37 @@ export async function executeGetFacts(
 ): Promise<GetFactsResult> {
   const upload = await loadLatestValidatedUpload(userId);
   if (!upload) {
+    // No VALIDATED upload — but distinguish "never uploaded" from "uploaded but
+    // the latest pass failed to produce anything usable". The latter is the
+    // guardrail case (an upload that parsed only rejected facts now fails loudly
+    // instead of going green), and Jarvis must state the REAL reason instead of
+    // claiming nothing was uploaded.
+    const latest = await prisma.marketDataUpload.findFirst({
+      where: { userId },
+      orderBy: [{ monthYear: "desc" }, { uploadedAt: "desc" }],
+      select: { monthYear: true, status: true, validationError: true },
+    });
+    if (latest && latest.status === "failed") {
+      const why = (latest.validationError ?? "").split("\n")[0].trim();
+      return {
+        facts: [],
+        monthYear: null,
+        state: "no_upload",
+        note:
+          `The most recent market-data upload (${latest.monthYear}) failed validation and produced no usable facts, ` +
+          `so there's nothing to cite yet.` +
+          (why ? ` Reason: ${why}` : "") +
+          ` Re-validate that upload (or re-check its column mapping) before relying on these numbers.`,
+      };
+    }
+    if (latest && latest.status === "validating") {
+      return {
+        facts: [],
+        monthYear: null,
+        state: "no_upload",
+        note: `The most recent market-data upload (${latest.monthYear}) is still validating — check back in a few minutes.`,
+      };
+    }
     return {
       facts: [],
       monthYear: null,

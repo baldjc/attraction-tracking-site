@@ -2191,8 +2191,23 @@ export async function runValidation(uploadId: string): Promise<void> {
     } // end full-AI validation branch
 
     const totalFacts = factsBundles.reduce((a, b) => a + b.facts.length, 0);
+    // "Usable" = what the runtime fact-read (Jarvis + AI tools) will actually
+    // surface: headline-safe or supporting-texture facts. Rejected facts are
+    // persisted for audit but invisible to every consumer, so an upload that
+    // yields ONLY rejected facts is functionally empty even when totalFacts>0.
+    // This count — not the raw totalFacts — drives the zero-output failure gate
+    // below, so a run that parses hundreds of rejected facts (e.g. the stale
+    // status-bucketing output) can no longer flip an upload "validated" (green)
+    // while delivering nothing citable. Counted across BOTH the live-AI and the
+    // reuse path (the two converge here), so a stale rejecting rawValidatorOutput
+    // re-persisted via the $0 reuse path is held to the same bar.
+    const usableFacts = factsBundles.reduce(
+      (a, b) => a + b.facts.filter((f) => f.usageClass !== "rejected").length,
+      0,
+    );
     mdv("parse.complete", uploadId, t0, {
       totalFacts,
+      usableFacts,
       leads: storyLeads.length,
       totalCostUsd: totalCost.toFixed(4),
       totalInputTokens,
@@ -2232,20 +2247,47 @@ export async function runValidation(uploadId: string): Promise<void> {
       );
     }
 
-    // Final failure check: nothing parseable from any of the 5 calls.
-    if (totalFacts === 0 && storyLeads.length === 0) {
+    // Final failure check: the upload produced nothing the AI tools / Jarvis can
+    // actually use. Gated on USABLE facts (headline-safe + texture), NOT raw
+    // totalFacts — an upload that parses hundreds of REJECTED facts (e.g. a run
+    // against stale/broken aggregation where every sold sample read as 0) has
+    // totalFacts>0 but is functionally empty, and must FAIL LOUDLY instead of
+    // flipping "validated" (green) with a silent "no usable facts" downstream.
+    if (usableFacts === 0 && storyLeads.length === 0) {
       mdv("validation.failed_no_output", uploadId, t0, {
+        totalFacts,
+        usableFacts,
+        totalSold: table.meta.totalSold,
+        reuseAiOutput,
         totalInputTokens,
         totalOutputTokens,
         totalCostUsd: totalCost.toFixed(4),
       });
+      // Loud ERROR line so the deployment ERROR filter surfaces a green-but-empty
+      // upload. Distinguish "AI returned nothing" from "AI returned only rejects".
+      console.error(
+        `[runValidation] ZERO USABLE OUTPUT uploadId=${uploadId} totalFacts=${totalFacts} usableFacts=0 leads=0 totalSold=${table.meta.totalSold} reuse=${reuseAiOutput} — marking upload FAILED (was previously validating green with no citable facts).`,
+      );
+      // Member-readable reason. When totalFacts>0 the file parsed fine but every
+      // candidate fact was rejected — the actionable cause is almost always that
+      // the sold rows didn't carry a readable sale price/status for this month,
+      // or the column mapping points at the wrong/empty column.
+      const reason =
+        totalFacts === 0
+          ? `The validator returned no parseable facts or story leads.`
+          : `The validator parsed ${totalFacts} candidate facts but ALL were rejected as unusable — 0 headline-safe facts, 0 supporting facts, and 0 story leads. ` +
+            `The file uploaded and parsed, but nothing in it can be cited by the AI tools or Jarvis. ` +
+            `This most commonly means the sold rows for this month didn't carry a readable sale price or status, or the column mapping points at the wrong/empty column. ` +
+            `Very low sold volume for the month can also produce too few samples to cite. ` +
+            `Check the column mapping (especially the sale-price and status columns) and re-validate.`;
       await prisma.marketDataUpload.update({
         where: { id: uploadId },
         data: {
           status: "failed",
           validationCostUsd: totalCost.toNumber(),
+          factYieldPct: 0,
           validationError:
-            `The validator returned no parseable facts or story leads.\n\n` +
+            `${reason}\n\n` +
             `--- RAW VALIDATOR OUTPUT (first 8000 chars) ---\n${rawForDebug.slice(0, 8000)}`,
         },
       });
