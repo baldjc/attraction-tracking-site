@@ -96,7 +96,14 @@ export type ScriptViolationRule =
    *  member-attribution marker like "our market"/"we pulled"/"locally"/"this
    *  market") instead of being attributed to the outside source. The member's
    *  data must lead and research must stay clearly external. */
-  | "research_stat_as_member";
+  | "research_stat_as_member"
+  /** Script OFFERS a free downloadable resource (calculator/checklist/quiz/…)
+   *  of a different artifact type than the assigned lead-magnet campaign — a
+   *  fabricated freebie. INERT unless a lead magnet is configured. */
+  | "lead_magnet_match"
+  /** An audience/price/area group is referred to by an opaque placeholder
+   *  label ("Segment A", "Group B", "Cohort 2") instead of a real name. */
+  | "no_opaque_segment_labels";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -2902,6 +2909,138 @@ function checkBingeTargetMatch(
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — lead_magnet_match (ERROR severity).                             */
+/*                                                                        */
+/*  When a plan has an assigned lead-magnet campaign, the ONLY free        */
+/*  downloadable resource the script may OFFER is that assigned asset. A    */
+/*  hallucinated freebie of a DIFFERENT artifact type (a "free home-value  */
+/*  calculator" when the assigned magnet is the "Moving Up Guide") is a     */
+/*  fabrication. We fire only on a tool-type resource noun that the creator */
+/*  OFFERS (creator-offer cue within 60 chars before it) whose type is NOT  */
+/*  part of the assigned magnet's own name — so a guide/report magnet       */
+/*  pitched by name never trips, and generic third-party advice ("you can   */
+/*  use a free calculator online") without a creator-offer cue is left      */
+/*  alone. INERT unless `leadMagnetConfigured === true`.                    */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const LEAD_MAGNET_TOOL_NOUN_RE =
+  /\b(calculator|checklist|worksheet|template|cheat\s?sheet|playbook|toolkit|tool\s?kit|quiz|tracker|spreadsheet|scorecard|swipe\s?file|flowchart)\b/gi;
+const CREATOR_OFFER_CUE_RE =
+  /\b(?:grab|download|get\s+my|my\s+free|i\s+(?:put\s+together|made|built|created|whipped\s+up)|i'?ve\s+(?:got|made|built)|link\s+in\s+the\s+description|in\s+the\s+description\s+below)\b/i;
+
+function leadMagnetNameTokens(name: string): Set<string> {
+  return new Set(
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length > 0),
+  );
+}
+
+function checkLeadMagnetMatch(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  if (opts.leadMagnetConfigured !== true) return [];
+  const name = (opts.leadMagnetName ?? "").trim();
+  if (!name) return [];
+  const nameTokens = leadMagnetNameTokens(name);
+  // Compacted (space-stripped) form of the magnet name so a multi-word artifact
+  // type in the name ("Seller Tool Kit", "Buyer Cheat Sheet", "Swipe File")
+  // matches the compacted captured noun ("toolkit"/"cheatsheet"/"swipefile"),
+  // which the per-token set alone would miss → false positive on the member's
+  // own asset.
+  const nameCompact = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const lines = dialogue.split("\n");
+  const violations: ScriptViolation[] = [];
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    LEAD_MAGNET_TOOL_NOUN_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = LEAD_MAGNET_TOOL_NOUN_RE.exec(line)) !== null) {
+      const nounKey = m[1].toLowerCase().replace(/\s+/g, "");
+      // The assigned magnet IS this artifact type → legitimate, skip. Check
+      // both the per-token set ("guide"/"report") and the compacted name so a
+      // multi-word type ("tool kit"→"toolkit") in the magnet name still matches.
+      if (
+        nameTokens.has(nounKey) ||
+        (nounKey.length >= 4 && nameCompact.includes(nounKey))
+      ) {
+        continue;
+      }
+      const before = line.slice(Math.max(0, m.index - 60), m.index);
+      if (!CREATOR_OFFER_CUE_RE.test(before)) continue;
+      violations.push({
+        rule: "lead_magnet_match",
+        severity: "error",
+        message:
+          `The script offers a free "${m[1].trim()}", but the assigned lead ` +
+          `magnet is "${name}". Pitch the EXACT assigned asset by name — do ` +
+          `not invent a different freebie (calculator, checklist, quiz, ` +
+          `template, etc.).`,
+        snippet: snippetAround(line, m),
+        line: dialogueLineMap[li],
+      });
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — no_opaque_segment_labels (ERROR severity).                      */
+/*                                                                        */
+/*  Audience/price/area groups must be named by what they ARE ("first-time */
+/*  buyers", "the $400–500K tier", "move-up sellers"), never as opaque      */
+/*  placeholder labels ("Segment A", "Group B", "Cohort 2"). The letter     */
+/*  form is always opaque; the numbered form is flagged only for segment/   */
+/*  cohort/persona nouns (so a legit "tier 1" / "category 5" is untouched). */
+/* ────────────────────────────────────────────────────────────────────── */
+
+const OPAQUE_SEGMENT_PATTERNS: readonly RegExp[] = [
+  // Letter labels ("Segment A", "Group B", "Cohort C"). Noun is case-
+  // insensitive but the label letter MUST be uppercase A–E: a real opaque
+  // label is always written capitalized, and forcing uppercase keeps the
+  // English article "a" ("we group a lot of buyers…") from false-positiving.
+  /\b(?:[Ss]egment|[Gg]roup|[Bb]ucket|[Cc]ohort|[Pp]ersona|[Aa]udience|[Tt]ier|[Cc]ategory)\s+[A-E]\b/g,
+  // Numbered labels — only the unambiguously-opaque nouns (so a legit
+  // "tier 1" / "category 5" is left alone).
+  /\b(?:[Ss]egment|[Cc]ohort|[Pp]ersona)\s+[1-9]\b/g,
+];
+
+function checkNoOpaqueSegmentLabels(script: string): ScriptViolation[] {
+  const { dialogue, dialogueLineMap } = stripToDialogue(script);
+  const lines = dialogue.split("\n");
+  const violations: ScriptViolation[] = [];
+  const seen = new Set<string>();
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    for (const re of OPAQUE_SEGMENT_PATTERNS) {
+      re.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(line)) !== null) {
+        const key = `${li}:${m.index}:${m[0].toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        violations.push({
+          rule: "no_opaque_segment_labels",
+          severity: "error",
+          message:
+            `Opaque segment label detected: "${m[0].trim()}". Name the group ` +
+            `by what it actually is — e.g. "first-time buyers", "move-up ` +
+            `sellers", "the $400–500K tier", "downtown condos" — never an ` +
+            `anonymous "Segment A / Group B / Cohort 2" placeholder.`,
+          snippet: snippetAround(line, m),
+          line: dialogueLineMap[li],
+        });
+      }
+    }
+  }
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Rule — placeholder_number (ERROR severity).                            */
 /*                                                                        */
 /*  A quantitative claim must be a clean, traceable value or be omitted    */
@@ -2924,11 +3063,23 @@ const PLACEHOLDER_NUMBER_PATTERNS: readonly RegExp[] = [
   // Filler quantity standing in for a number ("pricing runs a meaningful
   // amount."). Excludes the legitimate "a significant amount OF <noun>".
   /\ba\s+(?:meaningful|significant|substantial|sizm?eable|sizable|sizeable)\s+amount\b(?!\s+of)/gi,
-  // Dangling value verb with no number after it ("average sitting." /
-  // "pricing averaging."). Only fires when the verb runs straight into
-  // sentence-end punctuation — "sitting close to X%" / "averaging $5/sqft"
-  // (a value follows) are left alone.
-  /\b(?:sitting|hovering|averaging)\s*[.?!]/gi,
+  // Dangling value verb with no number after it — the model reaches for a stat
+  // and jams the metric noun straight into a value verb with no figure ("Days
+  // on market average sitting." / "pricing averaging."). Fires ONLY when the
+  // verb immediately follows a quantitative noun, so the many conversational
+  // idioms where these are complete predicates ("homes are not sitting.",
+  // "where you're sitting.", "listings keep sitting.") never trip — only the
+  // genuine stat-noun-then-dangling-verb leak does.
+  /\b(?:average|averages|averaging|pricing|price|inventory|median|supply|absorption|dom|ratio|rate|volume|months|days)\s+(?:sitting|hovering|averaging)\s*[.?!]/gi,
+  // Dangling numeric range — a number followed by a range connector (en/em
+  // dash or " to ") with NO closing number before sentence-end/punctuation
+  // ("prices from 43– .", "sat at 12 to ."). Leaks when the model reaches for
+  // a range endpoint it doesn't have. The connector must be spaced/dashed so a
+  // hyphenated word ("year-over") or a complete range ("43-56") can't trip it.
+  /\b\d[\d,]*(?:\.\d+)?%?(?:\s*[\u2013\u2014]|\s+to\b|\s+-\s+)\s*(?=[.?!,;)\]]|$)/gi,
+  // Empty range scaffolding — "from to" / "between and" with no endpoints.
+  /\bfrom\s+to\b/gi,
+  /\bbetween\s+and\b/gi,
 ];
 
 export function checkPlaceholderNumber(script: string): ScriptViolation[] {
@@ -3321,6 +3472,19 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    */
   bingeTargetTitle?: string;
   /**
+   * Lead-magnet guard — whether this plan has an assigned lead-magnet
+   * campaign. Drives `lead_magnet_match`: when true, a free downloadable
+   * resource the script OFFERS whose artifact type isn't part of
+   * `leadMagnetName` (e.g. a "free calculator" when the magnet is the
+   * "Moving Up Guide") is a fabricated freebie → ERROR. false/undefined ⇒
+   * INERT (generic "free guide" language is allowed and unchecked). Both the
+   * streaming route AND the save-script route should set this so a direct
+   * POST can't persist a script that offers a fabricated freebie.
+   */
+  leadMagnetConfigured?: boolean;
+  /** The assigned lead magnet's name (only meaningful when configured). */
+  leadMagnetName?: string;
+  /**
    * Floor-only signal for `min_dialogue_length`. When `false`, the lean
    * word floor (`LEAN_DIALOGUE_WORDS`) applies instead of the full 2,200
    * floor — for scripts whose neighbourhoods have NO Knowledge Base profile,
@@ -3432,6 +3596,10 @@ export function validateScript(
   violations.push(...checkUnfilledCredibilityPlaceholder(script));
   // Binge guard — no fabricated next-video tease.
   violations.push(...checkBingeTargetMatch(script, opts));
+  // Lead-magnet guard — no fabricated freebie when a magnet is assigned.
+  violations.push(...checkLeadMagnetMatch(script, opts));
+  // Segment naming — no opaque "Segment A / Group B" placeholder labels.
+  violations.push(...checkNoOpaqueSegmentLabels(script));
   // failure_rate honesty — no "%-failed-to-sell" misreading of the ratio.
   violations.push(...checkFailureRateFraming(script));
   // Fix 4 — no malformed/placeholder/filler numbers.

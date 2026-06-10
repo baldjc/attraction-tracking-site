@@ -99,6 +99,7 @@ export async function POST(
       linkedFactIds: true,
       shootType: true,
       bingeVideoId: true,
+      linkedCampaignId: true,
     },
   });
   if (!plan) {
@@ -195,6 +196,23 @@ export async function POST(
     }
   }
 
+  // Lead-magnet guard — mirror the streaming route so a direct POST can't
+  // persist a script that offers a fabricated freebie (a "free calculator"
+  // when the assigned magnet is a guide). INERT unless a usable campaign
+  // resolves (no magnet → generic "free guide" language stays allowed).
+  let leadMagnetConfigured = false;
+  let leadMagnetName: string | null = null;
+  if (plan.linkedCampaignId) {
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: plan.linkedCampaignId, userId, deletedAt: null },
+      select: { name: true },
+    });
+    if (campaign) {
+      leadMagnetConfigured = true;
+      leadMagnetName = campaign.name;
+    }
+  }
+
   // Floor-only profile signal — mirror the streaming route's lean word floor
   // so a lean, fully-data-grounded draft (no KB profile) is savable instead of
   // 422'ing on the 2,200-word floor. We load profiles for the member's vocab
@@ -227,6 +245,8 @@ export async function POST(
     credentialsText: marketConfig ? credentialsAnchorText(marketConfig) : [],
     bingeTargetConfigured,
     bingeTargetTitle: bingeTargetTitle ?? undefined,
+    leadMagnetConfigured,
+    leadMagnetName: leadMagnetName ?? undefined,
     hasNeighbourhoodProfile,
   });
   if (!validation.ok) {

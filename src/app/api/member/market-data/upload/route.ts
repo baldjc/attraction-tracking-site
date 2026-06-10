@@ -161,6 +161,16 @@ export async function POST(req: NextRequest) {
     id: string;
   }> = [];
 
+  // Non-blocking preflight warnings (DATE_AMBIGUITY / UNIT_SUSPECT /
+  // THIN_SAMPLE) surfaced back to the member so dirty-but-uploadable cells
+  // don't pass silently. Collected per file in Phase A, returned with the
+  // success response.
+  const fileWarnings: Array<{
+    filename: string;
+    code: string;
+    message: string;
+  }> = [];
+
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const buf = Buffer.from(await file.arrayBuffer());
@@ -191,6 +201,13 @@ export async function POST(req: NextRequest) {
           file.name,
         )} ${pf.warnings.map((w) => w.code).join(",")}`,
       );
+      for (const w of pf.warnings) {
+        fileWarnings.push({
+          filename: file.name,
+          code: w.code,
+          message: w.message,
+        });
+      }
     }
     if (!pf.ok) {
       return Response.json(
@@ -412,5 +429,5 @@ export async function POST(req: NextRequest) {
     await dispatchValidation(u.id, userId);
   }
 
-  return Response.json({ uploads });
+  return Response.json({ uploads, warnings: fileWarnings });
 }

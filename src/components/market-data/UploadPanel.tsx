@@ -192,6 +192,12 @@ export default function UploadPanel({
   // finishes, fragmented area names are auto-detected and can be collapsed on
   // the Knowledge Base page (the only KB mutation path — no hand-editing).
   const [justUploadedCount, setJustUploadedCount] = useState(0);
+  // Non-blocking preflight warnings (dirty-but-uploadable cells: ambiguous
+  // dates, suspect units, thin samples) returned by the upload route. Surfaced
+  // as a calm note so nothing passes silently, but never blocks the upload.
+  const [uploadWarnings, setUploadWarnings] = useState<
+    Array<{ filename: string; code: string; message: string }>
+  >([]);
 
   const thinking = useAiThinking({
     mode: "phase",
@@ -474,6 +480,14 @@ export default function UploadPanel({
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || "Upload failed.");
       }
+      // Surface any non-blocking preflight warnings the route returned so the
+      // member sees dirty-but-uploadable cells instead of them passing silently.
+      const okBody = (await res.json().catch(() => ({}))) as {
+        warnings?: Array<{ filename: string; code: string; message: string }>;
+      };
+      setUploadWarnings(
+        Array.isArray(okBody.warnings) ? okBody.warnings : [],
+      );
       // Reset + refresh history
       setJustUploadedCount(selected.length);
       setSelected([]);
@@ -897,6 +911,26 @@ export default function UploadPanel({
           />
         </div>
       )}
+
+      {justUploadedCount > 0 &&
+        uploadWarnings.length > 0 &&
+        conflicts.length === 0 &&
+        stage === "picking" && (
+          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <div className="font-medium">
+              {uploadWarnings.length} data warning
+              {uploadWarnings.length === 1 ? "" : "s"} — uploaded anyway, but
+              double-check these.
+            </div>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-xs">
+              {uploadWarnings.map((w, i) => (
+                <li key={`${w.filename}-${w.code}-${i}`}>
+                  <span className="font-medium">{w.filename}:</span> {w.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
       {justUploadedCount > 0 && conflicts.length === 0 && stage === "picking" && (
         <div className="mt-4 rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200">
