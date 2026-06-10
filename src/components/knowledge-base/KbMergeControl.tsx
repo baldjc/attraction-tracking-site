@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
 
@@ -46,21 +46,19 @@ export default function KbMergeControl() {
   const [latest, setLatest] = useState<LatestRun | null>(null);
   const [state, setState] = useState<State>({ phase: "idle" });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/member/knowledge-base/merge");
-        const data = await res.json().catch(() => ({}));
-        if (!cancelled && res.ok && data.latest) setLatest(data.latest);
-      } catch {
-        /* non-fatal — control still offers a fresh run */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadLatest = useCallback(async () => {
+    try {
+      const res = await fetch("/api/member/knowledge-base/merge");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) setLatest(data.latest ?? null);
+    } catch {
+      /* non-fatal — control still offers a fresh run */
+    }
   }, []);
+
+  useEffect(() => {
+    void loadLatest();
+  }, [loadLatest]);
 
   // A pending dry-run the member can still review/apply (auto-on-upload or a
   // prior manual run that was never applied or discarded).
@@ -94,24 +92,80 @@ export default function KbMergeControl() {
 
   async function applyRun(runId: string, report: MergeReport) {
     setState({ phase: "applying", runId, report });
+
+    let res: Response;
     try {
-      const res = await fetch("/api/member/knowledge-base/merge/apply", {
+      res = await fetch("/api/member/knowledge-base/merge/apply", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ mergeRunId: runId }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Apply failed.");
+    } catch {
+      // The browser stopped waiting. A large cleanup re-aggregates every upload
+      // and can run for several minutes; the server keeps applying (the run is
+      // idempotent + resumable). Reflect "still working", don't show a failure.
+      toast.info(
+        "This is a large cleanup and is still finishing in the background. Refresh in a few minutes to see the result.",
+      );
+      setState({ phase: "idle" });
+      void loadLatest();
+      router.refresh();
+      return;
+    }
+
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+
+    if (res.ok) {
       toast.success(
         `Knowledge Base cleaned up — ${report.collapsed} name${report.collapsed === 1 ? "" : "s"} collapsed.`,
       );
       setLatest(null);
       setState({ phase: "idle" });
       router.refresh();
-    } catch (e) {
-      toast.error((e as Error).message);
-      setState({ phase: "review", runId, report });
+      return;
     }
+
+    const msg = data?.error ?? "";
+
+    // Already applied — a slower earlier apply finished server-side. From the
+    // member's point of view this is success, not an error.
+    if (/APPLIED, cannot apply/i.test(msg)) {
+      toast.success("Your areas are already cleaned up.");
+      setState({ phase: "idle" });
+      void loadLatest();
+      router.refresh();
+      return;
+    }
+
+    // Still applying (an earlier click is mid-flight, or a large merge is
+    // running). Encourage a refresh instead of showing a failure.
+    if (/already being applied/i.test(msg)) {
+      toast.info(
+        "This cleanup is still applying — refresh in a few minutes to see the result.",
+      );
+      setState({ phase: "idle" });
+      void loadLatest();
+      router.refresh();
+      return;
+    }
+
+    // Bodyless response (gateway/proxy timeout): no JSON came back, but the
+    // server is still applying. Treat as in-progress, not a hard failure.
+    if (!data) {
+      toast.info(
+        "This is a large cleanup and is still finishing in the background. Refresh in a few minutes to see the result.",
+      );
+      setState({ phase: "idle" });
+      void loadLatest();
+      router.refresh();
+      return;
+    }
+
+    // A real, actionable error (e.g. partial re-aggregation left for retry).
+    toast.error(msg || "Apply failed.");
+    setState({ phase: "review", runId, report });
   }
 
   async function discardRun(runId: string) {

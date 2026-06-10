@@ -27,9 +27,29 @@ Measured: ~234s → ~93s for ~4,079 displays. Keep concurrency modest (≈6) —
 pass silently drops a batch's proposals on a 429, so over-parallelizing degrades
 merge quality without erroring.
 
-**Still open (separate path):** the **apply** path (`applyMergeRun`,
-re-aggregate every upload + relabel facts) is also a single in-request operation
-and times out on a member's first massive backlog merge (it's what stranded
-Phil's run in APPLYING). It's idempotent/resumable; the durable fix is to move
-apply onto the background worker queue. Incremental applies after a single new
-upload are small and fit the request window.
+**The apply path (`applyMergeRun`, re-aggregate every upload + relabel facts)**
+is also a single in-request operation and outlasts the browser/proxy on a
+member's first massive backlog merge (≈27 min for a 14-upload, ~13K-fact backlog).
+It's idempotent/resumable (CAS DRY_RUN→APPLYING, `STALE_APPLYING_MS=5min`
+reclaim), so the server keeps finishing after the browser gives up — the run DOES
+reach APPLIED even though the member saw a "failure". Incremental applies after a
+single new upload are small and fit the request window.
+
+**UX consequence + the classification fix:** because the server finishes after
+the browser times out, a member who re-clicks "apply" hits the now-APPLIED run
+and the route returns 400 `"Merge run is APPLIED, cannot apply"`. The OLD client
+showed that as a scary red error. `KbMergeControl.tsx` `applyRun` must now
+*classify* the apply response, never blindly throw: `/APPLIED, cannot apply/i` →
+success ("already cleaned up"); `/already being applied/i` + bodyless-timeout
+(`res.json().catch(()=>null)` → `!data`) + `fetch` network-throw → **info**
+("still finishing in the background, refresh shortly"), NOT error; only a genuine
+actionable failure stays a red toast. Each non-error branch calls `loadLatest()`
+so the existing APPLYING/APPLIED indicators reconcile on refresh.
+
+**Still open — the real fix:** moving apply onto the durable background worker
+queue (pg-boss; worker is alive/healthy in prod) so the request returns
+immediately and the heavy work never rides the HTTP request. Requires the
+established staged-rollout ops: redeploy the Reserved VM worker with a new
+apply handler + enable the `durable_job_queue` flag. Gate it like the other
+`dispatch*` helpers (flag OFF → synchronous fallback = today's behavior) so it's
+zero-regression until activated.
