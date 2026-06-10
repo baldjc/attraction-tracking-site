@@ -410,12 +410,15 @@ export function resolveUnambiguousSotValue(
  * truth for "which variant do we cite". Families absent from the map have one
  * variant (or no canonical winner) and fall back to `resolveUnambiguousSotValue`.
  *
- * MOI → `moiInclusive`: the CREB-aligned ((Active + Pending) ÷ Sold) view the
- * script already cites (the "8.8 Downtown | All" number). Keep this in lockstep
- * with the variant the SoT block marks ← CANONICAL and the reviewer checks.
+ * MOI → `moiStrict`: the platform-canonical Months of Inventory is STRICT
+ * (Active ÷ Sold), excluding pending — matching the on-demand cut engine
+ * (computeCut) and every board's canonical MOI. The inclusive ((Active +
+ * Pending) ÷ Sold) view rides as supporting texture only, never the headline
+ * "months of inventory". Keep this in lockstep with the variant the SoT block
+ * marks ← CANONICAL and the reviewer checks.
  */
 export const CANONICAL_METRIC_KEY: Partial<Record<MetricFamily, string>> = {
-  MOI: "moiInclusive",
+  MOI: "moiStrict",
 };
 
 /**

@@ -543,10 +543,11 @@ export interface MarketSourceDefaults {
    */
   canonicalDomVariant: "average" | "median";
   /**
-   * Market-canonical HEADLINE MOI variant (Phase 1 fix, Known Issue #5). CREB's
-   * published inventory = Active + Pending, so CREB aligns with INCLUSIVE. US
-   * boards' "months of supply" is typically active-only (STRICT) — TODO Phase 2
-   * to confirm each board's methodology.
+   * Market-canonical HEADLINE MOI variant. The platform standardizes on STRICT
+   * (Active ÷ Sold, excluding pending) for every board so the deterministic SoT,
+   * the on-demand cut engine, and the validator ledger all cite the same "months
+   * of inventory". The inclusive ((Active + Pending) ÷ Sold) view is still
+   * computed and persisted, but only as supporting texture — never headlined.
    */
   canonicalMoiVariant: "inclusive" | "strict";
 }
@@ -581,9 +582,13 @@ export const MARKET_SOURCE_DEFAULTS: Record<string, MarketSourceDefaults> = {
   // hardcoded prompt knowledge so Calgary uploads see no regression.
   CREB: {
     sourceAuthority: "CREB",
-    // CREB publishes AVERAGE DOM and inventory = Active + Pending (INCLUSIVE).
+    // CREB publishes AVERAGE DOM. MOI is STRICT (Active ÷ Sold) platform-wide —
+    // the canonical Months of Inventory excludes pending across every board so
+    // the deterministic SoT, the on-demand cut engine, and the validator ledger
+    // all agree. The inclusive (Active + Pending) ÷ Sold view is still computed
+    // and persisted as supporting texture, but is never the headline number.
     canonicalDomVariant: "average",
-    canonicalMoiVariant: "inclusive",
+    canonicalMoiVariant: "strict",
     statusCodes: [
       sc("Active", "active"),
       sc("Pending", "pending"),

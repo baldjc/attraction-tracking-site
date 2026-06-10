@@ -22,6 +22,7 @@
 
 import prisma from "@/lib/prisma";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
+import { isSingleFamilyClass } from "@/lib/property-class";
 import {
   type ColumnMapping,
   type MarketConfigShape,
@@ -155,6 +156,13 @@ interface NormalizedRow {
   date: Date | null;
   neighbourhood: string;
   propertyType: string | null;
+  /**
+   * RAW property-CLASS cell ("Single Family" / "Condo"), distinct from the
+   * mapped STYLE column above (`propertyType`). Used to keep style-segmented
+   * buckets single-family-only. Null when the upload has no distinct class
+   * column.
+   */
+  propertyClass: string | null;
   zone: string | null; // empty-zone tracking
   status: StatusBucket;
   /** Sub-classification of an off-market row (null unless status === "offMarket"). */
@@ -645,6 +653,34 @@ function buildBuckets(
   const offMarketSubMapping: OffMarketSubMapping =
     resolveOffMarketSubMapping(config);
 
+  // Resolve the RAW property-CLASS column ("Single Family" / "Condo"), which is
+  // distinct from the mapped STYLE column (mapping.propertyType, e.g.
+  // "2 Storey"). Mirrors the on-demand cut engine (computeCut.ts) exactly so
+  // both engines agree on which rows are single-family. A "2 Storey" condo and
+  // a "2 Storey" detached share a style; only the class column separates them.
+  const PROPERTY_CLASS_HEADER_CANDIDATES = ["propertytype", "propertyclass"];
+  let propertyClassHeader: string | null = null;
+  for (const c of PROPERTY_CLASS_HEADER_CANDIDATES) {
+    const actual = headerLookup.get(c);
+    if (actual) {
+      propertyClassHeader = actual;
+      break;
+    }
+  }
+  // Only a class column DISTINCT from the mapped style header can drive the
+  // single-family restriction. If the member mapped their style column to a
+  // header literally named "Property Type", the candidate would collide with
+  // the style column itself — in that case there is no separate class signal,
+  // so the restriction stays inactive (no regression for those uploads).
+  const styleHeaderActual = mapping.propertyType
+    ? headerLookup.get(normalizeHeader(mapping.propertyType)) ?? null
+    : null;
+  const classColumnDistinct =
+    propertyClassHeader != null &&
+    (styleHeaderActual == null ||
+      normalizeHeader(propertyClassHeader) !==
+        normalizeHeader(styleHeaderActual));
+
   let unknownStatusCount = 0;
   let emptyZoneCount = 0;
   let totalSold = 0;
@@ -686,6 +722,14 @@ function buildBuckets(
     const ptRaw = readMappedCell(raw, headerLookup, mapping.propertyType);
     const { type: propertyType, isDuplexMerge } = normalizePropertyType(ptRaw);
 
+    const propertyClassRaw = propertyClassHeader
+      ? raw[propertyClassHeader] ?? null
+      : null;
+    const propertyClass =
+      propertyClassRaw != null && propertyClassRaw.toString().trim().length > 0
+        ? propertyClassRaw.toString().trim()
+        : null;
+
     const zoneRaw = readMappedCell(raw, headerLookup, undefined); // Zone not in canonical map (Phase 2A); leave null
     const zone = zoneRaw && zoneRaw.toString().trim().length > 0 ? zoneRaw.toString().trim() : null;
     if (zone == null) emptyZoneCount += 1;
@@ -717,6 +761,7 @@ function buildBuckets(
         date,
         neighbourhood,
         propertyType,
+        propertyClass,
         zone,
         status: effectiveStatus,
         offMarketSub,
@@ -756,6 +801,18 @@ function buildBuckets(
     );
   }
 
+  // Style cuts are single-family-only. A style value ("2 Storey", "Bungalow")
+  // can belong to either a single-family home or a condo, so style-segmented
+  // buckets must never fold cross-class rows (e.g. a "2 Storey" condo) into a
+  // Single-Family style headline. Activate the restriction only when the upload
+  // carries a DISTINCT property-class column AND at least one recognizable
+  // single-family row exists (otherwise an unfamiliar class vocabulary would
+  // zero every style bucket). Overall buckets (propertyType === null) keep every
+  // class — only style-keyed buckets are restricted.
+  const styleSfRestriction =
+    classColumnDistinct &&
+    normalized.some((n) => isSingleFamilyClass(n.row.propertyClass));
+
   // Tally per group. We emit four bucket dimensions in parallel so the
   // validator gets both rolled-up and fully-segmented views:
   //   1. (neighbourhood, propertyType, priceTier)  — fully-segmented
@@ -774,6 +831,8 @@ function buildBuckets(
   };
 
   for (const { row, isDuplexMerge } of normalized) {
+    const rowIsSf =
+      !styleSfRestriction || isSingleFamilyClass(row.propertyClass);
     const keys: Array<[string, string | null, string | null]> = [
       [row.neighbourhood, row.propertyType, row.priceTier],
       [row.neighbourhood, row.propertyType, null],
@@ -782,6 +841,9 @@ function buildBuckets(
       ["All Neighbourhoods", null, null],
     ];
     for (const [n, pt, tier] of keys) {
+      // Style-keyed buckets (propertyType !== null) only tally single-family
+      // rows when the restriction is active; overall buckets keep every class.
+      if (pt !== null && styleSfRestriction && !rowIsSf) continue;
       tallyRow(ensure(groupKey(n, pt, tier)), row, isDuplexMerge);
     }
   }

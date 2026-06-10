@@ -58,6 +58,7 @@ import { getMarketConfigForUser as realGetMarketConfig } from "@/lib/market-conf
 import type { ColumnMapping, MarketConfigShape } from "@/lib/market-config";
 import { MetricFamily } from "@/generated/prisma/enums";
 import type { LedgerFact } from "@/lib/jarvis/types";
+import { isSingleFamilyClass } from "@/lib/property-class";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -508,7 +509,11 @@ function metricsFor(acc: GroupAcc): CutGroupMetric[] {
 export function computeCut(
   rows: CutRow[],
   params: ComputeCutParams,
-  opts: { headlineSoldFloor: number; discloseFloor?: number },
+  opts: {
+    headlineSoldFloor: number;
+    discloseFloor?: number;
+    classColumnDistinct?: boolean;
+  },
 ): ComputeCutCoreResult {
   const headlineSoldFloor = opts.headlineSoldFloor;
   // Hard minimum below which a figure is too thin to headline at all. Defaults
@@ -569,9 +574,37 @@ export function computeCut(
   // column/value error — the columns and values are valid, just nothing falls in
   // the requested range. Return a real "computed" result with zero groups so the
   // caller reports an honest count ("no listings match …"), never a no_match.
-  const scoped = catScoped.filter((row) =>
+  let scoped = catScoped.filter((row) =>
     appliedNumericFilters.every((nf) => numericMatch(row, nf)),
   );
+
+  // Style cuts are single-family-only. A style value ("2 Storey", "Bungalow")
+  // can belong to either a single-family home OR a condo, so a style-segmented
+  // cut must never fold cross-class rows (e.g. a "2 Storey" condo) into a
+  // Single-Family headline. Restrict to single-family when the cut involves the
+  // style dimension/filter, the member did NOT explicitly ask for a property-
+  // class cut, and the upload actually carries recognizable single-family rows.
+  // Condos remain reachable via an explicit propertyClass cut. Only a class
+  // column DISTINCT from the mapped style header can drive this restriction
+  // (opts.classColumnDistinct) — if the member mapped their style column to a
+  // header literally named "Property Type", the class candidate collides with
+  // the style column itself, so there is no separate class signal and the
+  // restriction stays inactive. Mirrors the deterministic aggregator
+  // (csv-aggregate.ts) exactly so both engines agree.
+  const styleInvolved =
+    params.dimension === "style" ||
+    appliedFilters.some((f) => f.field === "style");
+  const classExplicit =
+    params.dimension === "propertyClass" ||
+    appliedFilters.some((f) => f.field === "propertyClass");
+  if (
+    styleInvolved &&
+    !classExplicit &&
+    opts.classColumnDistinct === true &&
+    rows.some((r) => isSingleFamilyClass(r.propertyClass))
+  ) {
+    scoped = scoped.filter((r) => isSingleFamilyClass(r.propertyClass));
+  }
 
   if (scoped.length === 0) {
     return {
@@ -1366,9 +1399,24 @@ export async function runComputeCut(
       ? cutRows
       : cutRows.filter((r) => !isExcluded(excludedKeys, r.neighbourhood));
 
+  // Only a class column DISTINCT from the mapped style header can drive the
+  // single-family restriction. If the member mapped their style column to a
+  // header named like a class candidate (e.g. "Property Type"), the candidate
+  // collides with the style column itself — no separate class signal — so the
+  // restriction stays inactive. Mirrors csv-aggregate.ts exactly.
+  const styleHeaderActual = mapping.propertyType
+    ? headerLookup.get(normalizeHeader(mapping.propertyType)) ?? null
+    : null;
+  const classColumnDistinct =
+    propertyClassHeader != null &&
+    (styleHeaderActual == null ||
+      normalizeHeader(propertyClassHeader) !==
+        normalizeHeader(styleHeaderActual));
+
   const core = computeCut(filteredCutRows, params, {
     headlineSoldFloor,
     discloseFloor,
+    classColumnDistinct,
   });
 
   // Honesty gate 2 — column present, but the requested filter value isn't.
