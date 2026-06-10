@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import Decimal from "decimal.js-light";
-import { TIER_CONFIG, isServiceTier } from "@/lib/service-tier";
+import { TIER_CONFIG, isServiceTier, tierBypassesAiCap } from "@/lib/service-tier";
 
 // Sonnet pricing: $3 / 1M input tokens, $12 / 1M output tokens
 const INPUT_COST_PER_TOKEN = new Decimal("0.000003");
@@ -36,10 +36,13 @@ export async function getMonthlyUsage(userId: string): Promise<{
 }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, aiToolsMonthlyCapOverride: true },
+    select: { role: true, aiToolsMonthlyCapOverride: true, serviceTier: true },
   });
 
-  if (user?.role === "admin") {
+  // Admins and AI-cap-bypass tiers (Done-With-You) are treated as unlimited.
+  // The bypassed tier set is defined ONCE in service-tier.ts (tierBypassesAiCap)
+  // so it stays in lockstep with the v2 getCostCapStatus() engine below.
+  if (user?.role === "admin" || tierBypassesAiCap(user?.serviceTier)) {
     return {
       totalCost: new Decimal(0),
       cap: ADMIN_REMAINING,
@@ -122,12 +125,14 @@ export interface CostCapStatus {
 }
 
 /**
- * v2 cost-cap status for the data-first pipeline. Admins are never blocked.
+ * v2 cost-cap status for the data-first pipeline. Admins are never blocked, and
+ * neither are AI-cap-bypass tiers (Done-With-You) — see `tierBypassesAiCap()`.
  *
  * Hard cap + soft-warning threshold are driven by the member's canonical
  * service tier (see `TIER_CONFIG`): Foundations/Production cap at $25 (warn
- * $20), Growth/Done-With-You cap at $100 (warn $80). A per-user
- * `aiToolsMonthlyCapOverride` still wins over the tier default as the hard cap.
+ * $20), Growth caps at $100 (warn $80); Done-With-You bypasses the cap entirely.
+ * A per-user `aiToolsMonthlyCapOverride` still wins over the tier default as the
+ * hard cap for non-bypassed tiers.
  */
 export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
   const user = await prisma.user.findUnique({
@@ -139,7 +144,11 @@ export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
     ? TIER_CONFIG[user.serviceTier]
     : TIER_CONFIG.foundations;
 
-  if (user?.role === "admin") {
+  // Admins and AI-cap-bypass tiers (Done-With-You) are never blocked: treated
+  // as unlimited (no hard block, no soft warning). The bypassed tier set lives
+  // in ONE place — tierBypassesAiCap() in service-tier.ts — so every AI route
+  // that gates on `cap.hardBlocked` honors it automatically.
+  if (user?.role === "admin" || tierBypassesAiCap(user?.serviceTier)) {
     return {
       hardBlocked: false,
       softWarning: false,

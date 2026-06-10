@@ -106,6 +106,25 @@ export function tierBackfillMonths(tier: ServiceTier): number {
   return TIER_CONFIG[tier].backfillMonths;
 }
 
+// ── AI usage cap bypass ──────────────────────────────────────────────────────
+//
+// THE single, adjustable source of truth for "which service tier is exempt from
+// the monthly AI usage/cost cap" (treated as unlimited — no hard block, no soft
+// warning). Done-With-You is high-touch: the team runs AI generations on the
+// member's behalf, so a monthly spend cap must never interrupt them.
+//
+// Both AI-cap enforcement engines consult `tierBypassesAiCap()` BEFORE blocking:
+//   • v2 `getCostCapStatus()`  — Jarvis, Script Builder v2, Content Engine v2,
+//     idea validation, market-data, knowledge-base, planner wizard, etc.
+//   • v1 `getMonthlyUsage()` / `checkCostCap()` — legacy AI tools
+//     (description / theme / listing-video / ARC script builders).
+// To uncap another tier, add it to this list — nothing else changes.
+export const AI_CAP_BYPASS_TIERS: readonly ServiceTier[] = ["done_with_you"];
+
+export function tierBypassesAiCap(tier: string | null | undefined): boolean {
+  return isServiceTier(tier) && AI_CAP_BYPASS_TIERS.includes(tier);
+}
+
 // ── Feature gating matrix ────────────────────────────────────────────────────
 
 export const TIER_FEATURES = [

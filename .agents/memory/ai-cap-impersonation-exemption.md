@@ -23,6 +23,33 @@ so the ~handful of generation routes don't drift.
 **Why:** centralizing the policy in one predicate (not inline booleans per
 route) is what keeps the callsites from drifting.
 
+# Two cap engines — tier bypass must hit BOTH
+
+AI cap enforcement runs through TWO functions, and a new exemption (e.g. a
+whole tier) must be applied in BOTH or it leaks:
+- **v2 `getCostCapStatus()`** — every modern metered route gates on its
+  `hardBlocked` (Jarvis, Script Builder v2, Content Engine v2, idea validation,
+  market-data, knowledge-base, planner wizard, …).
+- **v1 `getMonthlyUsage()`** (backs `checkCostCap()`) — legacy AI tools still
+  gate here (description / theme / listing-video / ARC script builders).
+
+**Tier-based bypass:** the set of tiers that bypass the cap entirely lives in
+ONE predicate — `tierBypassesAiCap()` / `AI_CAP_BYPASS_TIERS` in
+`service-tier.ts`. Both engines short-circuit on `role==="admin" ||
+tierBypassesAiCap(serviceTier)`, mirroring the admin path (synthetic unlimited).
+**Done-With-You** (`done_with_you`, snake_case — also aliased donewithyou/dwy in
+`normalizeLegacyTier`) bypasses the cap because the team runs generations on the
+member's behalf.
+
+**Why:** centralizing the tier list in one predicate (not inline per engine or
+per route) is what keeps the ~20 callsites from drifting — same failure mode as
+the impersonation exemption above.
+
+**Gotcha:** admin/DWY short-circuits return synthetic usage (monthSpendUsd:0,
+remaining:ADMIN_REMAINING) — don't treat `getMonthlyUsage` as a spend-analytics
+source for those actors. The bypass is unconditional (ignores
+`aiToolsMonthlyCapOverride`), intentionally matching how admins ignore it.
+
 # Admin reset of current-period usage
 
 An admin-only action can wipe a member's current-period AI usage. The delete
