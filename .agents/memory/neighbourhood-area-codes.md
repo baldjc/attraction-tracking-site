@@ -1,16 +1,30 @@
 ---
 name: Neighbourhood area codes vs names
-description: When neighbourhood vocab / auto-populate shows numeric values, it's MLS area codes in the mapped column, not a mapping bug.
+description: Numeric neighbourhood vocab can be MLS area codes in the mapped column (not a mapping bug) — BUT the same MLS may also offer a names-based export; check the actual file before concluding.
 ---
 
-# Numeric "neighbourhoods" = MLS area codes, not a bug
+# Numeric "neighbourhoods" = MLS area codes, not a bug — but format-dependent
 
-Some MLS exports (e.g. Edmonton / RAE) only have a numeric area-code column
-(RAE calls it "Community": values like `100001`, `550900`; rare text like
-`WIHKWE`) and **no human-readable neighbourhood-name column at all**. When a
-member maps that column as their neighbourhood field, every downstream surface
-(Knowledge Base auto-populate, `neighbourhoodVocab`, script citations) shows the
-codes.
+**RAE has BOTH export formats — verified 2026-06-10.** An older Edmonton / RAE
+export put numeric area codes in the `Community` column (values like `100001`,
+`550900`; rare text like `WIHKWE`), which is where a member's 587 all-numeric
+`neighbourhoodVocab` codes came from. But RAE's **"Market Stats – Combined"**
+report puts **real neighbourhood NAMES in that same `Community` column**
+(verified: 9,301 rows, 0 numeric, 293 distinct names — "Abbottsfield",
+"Strathcona", "Wîhkwêntôwin", "Granville (Edmonton)"…). So a member already
+mapped `neighbourhood → Community` will get **names** the moment they upload the
+Combined export — **no remap needed**; the stale numeric vocab is just leftover
+from the old format and should be cleared (KB-scope reset blanks the vocab).
+
+**Lesson:** before telling a member "your MLS only exports codes, re-export with
+names," get the ACTUAL CSV they have now — the right report type may already
+carry names in the column they're already mapped to. Don't conclude "no name
+column exists" from one export.
+
+Some MLS exports genuinely only have a numeric area-code column and **no
+human-readable neighbourhood-name column at all**. When a member maps that
+column as their neighbourhood field, every downstream surface (Knowledge Base
+auto-populate, `neighbourhoodVocab`, script citations) shows the codes.
 
 **Why this is NOT a mapping/hardcoded-column bug:** the auto-populate route
 (`/api/member/knowledge-base/discovered-neighbourhoods`) reads *distinct*
