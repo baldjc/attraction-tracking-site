@@ -189,14 +189,20 @@ test("countByBucket tallies buckets and surfaces unknown labels", () => {
 
 // ── derived metrics (ratios) ────────────────────────────────────────────────
 
-test("worked example: 9 off-market, 10 sold -> failure_rate 0.9, sale_share ~0.526", () => {
-  assert.equal(failureRate(10, 9), 0.9);
+test("worked example: 9 off-market, 10 sold -> failure_rate ~0.474, sale_share ~0.526", () => {
+  const fr = failureRate(10, 9);
+  assert.ok(fr != null && Math.abs(fr - 9 / 19) < 1e-9);
   const ss = saleShare(10, 9);
   assert.ok(ss != null && Math.abs(ss - 0.5263157894736842) < 1e-9);
+  // bounded: failure_rate + sale_share === 1 for the all-off-market case
+  assert.ok(Math.abs((fr as number) + (ss as number) - 1) < 1e-9);
 });
 
-test("failure_rate can exceed 1.0 (more failures than sales)", () => {
-  assert.equal(failureRate(5, 12), 2.4);
+test("failure_rate is bounded 0..1 even when failures outnumber sales", () => {
+  // 12 off-market, 5 sold -> 12/17, never > 1.0
+  const fr = failureRate(5, 12);
+  assert.ok(fr != null && Math.abs(fr - 12 / 17) < 1e-9);
+  assert.ok((fr as number) <= 1);
 });
 
 test("sample-size guards return null below floors", () => {

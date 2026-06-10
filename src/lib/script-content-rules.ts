@@ -2431,25 +2431,40 @@ export function checkDataWindowClaim(script: string): ScriptViolation[] {
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-/*  failure_rate_framing (ERROR).                                          */
+/*  failure_rate_framing (ERROR) — >100% legacy safety net.               */
 /*                                                                        */
-/*  failure_rate is offMarket / sold — a RATIO that can exceed 100%, NOT  */
-/*  a share of all listings. Saying "47% of homes failed to sell" reads   */
-/*  the ratio as a share and is mathematically wrong. Honest framing uses */
-/*  sale_share ("X% of listings sold") or explicit counts ("for every 10 */
-/*  that sold, 9 failed to sell"). Flag any percentage tied to a failure- */
-/*  to-sell phrase in spoken dialogue.                                    */
+/*  failure_rate is now a BOUNDED share — failed / (sold + offMarket) —   */
+/*  so it lives in 0–100% and "47% of homes failed to sell" is HONEST and */
+/*  allowed. The only thing left to catch is a legacy upload (computed     */
+/*  before the bounded fix) whose value exceeds 100%: a spoken ">100%      */
+/*  failed to sell" is nonsense to a viewer and must be reframed as a      */
+/*  ratio ("for every 10 that sold, ~13 didn't"). So this rule fires ONLY  */
+/*  when the percentage tied to a failure-to-sell phrase is above 100.     */
 /* ────────────────────────────────────────────────────────────────────── */
 
 const FR_FAILURE_VERB =
   "(?:failed?\\s+to\\s+sell|did(?:n['’]?t| not)\\s+sell|never\\s+sold|don['’]?t\\s+sell|won['’]?t\\s+sell|fail(?:ed|ing)?\\s+to\\s+find\\s+a\\s+buyer)";
-const FR_PERCENT = "\\d{1,3}(?:\\.\\d+)?\\s*(?:%|percent)";
+// Capture group 1 = the numeric value so we can gate on >100. \d{1,4} so a
+// legacy "131%" or "180.95%" is captured, not silently truncated.
+const FR_PERCENT = "(\\d{1,4}(?:\\.\\d+)?)\\s*(?:%|percent)";
+// Also catch the metric stated by NAME ("the failure rate was 178%"), not just
+// by failure-to-sell verbs — legacy unbounded data can be quoted either way.
+const FR_NOUN =
+  "(?:failure[-\\s]?(?:to[-\\s]?sell\\s+)?rate|fail[-\\s]?rate)";
 const FR_PCT_THEN_FAIL = new RegExp(
-  `${FR_PERCENT}[^.?!\\n]{0,40}${FR_FAILURE_VERB}`,
+  `${FR_PERCENT}[^.?!\\n]{0,40}?${FR_FAILURE_VERB}`,
   "gi",
 );
 const FR_FAIL_THEN_PCT = new RegExp(
-  `${FR_FAILURE_VERB}[^.?!\\n]{0,40}${FR_PERCENT}`,
+  `${FR_FAILURE_VERB}[^.?!\\n]{0,40}?${FR_PERCENT}`,
+  "gi",
+);
+const FR_PCT_THEN_NOUN = new RegExp(
+  `${FR_PERCENT}[^.?!\\n]{0,40}?${FR_NOUN}`,
+  "gi",
+);
+const FR_NOUN_THEN_PCT = new RegExp(
+  `${FR_NOUN}[^.?!\\n]{0,40}?${FR_PERCENT}`,
   "gi",
 );
 
@@ -2457,9 +2472,18 @@ export function checkFailureRateFraming(script: string): ScriptViolation[] {
   const { dialogue, dialogueLineMap } = stripToDialogue(script);
   const violations: ScriptViolation[] = [];
   const seen = new Set<number>();
-  for (const re of [FR_PCT_THEN_FAIL, FR_FAIL_THEN_PCT]) {
+  for (const re of [
+    FR_PCT_THEN_FAIL,
+    FR_FAIL_THEN_PCT,
+    FR_PCT_THEN_NOUN,
+    FR_NOUN_THEN_PCT,
+  ]) {
     for (const m of dialogue.matchAll(re)) {
       if (m.index === undefined) continue;
+      // Only a literal percentage ABOVE 100 is impossible for the bounded
+      // failure rate. A clean ≤100% share ("47% failed to sell") is honest.
+      const pct = parseFloat(m[1]);
+      if (!(Number.isFinite(pct) && pct > 100)) continue;
       if (seen.has(m.index)) continue;
       seen.add(m.index);
       const before = dialogue.slice(0, m.index);
@@ -2469,11 +2493,11 @@ export function checkFailureRateFraming(script: string): ScriptViolation[] {
         rule: "failure_rate_framing",
         severity: "error",
         message:
-          `Failure-rate framing error: "${m[0].trim()}". failure_rate is ` +
-          `offMarket / sold — a RATIO that can exceed 100%, NOT a share of all ` +
-          `listings. Stating a "%-failed-to-sell" figure misreads it. Reframe ` +
-          `as sale_share ("X% of listings actually sold") or as plain counts ` +
-          `("for every 10 homes that sold, 9 failed to sell").`,
+          `Failure-rate framing error: "${m[0].trim()}". The failure rate is a ` +
+          `bounded share (failed ÷ (sold + off-market)), so it can never exceed ` +
+          `100% — a spoken ">100% failed to sell" is nonsense. This is legacy ` +
+          `pre-bounded data: reframe it as a ratio ("for every 10 homes that ` +
+          `sold, ~13 didn't") instead of a literal percentage.`,
         snippet: dialogue
           .slice(Math.max(0, m.index - 30), m.index + m[0].length + 30)
           .replace(/\s+/g, " ")

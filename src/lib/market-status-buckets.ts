@@ -26,14 +26,33 @@ export type StatusBucket = "sold" | "offMarket" | "active" | "pending" | "unknow
 
 /**
  * Prisma `where` fragment that drops retired failure_rate facts from citation
- * queries. Legacy rows used the old offMarket/(offMarket+sold) denominator and
- * were backfilled to methodologyVersion "legacy_v1"; v2 rows use offMarket/sold.
- * Spread this into any MarketFact.findMany that surfaces facts to members so the
- * old numbers never get cited. Only FAILURE_RATE + legacy_v1 is excluded; every
- * other family (and all v2 rows) passes through untouched.
+ * queries. The earliest failure_rate facts were backfilled to methodologyVersion
+ * "legacy_v1" and are excluded here so their old numbers never get cited. Current
+ * facts are stamped "v2": broker-honest off-market counts (Expired + Terminated +
+ * Withdrawn) over the bounded offMarket/(sold+offMarket) share — the failureRate()
+ * helper below. (An interim v2 build briefly used an unbounded offMarket/sold
+ * ratio; that has been reverted to the bounded share, and any pre-revert >100%
+ * values still stored under "v2" are caught both here (the metricValue > 100
+ * clause below) AND at the script/content framing layer by the
+ * failure_rate_framing safety net.) Spread this into any MarketFact.findMany that
+ * surfaces facts to members. Only FAILURE_RATE rows are ever excluded — either the
+ * legacy_v1 methodology or an impossible >100 value; every other family, and every
+ * bounded (≤100) v2 row, passes through untouched.
  */
 export const EXCLUDE_LEGACY_FAILURE_RATE: Prisma.MarketFactWhereInput = {
-  NOT: { metricFamily: "FAILURE_RATE", methodologyVersion: "legacy_v1" },
+  // Array form = exclude a row matching EITHER clause (AND of negations):
+  //  1. the explicitly-retired legacy_v1 methodology, and
+  //  2. any FAILURE_RATE fact whose stored value exceeds 100 — impossible for a
+  //     bounded 0–100% share, so it can only be a pre-revert unbounded
+  //     offMarket/sold value that slipped in under the "v2" tag. Dropping it
+  //     here keeps those impossible numbers out of every member-facing citation
+  //     query without a data migration. (Legacy unbounded values that happen to
+  //     land ≤100 are indistinguishable from honest ones by value alone — those
+  //     need a methodology re-tag + re-validation; see fact-validator.ts note.)
+  NOT: [
+    { metricFamily: "FAILURE_RATE", methodologyVersion: "legacy_v1" },
+    { metricFamily: "FAILURE_RATE", metricValue: { gt: 100 } },
+  ],
 };
 
 /** The four label sets that drive bucketing. Raw MLS strings, matched case-insensitively. */
@@ -301,15 +320,26 @@ export function hasSufficientFailureSample(
 }
 
 /**
- * Failure rate = offMarket / sold. Broker-honest ratio: "for every closed sale,
- * this many listings came off the market unsold". CAN exceed 1.0 (a cold market
- * where more listings fail than close). Returns null when sample is insufficient
- * or there were no sales.
+ * Failure rate = offMarket / (sold + offMarket). The share of RESOLVED listings
+ * (closed + came off the market unsold) that failed to sell. Bounded 0..1 — it
+ * can never exceed 100% because the failed count is part of its own denominator.
+ * `offMarket` is whichever failed subset the caller passes (all off-market, or a
+ * narrower expired/withdrawn subset for the variants). Returns null when the
+ * sample is insufficient or nothing resolved. Defensive clamp+log guards against
+ * a bad/negative input ever pushing the share above 1 (a bug signal, never shown).
  */
 export function failureRate(sold: number, offMarket: number): number | null {
-  if (sold <= 0) return null;
+  const resolved = sold + offMarket;
+  if (resolved <= 0) return null;
   if (!hasSufficientFailureSample(sold, offMarket)) return null;
-  return offMarket / sold;
+  const share = offMarket / resolved;
+  if (share > 1) {
+    console.error(
+      `[failureRate] bounded share ${share} > 1 (sold=${sold}, offMarket=${offMarket}); clamping to 1`,
+    );
+    return 1;
+  }
+  return share;
 }
 
 /**

@@ -716,9 +716,9 @@ function aggregateGroups(
     return den > 0 ? num / den : null;
   };
   const distinctHoods = new Set(groups.map((g) => g.neighbourhood)).size;
-  // failure_rate = offMarket / sold (a ratio that can exceed 1.0), guarded by
-  // sample-size floors. Stored as a percentage (ratio * 100) like the per-group
-  // rows. failureRateRatio() returns null when under the sold/offMarket floors.
+  // failure_rate = offMarket / (sold + offMarket) — bounded 0..1 share, guarded
+  // by sample-size floors. Stored as a percentage (share * 100) like the
+  // per-group rows. failureRateRatio() returns null below the sold/offMarket floors.
   const rollupFailureRatio = failureRateRatio(sold, offMarket);
   const rollupSaleShareRatio = saleShareRatio(sold, offMarket);
   const rollupAbsorptionRatio = absorptionRateRatio(sold, active);
@@ -1556,8 +1556,11 @@ function mapFactToPrisma(
     inventoryGapWithCreb: fact.inventoryGapWithCreb,
     failureRateFormula: fact.failureRateFormula,
     usageNotes: fact.usageNotes,
-    // v2 = offMarket/sold methodology. Legacy rows (offMarket/(offMarket+sold))
-    // were backfilled to "legacy_v1" and are excluded from failure_rate
+    // v2 = current methodology: broker-honest off-market counts (Expired +
+    // Terminated + Withdrawn) over the bounded offMarket/(sold+offMarket) share.
+    // (An interim v2 build briefly used an unbounded offMarket/sold ratio; that
+    // is reverted — see failureRate() in market-status-buckets.ts.) The earliest
+    // rows were backfilled to "legacy_v1" and are excluded from failure_rate
     // citation queries. Stamp every new fact v2; the filter keys on the family.
     methodologyVersion: "v2",
   };

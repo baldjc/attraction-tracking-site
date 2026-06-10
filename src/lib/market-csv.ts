@@ -8,6 +8,11 @@ import {
   type AnyMappedField,
 } from "@/lib/market-config";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
+import {
+  detectStructuralBlock,
+  collectWarnings,
+  type PreflightWarning,
+} from "@/lib/market-preflight-checks";
 
 // ─── Persistent CSV storage (Replit Object Storage) ──────────────────────────
 // Previously CSVs were written to /tmp/uploads which is ephemeral — container
@@ -186,6 +191,9 @@ export interface PreflightOk {
   rowCount: number;
   headersCount: number;
   statusRecognizedRatio: number | null;
+  /** Non-blocking data-quality signals (thin sample, ambiguous dates, suspect
+   *  units). The upload still proceeds — these are surfaced/logged only. */
+  warnings?: PreflightWarning[];
 }
 export interface PreflightFail {
   ok: false;
@@ -194,6 +202,9 @@ export interface PreflightFail {
     | "STATUS_VALUES_UNRECOGNIZED"
     | "STATUS_ONLY_NON_ACTIONABLE"
     | "NEIGHBOURHOOD_MOSTLY_NUMERIC"
+    | "AGGREGATE_REPORT"
+    | "HEADER_NOT_ROW1"
+    | "MULTI_MONTH"
     | "EMPTY_FILE";
   message: string;
   detail: string;
@@ -304,6 +315,25 @@ export function runPreflight(
 ): PreflightResult {
   const headersLower = preview.headers.map((h) => h.toLowerCase().trim());
   const headersCount = preview.headers.length;
+
+  // 0. Structural blocks — the file shape itself is wrong (a banner/title row
+  // above the header, a pre-aggregated summary report, or several months in one
+  // file). Run FIRST so these give a precise reason instead of a generic
+  // "missing columns". Each detector is conservative: a clean single-month
+  // row-level export passes untouched.
+  const structural = detectStructuralBlock(preview, columnMapping);
+  if (structural) {
+    return {
+      ok: false,
+      code: structural.code,
+      message: structural.message,
+      detail: structural.detail,
+      suggestion: structural.suggestion,
+      rowCount: preview.rowCount,
+      headersCount,
+      statusRecognizedRatio: null,
+    };
+  }
 
   const mappedHeaderFor = (field: string): string | undefined => {
     const key = PREFLIGHT_FIELD_TO_MAPPING[field];
@@ -477,11 +507,17 @@ export function runPreflight(
     }
   }
 
+  // Non-blocking data-quality signals — the upload proceeds; the caller logs /
+  // surfaces these. Computed last so they ride along with an otherwise-clean
+  // result without ever gating it.
+  const warnings = collectWarnings(preview, columnMapping);
+
   return {
     ok: true,
     rowCount: preview.rowCount,
     headersCount,
     statusRecognizedRatio,
+    ...(warnings.length > 0 ? { warnings } : {}),
   };
 }
 

@@ -111,18 +111,48 @@ function failureFramingHits(script: string): number {
   return violations.filter((v) => v.rule === "failure_rate_framing").length;
 }
 
-test("failure_rate_framing — '47% failed to sell' in dialogue trips", () => {
+test("failure_rate_framing — bounded '47% failed to sell' now passes", () => {
+  // Under the bounded failure rate (failed ÷ (sold+offMarket)) a ≤100% share is
+  // honest and speakable — it must NOT trip.
   const n = failureFramingHits(
     "This is the part nobody talks about. Last month, 47% of homes failed to sell in this pocket.",
   );
-  assert.ok(n >= 1, "a %-failed-to-sell claim must trip the rule");
+  assert.equal(n, 0, "a bounded ≤100% %-failed-to-sell claim must not trip");
 });
 
-test("failure_rate_framing — reversed 'failed to sell ... 90 percent' trips", () => {
+test("failure_rate_framing — legacy >100% failed-to-sell trips (safety net)", () => {
   const n = failureFramingHits(
-    "Here's the reality: homes that failed to sell were 90 percent of what sold.",
+    "Here's the reality: 131% of homes failed to sell in this pocket last month.",
   );
-  assert.ok(n >= 1, "verb-then-percent ordering must also trip");
+  assert.ok(n >= 1, "a literal >100% failure figure must trip the safety net");
+});
+
+test("failure_rate_framing — reversed verb-then-percent >100% trips", () => {
+  const n = failureFramingHits(
+    "Here's the reality: homes that failed to sell were 115 percent of what sold.",
+  );
+  assert.ok(n >= 1, "verb-then-percent ordering above 100% must also trip");
+});
+
+test("failure_rate_framing — named-metric >100% ('failure rate was 178%') trips", () => {
+  const n = failureFramingHits(
+    "Here's the part nobody talks about: the failure rate was 178% last month.",
+  );
+  assert.ok(n >= 1, "a named-metric >100% failure figure must trip the safety net");
+});
+
+test("failure_rate_framing — named-metric ≤100% ('failure rate of 47%') passes", () => {
+  const n = failureFramingHits(
+    "Here's the truth: the failure rate of 47% held steady through the quarter.",
+  );
+  assert.equal(n, 0, "a bounded ≤100% named-metric figure must not trip");
+});
+
+test("failure_rate_framing — 'failure-to-sell rate' noun variant >100% trips", () => {
+  const n = failureFramingHits(
+    "Look at this: the failure-to-sell rate hit 178% last month.",
+  );
+  assert.ok(n >= 1, "the failure-to-sell rate noun variant must also trip above 100%");
 });
 
 test("failure_rate_framing — honest sale_share / count framing passes", () => {

@@ -161,9 +161,10 @@ export function rowsFromGroup(
   // is the active count itself (it IS the measurement).
   push("INVENTORY", "activeCount", group.activeCount, group.activeCount);
 
-  // failure_rate = offMarket / sold (a ratio that can exceed 1.0). The sample
-  // size we attach is sold + offMarket — the listings that actually fed the
-  // ratio — so downstream confidence gating sees the real N.
+  // failure_rate = offMarket / (sold + offMarket) — bounded 0..1 share of
+  // resolved listings that failed to sell. The sample size we attach is
+  // sold + offMarket — the listings that actually fed the share — so downstream
+  // confidence gating sees the real N.
   const failN = group.soldCount + group.offMarketCount;
   push("FAILURE_RATE", "failureRate", group.failureRate, failN);
   // sale_share = Sold / (Sold + offMarket) — bounded companion to failure_rate

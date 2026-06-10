@@ -117,7 +117,8 @@ test("pool90d — anchor defines the group universe (a prior-only group yields n
 
 test("pool90d — failure rate pools over combined Sold + offMarket", () => {
   // Clears the floor (sold ≥ 5, offMarket ≥ 3). anchor 2 sold + 3 offMarket;
-  // prior 8 sold + 0 offMarket → pooled 10 sold, 3 offMarket → 3/10 = 30%.
+  // prior 8 sold + 0 offMarket → pooled 10 sold, 3 offMarket. Bounded share =
+  // failed / (failed + sold) = 3 / 13 ≈ 23.08%.
   const anchor = new Map([
     [KEY, acc({ soldPrices: [100, 100], offMarket: 3 })],
   ]);
@@ -126,7 +127,7 @@ test("pool90d — failure rate pools over combined Sold + offMarket", () => {
   ]);
   const [g] = pool90d(anchor, [prior]);
   assert.ok(g.failureRate != null);
-  assert.ok(Math.abs((g.failureRate as number) - 30) < 1e-9);
+  assert.ok(Math.abs((g.failureRate as number) - (3 / 13) * 100) < 1e-9);
   assert.equal(g.failN, 13); // 10 sold + 3 offMarket
 });
 

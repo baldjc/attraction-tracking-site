@@ -86,25 +86,62 @@ test("uncited card is rejected so it can never ship", () => {
   );
 });
 
-test("failure-rate framing — '%-failed-to-sell' prose is rejected", () => {
+test("failure-rate framing — bounded ≤100% '%-failed-to-sell' prose now passes", () => {
+  // Under the bounded failure rate, "47% of homes failed to sell" is honest.
   const r = validate(
     baseCard({ clarityPremise: "Last month 47% of homes failed to sell." }),
   );
+  assert.equal(r.ok, true, `bounded framing should pass — ${r.errors.join("; ")}`);
+});
+
+test("failure-rate framing — legacy >100% figure is rejected (safety net)", () => {
+  const r = validate(
+    baseCard({ clarityPremise: "Last month 131% of homes failed to sell." }),
+  );
   assert.equal(r.ok, false);
   assert.ok(
-    r.errors.some((e) => e.includes("%-failed-to-sell")),
-    `expected failure-rate framing error, got: ${r.errors.join("; ")}`,
+    r.errors.some((e) => e.includes("above 100%")),
+    `expected >100% failure-rate framing error, got: ${r.errors.join("; ")}`,
   );
 });
 
-test("failure-rate framing — reversed order (verb then percent) is rejected", () => {
+test("failure-rate framing — reversed order >100% (verb then percent) is rejected", () => {
   const r = validate(
-    baseCard({ visualPeak: "Homes that failed to sell were 90 percent of solds." }),
+    baseCard({ visualPeak: "Homes that failed to sell were 115 percent of solds." }),
   );
   assert.equal(r.ok, false);
   assert.ok(
-    r.errors.some((e) => e.includes("%-failed-to-sell")),
-    `expected failure-rate framing error, got: ${r.errors.join("; ")}`,
+    r.errors.some((e) => e.includes("above 100%")),
+    `expected >100% failure-rate framing error, got: ${r.errors.join("; ")}`,
+  );
+});
+
+test("failure-rate framing — named-metric >100% ('failure rate was 178%') is rejected", () => {
+  const r = validate(
+    baseCard({ clarityPremise: "Last month the failure rate was 178%." }),
+  );
+  assert.equal(r.ok, false);
+  assert.ok(
+    r.errors.some((e) => e.includes("above 100%")),
+    `expected >100% named-metric error, got: ${r.errors.join("; ")}`,
+  );
+});
+
+test("failure-rate framing — named-metric ≤100% ('failure rate of 47%') passes", () => {
+  const r = validate(
+    baseCard({ clarityPremise: "Last month the failure rate of 47% held steady." }),
+  );
+  assert.equal(r.ok, true, `bounded named-metric should pass — ${r.errors.join("; ")}`);
+});
+
+test("failure-rate framing — 'failure-to-sell rate' noun variant >100% is rejected", () => {
+  const r = validate(
+    baseCard({ clarityPremise: "The failure-to-sell rate hit 178% last month." }),
+  );
+  assert.equal(r.ok, false);
+  assert.ok(
+    r.errors.some((e) => e.includes("above 100%")),
+    `expected >100% failure-to-sell rate error, got: ${r.errors.join("; ")}`,
   );
 });
 

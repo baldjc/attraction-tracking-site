@@ -1,16 +1,27 @@
 ---
-name: Failure-rate legacy citation exclusion fan-out
-description: Where EXCLUDE_LEGACY_FAILURE_RATE must be spread, and which marketFact reads are intentionally exempt.
+name: Failure-rate methodology revert + citation exclusion
+description: failure_rate is BOUNDED again; how EXCLUDE_LEGACY_FAILURE_RATE filters legacy/impossible rows; the unbounded-but-≤100 residual; the framing safety net.
 ---
 
-The legacy failure_rate methodology bug (off/(off+sold) instead of off/sold) was fixed by stamping pre-existing rows `methodologyVersion="legacy_v1"` and gating them out of citation with `EXCLUDE_LEGACY_FAILURE_RATE` (a Prisma `{ NOT: { metricFamily:"FAILURE_RATE", methodologyVersion:"legacy_v1" } }` exported from `market-status-buckets.ts`).
+## Methodology has flip-flopped — current truth: BOUNDED
+The metric's denominator changed twice, so trust the helper, not old prose:
+- Earliest: `offMarket/(sold+offMarket)` (bounded). Stamped `methodologyVersion="legacy_v1"`, excluded from citation.
+- Interim "v2": `offMarket/sold` (UNBOUNDED, can exceed 100%). Stamped `"v2"`, citable.
+- **Current (reverted):** `offMarket/(sold+offMarket)` again — bounded 0..1, exact complement of `saleShare` (sum to 1). New facts still stamped `"v2"`.
 
-**Rule:** EVERY member-facing `marketFact` query that surfaces a metric VALUE for citation/linking/display must spread `...EXCLUDE_LEGACY_FAILURE_RATE` into its `where`. The citation surface is much wider than the obvious resolvers — it spans script-builder routes, suggest-improvements (both the linked query AND the headline-safe pool), the wizard script page, save-idea, use-as-video by-id validation, content-plans facts/save-script/lineage, script-plan-enrichment, plus the core resolvers (script-data-resolver, story-lead-fact-resolver, content-engine-context, fact-validator headline query, member market-data/facts route).
+**Why it matters:** legacy_v1's denominator == today's denominator, so "X% failed to sell" with X≤100 is HONEST framing now. The legacy_v1 exclusion is retained for off-market COUNT-definition differences, not the denominator.
 
-**Why:** A single missed query silently re-exposes the buggy metric. The first pass only covered ~5 resolvers; code review found ~9 more leaks. Treat any new value-surfacing marketFact read as in-scope by default.
+## EXCLUDE_LEGACY_FAILURE_RATE (Prisma `where` fragment)
+Array-`NOT` form: drops a FAILURE_RATE row if EITHER `methodologyVersion="legacy_v1"` OR `metricValue > 100`.
+- **The >100 clause** deterministically catches pre-revert unbounded values that were stored under `"v2"` and are otherwise indistinguishable by tag from honest bounded v2 facts. A bounded share can never exceed 100, so no legitimate row is ever dropped; nulls are unaffected by `gt:100`.
+- **Keep it array-`NOT`** (`NOT: [c1, c2]`) — preserves the single top-level `NOT` key that every spread call site relies on. Switching to top-level `AND` would collide with `...spread`.
+- **Rule:** spread `...EXCLUDE_LEGACY_FAILURE_RATE` into EVERY member-facing marketFact query that surfaces a metric VALUE (citation/link/display) — the surface is much wider than the obvious resolvers. **Exempt:** name-only/`distinct select:{neighbourhood}` discovery queries (excluding could drop a hood) and the post-insert re-fetch in fact-validator.
 
-**Intentionally exempt (do NOT add it):**
-- Neighbourhood-discovery queries that `select` only `neighbourhood` (distinct) — e.g. use-as-video hoodRows, knowledge-base discovered-neighbourhoods. They read names, not values; excluding could drop a hood.
-- The post-insert re-fetch in fact-validator (`where: { uploadId }`) that returns just-written v2 rows.
+## Unresolved residual (flagged, NOT fixed — was out of scope)
+Legacy unbounded values that happen to land ≤100 are **indistinguishable by value or tag** from honest bounded facts, so they survive the filter. Durable fix = methodology re-tag (e.g. `"v3"` for bounded) + re-validation/backfill across members; deferred because it costs paid re-validation and wasn't requested.
 
-The exclusion is intentionally narrow: it drops only legacy_v1 FAILURE_RATE, preserving v2 failure_rate and every other family/version.
+## failure_rate_framing guards (script-content-rules.ts + content-engine-validation.ts)
+Defense in depth for the residual. Both `checkFailureRateFraming` fire ONLY when a failure figure exceeds 100% — bounded ≤100% prose passes. They match failure-VERB phrasing ("47% failed to sell") AND named-metric phrasing ("the failure rate / failure-to-sell rate was 178%"). **Gotcha:** the percent-capture gap MUST be lazy (`[^.?!\n]{0,40}?`) — a greedy gap mis-captured digits (grabbed "5" out of "115"), defeating the >100 gate.
+
+## Internal-only stale prose
+`failureRateFormula` / `usageNotes` MarketFact fields can still hold old ">100% ratio" prose. They're read ONLY in `fact-validator.ts` + `fact-validator-parser.ts` (ingest bookkeeping) — no member/Jarvis/script path selects them, so stale prose there needs no paid re-validation.

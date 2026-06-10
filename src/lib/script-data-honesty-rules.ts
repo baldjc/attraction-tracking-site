@@ -43,20 +43,24 @@ This is the most common failure mode for data-heavy scripts: treating pronounced
 **When in doubt, use the Validator's labels.** If a fact comes in with \`market_type: sellers, trajectory: loosening-fast\`, the script writes "still a sellers market, but loosening fast." Not "buyers have leverage now."`;
 
 /**
- * Failure-rate ratio framing (LOCKED). New rule, pipeline-neutral. Imported by
- * BOTH prompts. The failure rate = (expired + terminated + withdrawn) / sold,
- * so it can exceed 100% — a spoken ">100% failure rate" is nonsense to a viewer.
+ * Failure-rate framing (LOCKED). Pipeline-neutral; imported by BOTH prompts.
+ * The failure rate is now a BOUNDED share — failed ÷ (failed + sold) — so it
+ * lives in 0–100% and reads as a clean percentage. Legacy uploads computed
+ * before the bounded fix may still carry a value above 100%; the >100% fallback
+ * below keeps those from ever being read as a nonsense percentage on camera.
  */
-export const FAILURE_RATE_RATIO_FRAMING = `## FAILURE RATE — FRAME AS A RATIO, NEVER A NONSENSE PERCENTAGE
+export const FAILURE_RATE_RATIO_FRAMING = `## FAILURE RATE — A BOUNDED SHARE OF LISTINGS THAT DIDN'T SELL
 
-The failure rate compares listings that did NOT sell (expired, terminated, withdrawn) against listings that DID sell — so it can exceed 100% when more listings fail than close. A spoken "131% failure rate" is nonsense to a viewer: nothing can fail more than 100% of the time. NEVER read a failure-rate figure above 100% as a raw percentage in dialogue.
+The failure rate is the share of RESOLVED listings — the ones that either closed OR came off the market unsold (expired, terminated, withdrawn) — that failed to sell: failed ÷ (failed + sold). It is bounded 0–100%, a clean and speakable percentage.
 
-Instead, translate it into a plain-language ratio or comparison the viewer can picture:
-- 131% → *"for every ten homes that sold, about thirteen listings didn't"* / *"more listings failed to sell than actually closed"*
-- 72% → *"roughly seven listings failed for every ten that sold"* / *"almost three out of four sellers in this pocket didn't get the job done"*
-- When the figure is at or below 100%, a clean percentage is fine (*"about a third of listings didn't sell"*), but a ratio is often more vivid.
+Speak it plainly, or as a vivid ratio when that lands harder:
+- 54% → *"more than half the listings in this pocket didn't sell"* / *"about 54% of sellers here didn't get the job done."*
+- 30% → *"roughly three in ten listings failed to sell."*
+- 72% → *"almost three out of four sellers in this pocket didn't close."*
 
-The raw figure is still whatever the data shows — this rule governs only how it is SPOKEN on camera: a sensible ratio or comparison, never a literal percentage over 100.`;
+LEGACY SAFETY NET: if a figure ever comes in ABOVE 100% (an older upload measured before the bounded fix), NEVER read it as a literal percentage — a spoken ">100% failure rate" is nonsense to a viewer. Translate it into a ratio instead: 131% → *"for every ten homes that sold, about thirteen listings didn't."*
+
+The raw figure is still whatever the data shows — this rule governs only how it is SPOKEN on camera: a clean bounded percentage, or a sensible ratio, never a literal percentage over 100.`;
 
 /**
  * Generic data-grounding / anti-invention guardrails, written pipeline-neutral.

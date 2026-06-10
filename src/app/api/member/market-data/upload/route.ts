@@ -185,6 +185,13 @@ export async function POST(req: NextRequest) {
             : pf.statusRecognizedRatio.toFixed(2)
         }`,
     );
+    if (pf.ok && pf.warnings && pf.warnings.length > 0) {
+      console.log(
+        `[mdv preflight] warnings userId=${userId} filename=${JSON.stringify(
+          file.name,
+        )} ${pf.warnings.map((w) => w.code).join(",")}`,
+      );
+    }
     if (!pf.ok) {
       return Response.json(
         {

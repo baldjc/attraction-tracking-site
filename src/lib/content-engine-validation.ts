@@ -183,34 +183,53 @@ export function matchesHood(haystackLower: string, hood: string): boolean {
   return re.test(haystackLower);
 }
 
-// ── Failure-rate honesty rule ─────────────────────────────────────────────
-// failure_rate is offMarket / sold (a RATIO that can exceed 100%), NOT a share
-// of all listings. Stating "47% failed to sell" reads the ratio as a share and
-// is mathematically wrong (9 off / 10 sold = 90% failure_rate but only ~47% of
-// resolved listings actually failed). Honest framing uses either sale_share
-// ("X% of listings sold") or explicit counts ("for every 10 that sold, 9 failed
-// to sell"). This rule flags any percentage tied to failure-to-sell language.
+// ── Failure-rate honesty rule (>100% legacy safety net) ───────────────────
+// failure_rate is now a BOUNDED share — failed / (sold + offMarket) — so it
+// lives in 0–100% and "47% of homes failed to sell" is honest and allowed. The
+// only thing left to catch is a legacy upload (computed before the bounded fix)
+// whose value exceeds 100%: a literal ">100% failed to sell" is nonsense and
+// must be reframed as a ratio. So this rule fires ONLY when the percentage tied
+// to a failure-to-sell phrase is above 100. Capture group 1 = the number.
 const FAILURE_VERB =
   "(?:failed?\\s+to\\s+sell|did(?:n['’]?t| not)\\s+sell|never\\s+sold|don['’]?t\\s+sell|won['’]?t\\s+sell|fail(?:ed|ing)?\\s+to\\s+find\\s+a\\s+buyer)";
-const PERCENT_TOKEN = "\\d{1,3}(?:\\.\\d+)?\\s*(?:%|percent)";
+const PERCENT_TOKEN = "(\\d{1,4}(?:\\.\\d+)?)\\s*(?:%|percent)";
+// Also catch the metric stated by NAME ("the failure rate was 178%"), not just
+// by failure-to-sell verbs — legacy unbounded data can be quoted either way.
+const FAILURE_NOUN =
+  "(?:failure[-\\s]?(?:to[-\\s]?sell\\s+)?rate|fail[-\\s]?rate)";
 const PCT_THEN_FAIL = new RegExp(
-  `${PERCENT_TOKEN}[^.?!\\n]{0,40}${FAILURE_VERB}`,
+  `${PERCENT_TOKEN}[^.?!\\n]{0,40}?${FAILURE_VERB}`,
   "i",
 );
 const FAIL_THEN_PCT = new RegExp(
-  `${FAILURE_VERB}[^.?!\\n]{0,40}${PERCENT_TOKEN}`,
+  `${FAILURE_VERB}[^.?!\\n]{0,40}?${PERCENT_TOKEN}`,
+  "i",
+);
+const PCT_THEN_NOUN = new RegExp(
+  `${PERCENT_TOKEN}[^.?!\\n]{0,40}?${FAILURE_NOUN}`,
+  "i",
+);
+const NOUN_THEN_PCT = new RegExp(
+  `${FAILURE_NOUN}[^.?!\\n]{0,40}?${PERCENT_TOKEN}`,
   "i",
 );
 
 /**
- * Returns an error string when `text` expresses a failure-to-sell figure as a
- * percentage (which misreads the offMarket/sold ratio as a share of listings),
- * or null when the prose is clean. Exported for direct unit testing.
+ * Returns an error string when `text` speaks a failure-to-sell figure ABOVE
+ * 100% (legacy pre-bounded data that can't be read as a literal percentage), or
+ * null when the prose is clean. A bounded ≤100% share is honest and passes.
+ * Exported for direct unit testing.
  */
 export function checkFailureRateFraming(text: string): string | null {
   if (!text) return null;
-  if (PCT_THEN_FAIL.test(text) || FAIL_THEN_PCT.test(text)) {
-    return 'states a "%-failed-to-sell" figure — failure_rate is offMarket/sold (a ratio that can exceed 100%, not a share of listings). Reframe as sale_share ("X% of listings sold") or as counts ("for every 10 that sold, 9 failed to sell")';
+  for (const re of [PCT_THEN_FAIL, FAIL_THEN_PCT, PCT_THEN_NOUN, NOUN_THEN_PCT]) {
+    const m = re.exec(text);
+    if (m) {
+      const pct = parseFloat(m[1]);
+      if (Number.isFinite(pct) && pct > 100) {
+        return 'speaks a failure-to-sell figure above 100% — the failure rate is a bounded share (failed ÷ (sold + off-market)) and can never exceed 100%. This is legacy pre-bounded data: reframe it as a ratio ("for every 10 that sold, ~13 didn\'t") instead of a literal percentage';
+      }
+    }
   }
   return null;
 }

@@ -190,23 +190,23 @@ DOM uses **column 3** of the CSV (current-listing DOM). CDOM (column 4 — days 
 
 Failure rate has no CREB equivalent. CREB does not publish it. Every failure-rate fact must use this exact formula:
 
-\`failure_rate = Off-Market ÷ Sold\`
+\`failure_rate = Off-Market ÷ (Sold + Off-Market)\`
 
 where **Off-Market = Expired + Terminated + Withdrawn (every listing that left the market without selling)** over the calendar month being analysed.
 
-This is a RATIO, not a share of all listings: it answers *"for every home that sold, how many failed to sell?"* It CAN exceed 1.0 (100%) — e.g. 9 off-market against 10 sold is a failure_rate of 0.9 (90%), and 12 off-market against 10 sold is 1.2 (120%). Never cap it at 100%.
+This is a BOUNDED SHARE of RESOLVED listings (the ones that either closed OR came off the market unsold), expressed 0–100%: it answers *"of the listings that left the market this month, what share failed to sell?"* It can NEVER exceed 100% — the failed count is part of its own denominator. Example: 9 off-market against 10 sold is \`9 / 19 = 0.474\` (47.4%). If a computed value ever lands above 1.0, that is a data bug — clamp it to 1.0; never report a percentage over 100.
 
-Do NOT use the old \`(Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn)\` denominator — that under-states the true ratio and is being retired.
+This bounded \`(Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn)\` denominator is the CURRENT, REQUIRED formula. An earlier convention used \`Off-Market ÷ Sold\` — an unbounded ratio that could exceed 100% — and is RETIRED. Do NOT use it.
 
-When you want to express the same data as a *share of all resolved listings* (a 0–100% figure), emit a separate fact with \`metricName: sale_share\` and \`metricFamily: FAILURE_RATE\`:
+\`sale_share\` is the exact complement and uses the SAME denominator — emit it as a separate fact with \`metricName: sale_share\` and \`metricFamily: FAILURE_RATE\`:
 
 \`sale_share = Sold ÷ (Sold + Off-Market)\`
 
-For the worked example above (10 sold, 9 off-market): \`sale_share = 10 / 19 = 0.526\` (52.6% of resolved listings actually sold). \`sale_share\` and \`failure_rate\` are complementary views of the same two counts — never present one as if it were the other.
+For the worked example (10 sold, 9 off-market): \`sale_share = 10 / 19 = 0.526\` (52.6% sold) and \`failure_rate = 9 / 19 = 0.474\` (47.4% failed). They sum to 1.0 — complementary views of the same two counts; never present one as if it were the other.
 
 The deterministic pipeline now also persists \`sale_share\` as its own ground-truth AggregatedMetric row (the FAILURE_RATE family, metricKey \`saleShare\`), so your \`sale_share\` fact has a computed number to reconcile against — match it (within rounding). This is the **v2** sale_share convention (the same broker-honest counts as failure_rate v2: Off-Market = Expired + Terminated + Withdrawn). Note "sale_share v2" in the fact's \`usage_notes\`.
 
-Every failure-rate fact's \`usage_notes\` must include the line: *"Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / Sold for the calendar month; a ratio that can exceed 100%."*
+Every failure-rate fact's \`usage_notes\` must include the line: *"Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / (Sold + Off-Market) for the calendar month; a bounded share, 0–100%."*
 
 ### CREB-ALIGNMENT METADATA — REQUIRED ON EVERY MOI AND DOM FACT
 
@@ -345,7 +345,7 @@ DATA SOURCE: [name and date of source CSV, e.g., "Pillar 9 export — Calgary Ma
 LAST CREB RECONCILIATION DATE: [YYYY-MM-DD — last time the CSV's published values were spot-checked against the CREB Monthly Stats Package. If never, write "NEVER — schedule reconciliation."]
 DOM CALCULATION METHOD: average (CREB-aligned) is the canonical headline (metricName dom_average). dom_median also reported per fact as supporting texture.
 INVENTORY CALCULATION METHOD: moi_inclusive (Active + Pending, CREB-aligned) is the canonical headline (metricName moi_inclusive). moi_strict (Active only) also reported per fact as supporting texture.
-FAILURE-RATE FORMULA: Off-Market (Expired + Terminated + Withdrawn) / Sold for the calendar month — a RATIO that can exceed 100%. CREB does not publish this metric. Do NOT use the old (Expired+Terminated+Withdrawn) / (Sold+Expired+Terminated+Withdrawn) denominator — it is retired.
+FAILURE-RATE FORMULA: Off-Market (Expired + Terminated + Withdrawn) / (Sold + Off-Market) for the calendar month — a BOUNDED SHARE, 0–100%. CREB does not publish this metric. (The old Off-Market / Sold ratio, which could exceed 100%, is retired — do NOT use it.)
 
 TOTAL FACTS PROCESSED: [N]
 HEADLINE-SAFE: [count]
@@ -620,8 +620,8 @@ And the SUMMARY section calls it out under MIX SHIFTS DETECTED so the user sees 
   creb_delta_estimate: n/a
   viewer_caveat: n/a
   inventory_gap_with_creb: n/a
-  failure_rate_formula: "Off-Market (Expired + Terminated + Withdrawn) / Sold for the calendar month — a ratio that can exceed 100%"
-  usage_notes: Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / Sold for the calendar month; a ratio that can exceed 100%. Trajectory: 78.0% → 84.2% → 90.0%, accelerating downhill three months in a row. Sample-size-robust (210 sold in the denominator). The cleanest sustained deterioration in the city.
+  failure_rate_formula: "Off-Market (Expired + Terminated + Withdrawn) / (Sold + Off-Market) for the calendar month — a bounded share, 0–100%"
+  usage_notes: Internal metric — CREB does not publish failure rate. Cannot be cross-referenced against creb.com. Formula: Off-Market (Expired+Terminated+Withdrawn) / (Sold + Off-Market) for the calendar month; a bounded share, 0–100%. Trajectory: 61.0% → 72.4% → 81.5%, accelerating downhill three months in a row. Sample-size-robust (210 resolved listings in the denominator). The cleanest sustained deterioration in the city.
 \`\`\`
 
 That's the bar. Catch the mirage, label it plainly, expose both views where viewers will cross-check, send the cleaner facts forward.

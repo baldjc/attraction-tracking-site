@@ -167,15 +167,40 @@ interface NormalizedRow {
   priceTier: string | null;
 }
 
-function parseNumber(raw: string | undefined | null): number | null {
+export function parseNumber(raw: string | undefined | null): number | null {
   if (raw == null) return null;
-  const s = raw.toString().trim();
+  let s = raw.toString().trim();
   if (!s) return null;
-  // Strip currency symbols, commas, spaces. Keep leading minus + decimal.
+  // Auto-clean layer (matches the upload preflight's normalization promise):
+  // 1. Normalize unicode minus / en/em dashes to ASCII hyphen so "−1,234" and
+  //    "–5" parse instead of being stripped to a positive number.
+  s = s.replace(/[\u2212\u2012\u2013\u2014\u2015]/g, "-");
+  // 2. Accounting-style negatives: "(1,234)" → "-1,234".
+  let negative = false;
+  const paren = s.match(/^\((.*)\)$/);
+  if (paren) {
+    s = paren[1].trim();
+    negative = true;
+  }
+  // 3. Magnitude suffix (k / m / b): "350k" → 350000, "1.2M" → 1200000. Detected
+  //    BEFORE the lossy strip below removes letters. Anchored to the whole cell
+  //    (optional currency prefix) so an address like "5B" in a numeric column
+  //    can't be misread — and real prices never carry trailing non-suffix text.
+  let multiplier = 1;
+  const mag = s.match(/^[$\s\u00a0]*(-?\d[\d,]*\.?\d*)\s*([kmb])\s*$/i);
+  if (mag) {
+    const suffix = mag[2].toLowerCase();
+    multiplier = suffix === "k" ? 1e3 : suffix === "m" ? 1e6 : 1e9;
+    s = mag[1];
+  }
+  // 4. Strip currency symbols, commas, NBSP/spaces, and stray unit text
+  //    ("1,234 sq ft", "$450,000 CAD"). Keep the leading minus + decimal point.
   const cleaned = s.replace(/[$,\s]/g, "").replace(/[^\d.\-]/g, "");
   if (!cleaned || cleaned === "-" || cleaned === ".") return null;
   const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
+  if (!Number.isFinite(n)) return null;
+  const scaled = n * multiplier;
+  return negative ? -Math.abs(scaled) : scaled;
 }
 
 /**
@@ -428,15 +453,15 @@ function metricsFromAccumulator(
   const domMedian = median(acc.soldDoms);
   const domAverage = average(acc.soldDoms);
   const spLpRatio = average(acc.soldSpLpRatios); // mean SP/LP ratio
-  // failure_rate (v2) = offMarket / sold — a broker-honest ratio that can exceed
-  // 1.0. The helper returns a 0..n ratio (null below the sample floor); we store
-  // it ×100 to preserve the existing AggregatedGroup/AggregatedMetric percentage
-  // storage convention (downstream formatters expect a percentage-style number).
+  // failure_rate = offMarket / (sold + offMarket) — the bounded 0..1 share of
+  // RESOLVED listings that failed to sell (null below the sample floor). Stored
+  // ×100 to preserve the AggregatedGroup/AggregatedMetric percentage storage
+  // convention (downstream formatters expect a percentage-style number).
   const failureRatio = failureRateRatio(acc.sold, acc.offMarket);
   const failureRate = failureRatio == null ? null : failureRatio * 100;
-  // failure_rate VARIANTS — same offMarket/sold ratio over narrower off-market
-  // denominators (expired-only, expired+withdrawn). Each clears the off-market
-  // sample floor against its OWN (smaller) denominator. Stored ×100 like the
+  // failure_rate VARIANTS — same failed/(sold+failed) share over narrower failed
+  // subsets (expired-only, expired+withdrawn). Each clears the off-market sample
+  // floor against its OWN (smaller) subset. Bounded 0..1, stored ×100 like the
   // all-off-market value so the shared FAILURE_RATE formatter renders "%".
   const failExpiredOnlyR = failureRateRatio(acc.sold, acc.expired);
   const failureRateExpiredOnly =
