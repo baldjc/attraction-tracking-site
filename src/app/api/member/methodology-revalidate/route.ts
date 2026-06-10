@@ -52,6 +52,7 @@ interface RevalidationEstimate {
   monthSpendUsd: number;
   hardBlocked: boolean;
   overBudget: boolean;
+  unlimited: boolean;
 }
 
 // Shared cost-estimate logic for the GET dry-run (button enable/disable) and the
@@ -100,7 +101,12 @@ async function computeRevalidationEstimate(
     capUsd: cap.capUsd,
     monthSpendUsd: cap.monthSpendUsd,
     hardBlocked: cap.hardBlocked,
-    overBudget: cap.hardBlocked || estimateUsd > remainingUsd,
+    // Cap-bypass actors (admin / Done-With-You) are unlimited: never over
+    // budget, regardless of how large the re-validation estimate is.
+    overBudget: cap.unlimited
+      ? false
+      : cap.hardBlocked || estimateUsd > remainingUsd,
+    unlimited: cap.unlimited,
   };
 }
 
@@ -121,6 +127,7 @@ export async function GET() {
     capUsd: est.capUsd,
     monthSpendUsd: est.monthSpendUsd,
     overBudget: est.overBudget,
+    unlimited: est.unlimited,
   });
 }
 

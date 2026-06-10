@@ -357,11 +357,13 @@ export async function POST(req: NextRequest) {
   // Server-side belt-and-braces cost guard. The UI shows a confirmation
   // dialog with an estimate, but a tampered client could skip it — so we
   // also refuse here when the estimated batch cost would push the user past
-  // their monthly hard cap. Admins are exempted via getCostCapStatus().
+  // their monthly hard cap. Cap-bypass actors (admins + Done-With-You) are
+  // unlimited (`cap.unlimited`): they skip this estimate gate entirely, so a
+  // large batch never trips a member-facing budget warning for them.
   const cap = await getCostCapStatus(userId);
   const avgCost = await averageRecentValidationCostUsd(userId);
   const estimatedBatchCost = prepared.length * avgCost;
-  if (cap.monthSpendUsd + estimatedBatchCost > cap.capUsd) {
+  if (!cap.unlimited && cap.monthSpendUsd + estimatedBatchCost > cap.capUsd) {
     const remainingBudget = Math.max(0, cap.capUsd - cap.monthSpendUsd);
     return Response.json(
       {

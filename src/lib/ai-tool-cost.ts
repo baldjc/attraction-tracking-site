@@ -33,6 +33,10 @@ export async function getMonthlyUsage(userId: string): Promise<{
   remaining: Decimal;
   percentUsed: number;
   breakdown: Record<string, Decimal>;
+  /** True when this actor bypasses the cap entirely (admin or a bypass tier).
+   *  UI surfaces should render "Unlimited" / hide the meter instead of a
+   *  near-limit message — they must NOT re-derive the cap math themselves. */
+  unlimited: boolean;
 }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -49,6 +53,7 @@ export async function getMonthlyUsage(userId: string): Promise<{
       remaining: ADMIN_REMAINING,
       percentUsed: 0,
       breakdown: {},
+      unlimited: true,
     };
   }
 
@@ -81,7 +86,7 @@ export async function getMonthlyUsage(userId: string): Promise<{
   const remaining = diff.greaterThan(0) ? diff : new Decimal(0);
   const percentUsed = cap.toNumber() > 0 ? Math.min(100, (totalCost.toNumber() / cap.toNumber()) * 100) : 0;
 
-  return { totalCost, cap, remaining, percentUsed, breakdown };
+  return { totalCost, cap, remaining, percentUsed, breakdown, unlimited: false };
 }
 
 export async function checkCostCap(userId: string): Promise<{
@@ -122,6 +127,10 @@ export interface CostCapStatus {
   monthSpendUsd: number;
   capUsd: number;
   softWarningUsd: number;
+  /** True when this actor bypasses the cap entirely (admin or a bypass tier).
+   *  Callers that do their own remaining-budget math (e.g. revalidation cost
+   *  estimates) MUST treat this as unlimited and skip the comparison. */
+  unlimited: boolean;
 }
 
 /**
@@ -155,6 +164,7 @@ export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
       monthSpendUsd: 0,
       capUsd: tierConfig.monthlyCapUsd,
       softWarningUsd: tierConfig.softWarningUsd,
+      unlimited: true,
     };
   }
 
@@ -182,6 +192,7 @@ export async function getCostCapStatus(userId: string): Promise<CostCapStatus> {
     monthSpendUsd,
     capUsd,
     softWarningUsd,
+    unlimited: false,
   };
 }
 

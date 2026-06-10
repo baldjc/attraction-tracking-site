@@ -24,6 +24,7 @@ export async function GET() {
     cap: usage.cap.toFixed(2),
     remaining: usage.remaining.toFixed(6),
     percentUsed: usage.percentUsed,
+    unlimited: usage.unlimited,
     breakdown,
     resetsAt: resetsAtString(),
   });

@@ -167,6 +167,7 @@ interface RevalidateEstimate {
   capUsd: number;
   monthSpendUsd: number;
   overBudget: boolean;
+  unlimited?: boolean;
 }
 
 function MethodologySettingsInner() {
@@ -287,7 +288,9 @@ function MethodologySettingsInner() {
       ? "You have no validated uploads to re-validate yet."
       : estimate.overBudget
         ? `Re-validating ~${estimate.factCount} facts (${formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of your monthly allowance) would exceed what's left this month.`
-        : `Re-runs your last ${estimate.uploadCount} upload${estimate.uploadCount === 1 ? "" : "s"} (~${estimate.factCount} facts, ${formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of your monthly allowance).`;
+        : estimate.unlimited
+          ? `Re-runs your last ${estimate.uploadCount} upload${estimate.uploadCount === 1 ? "" : "s"} (~${estimate.factCount} facts). Unlimited usage on your plan.`
+          : `Re-runs your last ${estimate.uploadCount} upload${estimate.uploadCount === 1 ? "" : "s"} (~${estimate.factCount} facts, ${formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of your monthly allowance).`;
 
   return (
     <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0f1722] overflow-hidden">
@@ -532,7 +535,9 @@ function MethodologySettingsInner() {
                   {estimate?.hasUploads && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       ~{estimate.factCount} facts ·{" "}
-                      {formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of allowance
+                      {estimate.unlimited
+                        ? "Unlimited usage on your plan"
+                        : `${formatActionImpactPercent(estimate.estimateUsd, estimate.capUsd)} of allowance`}
                     </span>
                   )}
                 </div>

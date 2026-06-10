@@ -4,6 +4,7 @@ import Link from "next/link";
 import MemberPickerModal from "@/components/admin/MemberPickerModal";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { tierLabel } from "@/lib/service-tier";
 import {
   HomeIcon,
   UsersIcon,
@@ -170,7 +171,15 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const isImpersonating = !!impersonate;
 
   useEffect(() => {
-    if (role === "member") {
+    const imp = !!impersonate;
+    const impStaff = imp && impersonate?.targetRole === "editor";
+    const staffOnMember =
+      (role === "admin" || role === "editor") && imp && !impStaff;
+    // Fetch the member's REAL tier for the sidebar label + link gating. Runs for
+    // a member viewing their own sidebar AND for staff impersonating a member —
+    // the impersonation cookie makes /api/member/tier resolve to that member, so
+    // the label reflects who you're working as, not a hardcoded tier.
+    if (role === "member" || staffOnMember) {
       fetch("/api/member/tier")
         .then((r) => r.ok ? r.json() : null)
         .then((d) => {
@@ -181,7 +190,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         })
         .catch(() => {});
     }
-  }, [role]);
+  }, [role, impersonate]);
 
   useEffect(() => {
     if (role === "admin") {
@@ -287,15 +296,19 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
     ? "/admin"
     : "/member/dashboard";
 
+  // Member-view label reflects the member's REAL service tier (e.g. "Done With
+  // You Member"), never a hardcoded tier. Falls back to a neutral "Member" while
+  // the tier fetch is in flight rather than flashing a wrong tier.
+  const memberTierLabel = memberTier ? `${tierLabel(memberTier)} Member` : "Member";
   const roleLabel = isImpersonatingStaff
     ? "Staff Admin"
     : isStaffOnMemberView
-    ? "Foundations Member"
+    ? memberTierLabel
     : role === "admin"
     ? "Admin"
     : role === "editor"
     ? "Staff Admin"
-    : "Foundations Member";
+    : memberTierLabel;
 
   const sidebarInner = (
     <div className="flex flex-col h-full">

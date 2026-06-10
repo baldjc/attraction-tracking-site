@@ -98,6 +98,7 @@ interface UploadData {
 
 interface UsageData {
   percentUsed: number;
+  unlimited?: boolean;
   cap: string;
   resetsAt: string;
 }
@@ -341,8 +342,12 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
     setDraftToResume(null);
   }
 
+  // Cap-bypass actors (admin / Done-With-You) are unlimited: never locked, no
+  // usage banner. The server already forces percentUsed=0 for them, but gate on
+  // the explicit flag too so a future cap-math change can't resurface a warning.
+  const unlimited = usage?.unlimited ?? false;
   const pct = usage?.percentUsed ?? 0;
-  const isLocked = pct >= 100;
+  const isLocked = !unlimited && pct >= 100;
 
   const subtitle =
     phase === "upload"
@@ -374,7 +379,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
         onRetry={() => handleSaveToPlanner()}
       />
 
-      {usage && pct >= 50 && (
+      {usage && !unlimited && pct >= 50 && (
         <div
           className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
             pct >= 90
