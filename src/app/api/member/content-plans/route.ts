@@ -81,7 +81,18 @@ export async function POST(req: NextRequest) {
   const serviceTier = dbUser?.serviceTier ?? "foundations";
 
   const body = await req.json();
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId, bingeVideoId, propertyTypeFocus } = body;
+  const { title, status, theme, rotationSlot, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, thumbnailWords, footageLink, linkedIdeaId, linkedScriptId, youtubeVideoId, bingeVideoId, propertyTypeFocus } = body;
+  // PART 3 — the planner board groups by rotation THEME (rotationSlot). The Add
+  // Blank Video modal's primary picker writes one of the five known slot keys;
+  // anything off-list (or absent) leaves the card Unassigned rather than
+  // persisting an invalid slot.
+  const ALLOWED_ROTATION_SLOTS = new Set([
+    "market_update", "neighbourhood_fact", "contrarian_take", "do_not", "should_you",
+  ]);
+  const cleanRotationSlot: string | null =
+    rotationSlot && typeof rotationSlot === "string" && ALLOWED_ROTATION_SLOTS.has(rotationSlot)
+      ? rotationSlot
+      : null;
   // Wave 4 — whitelist propertyTypeFocus so a forged payload can't write
   // an arbitrary string into the lock column (which Script Builder v2
   // would then refuse to match against any per-type SoT row, silently
@@ -119,6 +130,7 @@ export async function POST(req: NextRequest) {
       title: title.trim(),
       status: finalStatus,
       theme: theme ?? null,
+      rotationSlot: cleanRotationSlot,
       shootDate: shootDate ? new Date(shootDate) : null,
       shootLocation: shootLocation ?? null,
       publishDate: publishDate ? new Date(publishDate) : null,

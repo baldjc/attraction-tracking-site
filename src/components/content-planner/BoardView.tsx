@@ -19,6 +19,7 @@ import { STATUS_STYLES, getStatusOptions, PRIORITY_OPTIONS, hasEditDueDate, filt
 import { resolveProgressSteps, type PlanArtifactsByType } from "@/lib/plan-state";
 import ProgressTrack from "./ProgressTrack";
 import { type ContentPlan } from "./ContentPlanEditModal";
+import { ROTATION_SLOTS, ROTATION_SLOT_LABELS, type RotationSlotKey } from "@/lib/content-engine-validation";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -200,27 +201,30 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
     setOverId(null);
     const { active, over } = e;
     if (!over) return;
-    const planId   = String(active.id);
-    const newTheme = String(over.id) === "__unassigned__" ? null : String(over.id);
-    const plan     = plans.find((p) => p.id === planId);
+    const planId  = String(active.id);
+    // PART 3 — the board groups by rotation THEME, so a drag moves the card
+    // between rotation slots (the column id is the slot KEY). Dropping on the
+    // Unassigned column clears the slot.
+    const newSlot = String(over.id) === "__unassigned__" ? null : String(over.id);
+    const plan    = plans.find((p) => p.id === planId);
     if (!plan) return;
-    if (plan.theme === newTheme) return;
+    if ((plan.rotationSlot ?? null) === newSlot) return;
 
-    const oldTheme = plan.theme;
-    setPlans((prev) => prev.map((p) => p.id === planId ? { ...p, theme: newTheme } : p));
+    const oldSlot = plan.rotationSlot ?? null;
+    setPlans((prev) => prev.map((p) => p.id === planId ? { ...p, rotationSlot: newSlot } : p));
     setErrorMsg("");
 
     try {
       const res = await fetch(`${apiBase}/${planId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: newTheme }),
+        body: JSON.stringify({ rotationSlot: newSlot }),
       });
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
       setPlans((prev) => prev.map((p) => p.id === planId ? data.plan : p));
     } catch {
-      setPlans((prev) => prev.map((p) => p.id === planId ? { ...p, theme: oldTheme } : p));
+      setPlans((prev) => prev.map((p) => p.id === planId ? { ...p, rotationSlot: oldSlot } : p));
       setErrorMsg("Failed to move card. Please try again.");
     }
   }
@@ -247,6 +251,9 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
         body: JSON.stringify({
           title: addForm.title,
           status: addForm.status || allStatusOptions[0],
+          // PART 3 — rotation Theme is the primary grouping; Stressor is a
+          // separate optional attribute (legacy `theme` column).
+          rotationSlot: addForm.rotationSlot || null,
           theme: addForm.theme || null,
           shootDate: addForm.shootDate || null,
           publishDate: addForm.publishDate || null,
@@ -277,24 +284,30 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
     );
   }
 
-  const hasNoThemes = themes.length === 0;
+  // PART 3 — the board's primary grouping is the 5-slot rotation THEME
+  // (rotationSlot), not the Avatar Stressor. The columns are the five fixed
+  // rotation themes; a plan lands in a column when its rotationSlot matches.
+  // Plans with no rotationSlot (e.g. only an Avatar Stressor set, or nothing)
+  // collect in Unassigned. The Stressor stays a separate optional attribute.
   const visiblePlans = sortPlansByDate(filterPlans(plans, searchQuery, statusFilter), sortBy);
-  const unassigned  = visiblePlans.filter((p) => !p.theme || !themes.some((t) => t.name === p.theme));
+  const isKnownSlot = (s: string | null | undefined): s is RotationSlotKey =>
+    !!s && (ROTATION_SLOTS as readonly string[]).includes(s);
+  const unassigned  = visiblePlans.filter((p) => !isKnownSlot(p.rotationSlot));
   const activePlan  = plans.find((p) => p.id === activeDragId);
 
-  const columns: { id: string; label: string; colour: string }[] = themes.map((t, i) => ({
-    id: t.name,
-    label: t.emoji ? `${t.emoji} ${t.name}` : t.name,
-    colour: t.colour ?? COLUMN_COLOURS[i % COLUMN_COLOURS.length],
+  const columns: { id: string; label: string; colour: string }[] = ROTATION_SLOTS.map((slot, i) => ({
+    id: slot,
+    label: ROTATION_SLOT_LABELS[slot],
+    colour: COLUMN_COLOURS[i % COLUMN_COLOURS.length],
   }));
   if (unassigned.length > 0) {
     columns.push({ id: "__unassigned__", label: "Unassigned", colour: "#d1d5db" });
   }
 
-  if (hasNoThemes && plans.length === 0) {
+  if (plans.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-sm text-[var(--abv-text)]/40">
-        Set up your avatar in the Avatar Architect to see your Avatar Stressors here. For now, you can assign Stressors manually in the Table view.
+        No videos yet. Generate ideas in the Content Engine, or add a blank video and assign it a rotation Theme.
       </div>
     );
   }
@@ -324,7 +337,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
           {columns.map((col) => {
             const colPlans = col.id === "__unassigned__"
               ? unassigned
-              : visiblePlans.filter((p) => p.theme === col.id);
+              : visiblePlans.filter((p) => p.rotationSlot === col.id);
             return (
               <div key={col.id} className="w-64 shrink-0 bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
@@ -356,7 +369,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
           {columns.map((col) => {
             const colPlans = col.id === "__unassigned__"
               ? unassigned
-              : visiblePlans.filter((p) => p.theme === col.id);
+              : visiblePlans.filter((p) => p.rotationSlot === col.id);
             return (
               <div key={col.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: col.colour }} />
@@ -486,16 +499,29 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Avatar Stressor</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Theme</label>
                 <select
-                  value={addForm.theme ?? ""}
-                  onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}
+                  value={addForm.rotationSlot ?? ""}
+                  onChange={(e) => setAddForm((f) => ({ ...f, rotationSlot: e.target.value }))}
                   className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
                 >
                   <option value="">Select theme...</option>
-                  {themes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
+                  {ROTATION_SLOTS.map((slot) => <option key={slot} value={slot}>{ROTATION_SLOT_LABELS[slot]}</option>)}
                 </select>
               </div>
+              {themes.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Avatar Stressor <span className="text-[var(--abv-text)]/40 font-normal">(optional)</span></label>
+                  <select
+                    value={addForm.theme ?? ""}
+                    onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}
+                    className="w-full border border-gray-200 text-[var(--abv-text)] text-sm rounded-lg px-3 py-2 focus:border-[var(--abv-azure)] focus:outline-none"
+                  >
+                    <option value="">Select stressor...</option>
+                    {themes.map((t) => <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Shoot Date</label>

@@ -103,7 +103,12 @@ export type ScriptViolationRule =
   | "lead_magnet_match"
   /** An audience/price/area group is referred to by an opaque placeholder
    *  label ("Segment A", "Group B", "Cohort 2") instead of a real name. */
-  | "no_opaque_segment_labels";
+  | "no_opaque_segment_labels"
+  /** The script was built under an Active Avatar Stressor but the body never
+   *  genuinely acknowledges that stressor's worry (psychology layer) — felt
+   *  language co-located with the avatar's own stress vocabulary. INERT when
+   *  no `activeStressor` is supplied (e.g. the member hasn't built it). */
+  | "stressor_acknowledgement";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -3485,6 +3490,18 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
   /** The assigned lead magnet's name (only meaningful when configured). */
   leadMagnetName?: string;
   /**
+   * PART 1 — the Avatar Stressor this script is being written under, resolved
+   * from the plan's theme column + the member's saved contentThemes. When
+   * present, `checkStressorAcknowledgement` REQUIRES the body to genuinely
+   * acknowledge this stressor's worry: felt/worry language co-located with the
+   * avatar's OWN stress vocabulary (so incidental topic words can't satisfy
+   * it). INERT when null/undefined — a member who hasn't built this stressor
+   * gets no line, by design (degrade, never fabricate). Enforced at generation
+   * (the streaming route passes it); the save route leaves it unset, so a
+   * direct save never hard-fails on this beat.
+   */
+  activeStressor?: { name: string; coreStress: string } | null;
+  /**
    * Floor-only signal for `min_dialogue_length`. When `false`, the lean
    * word floor (`LEAN_DIALOGUE_WORDS`) applies instead of the full 2,200
    * floor — for scripts whose neighbourhoods have NO Knowledge Base profile,
@@ -3501,6 +3518,142 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * existing behaviour, which always passes `profileText`).
    */
   hasNeighbourhoodProfile?: boolean;
+}
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/*  stressor_acknowledgement — the body must genuinely acknowledge the active  */
+/*  Avatar Stressor's worry (psychology layer), not merely name the topic.     */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/** Felt/worry framings that mark a GENUINE psychological acknowledgement (as
+ *  opposed to a script that incidentally names the topic — a neighbourhood
+ *  video says "area"/"neighbourhood" constantly without ever naming the
+ *  worry). A beat only counts when one of these co-occurs with the avatar's
+ *  own stress vocabulary in the same sentence. */
+const STRESSOR_ACK_MARKERS: RegExp[] = [
+  /keep(?:s|ing)?\s+you\s+up/i,
+  /up\s+at\s+night/i,
+  /los(?:e|ing)\s+(?:any\s+)?sleep/i,
+  /the\s+fear/i, /fear\s+of/i, /afraid/i, /scared/i,
+  /worr(?:y|ies|ied|ying)/i, /anxious/i, /anxiety/i, /nervous/i,
+  /second[\s-]?guess/i, /stuck\s+with/i, /haunt/i,
+  /the\s+part\s+that\s+(?:actually|really)/i,
+  /the\s+(?:real\s+)?question/i, /what\s+actually/i,
+  /what\s+you(?:'re|\s+are)\s+(?:really\s+)?(?:weighing|afraid|worried|wrestling)/i,
+  /wonder(?:ing)?\s+(?:whether|if)/i, /nagging/i,
+  /in\s+the\s+back\s+of\s+your\s+(?:mind|head)/i,
+  /the\s+thing\s+that/i, /quietly/i, /hesitat/i, /doubt/i,
+  /paralyz/i, /overwhelm/i, /the\s+(?:weight|pressure)\s+of/i,
+  /sit\s+with/i, /uncertain/i, /unsettl/i, /that(?:'s| is)\s+fair/i,
+  /keeps?\s+(?:you|people)\s+stuck/i, /the\s+worry\s+is/i,
+];
+
+const STRESSOR_ANCHOR_STOPWORDS = new Set([
+  "the", "and", "but", "are", "you", "your", "with", "this", "that", "these",
+  "those", "will", "would", "should", "could", "have", "has", "had", "for",
+  "not", "into", "out", "down", "even", "right", "just", "get", "got", "make",
+  "made", "being", "about", "than", "then", "any", "all", "one", "ever",
+  "really", "actually", "still", "yet", "over", "next", "our", "they", "them",
+  "their", "what", "when", "where", "how", "who", "which", "whether", "going",
+  "want", "need", "now", "here", "there", "feel", "like", "some", "much",
+]);
+
+/** Distinctive lowercased stems from the stressor's coreStress question plus
+ *  its name (minus a leading "The"). Words ≥5 chars are stemmed to their first
+ *  5 chars so "neighbourhood"/"neighbour" or "decision"/"deciding" both match. */
+function stressorAnchorStems(stressor: { name: string; coreStress: string }): string[] {
+  const raw = `${stressor.coreStress} ${stressor.name.replace(/^the\s+/i, "")}`;
+  const stems = new Set<string>();
+  for (const word of raw.toLowerCase().split(/[^a-z]+/)) {
+    if (word.length < 4) continue;
+    if (STRESSOR_ANCHOR_STOPWORDS.has(word)) continue;
+    stems.add(word.length >= 5 ? word.slice(0, 5) : word);
+  }
+  return [...stems];
+}
+
+function checkStressorAcknowledgement(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  const stressor = opts.activeStressor;
+  if (!stressor || !stressor.coreStress?.trim()) return [];
+  const anchors = stressorAnchorStems(stressor);
+  if (anchors.length === 0) return [];
+
+  // Body only: drop the ## Sources footnote (citation text), bracketed
+  // production tags ([VISUAL: …], [LEAD MAGNET …], [BINGE …]), and markdown
+  // heading / bold-only packaging lines so incidental topic words in
+  // citations or the title can't satisfy the gate.
+  let body = script;
+  const footnote = extractSourcesFootnote(script);
+  if (footnote) {
+    const idx = body.indexOf(footnote);
+    if (idx > 0) body = body.slice(0, idx);
+  }
+
+  // Drop the `### Intro Option N — …` alternate-opener blocks. These are
+  // pickable hook variants (a "question open" / empathy open can carry worry
+  // language), NOT the body — the beat must live in the body, not the intro.
+  // Suppression is PARAGRAPH-BOUNDED (heading through the next blank line) so
+  // it never bleeds into the full script that follows the last intro option.
+  {
+    const lines = body.split("\n");
+    const kept: string[] = [];
+    let suppressing = false;
+    for (const line of lines) {
+      if (/^\s{0,3}#{1,6}\s/.test(line)) {
+        suppressing = /^\s{0,3}#{1,6}\s+intro\s+option\b/i.test(line);
+        continue; // heading lines are packaging — never body
+      }
+      if (suppressing) {
+        if (line.trim() === "") suppressing = false; // end of the intro block
+        continue; // suppress the intro-option prose
+      }
+      kept.push(line);
+    }
+    body = kept.join("\n");
+  }
+
+  body = body
+    .replace(/\[[^\]]*\]/g, " ")
+    .split("\n")
+    .filter((line) => !/^\s*\*\*[^*]+\*\*\s*$/.test(line))
+    .join("\n");
+
+  // Skip the opening ARC hook / two-beat intro of the full script: the beat is
+  // explicitly banned there, so an acknowledgement that only lives in the
+  // opening must NOT satisfy the gate. The opening is ≤12% of runtime, so drop
+  // the first ~12% of remaining words (floored at 40, capped at 150 so a long
+  // body's real psychology beats are never skipped).
+  const words = body.split(/\s+/).filter(Boolean);
+  const skip = Math.min(150, Math.max(40, Math.floor(words.length * 0.12)));
+  const scanBody = words.slice(skip).join(" ");
+
+  const sentences = scanBody.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    if (!STRESSOR_ACK_MARKERS.some((re) => re.test(sentence))) continue;
+    const lower = sentence.toLowerCase();
+    if (anchors.some((a) => lower.includes(a))) return []; // genuine beat found
+  }
+
+  return [
+    {
+      rule: "stressor_acknowledgement",
+      severity: "error",
+      message:
+        `This script is being written under the "${stressor.name}" Avatar ` +
+        `Stressor, but the body never genuinely acknowledges that worry. Weave ` +
+        `ONE clear, empowered acknowledgement of it into the BODY (psychology ` +
+        `layer — NOT the title, thumbnail, hook, or two-beat intro): name the ` +
+        `specific worry from the avatar's own question — "${stressor.coreStress}" ` +
+        `— in felt language (e.g. "the part that actually keeps you up", "the ` +
+        `fear of…", "what you're really weighing", "that hesitation is normal"), ` +
+        `then steady it. Reuse two or three distinctive words from that question ` +
+        `verbatim so it reads specific to THIS avatar, not generic.`,
+      snippet: stressor.coreStress.slice(0, 120),
+    },
+  ];
 }
 
 /**
@@ -3608,6 +3761,9 @@ export function validateScript(
   violations.push(...checkRecapClose(script));
   // Fix 1 — Expertise Bridge cadence must trace to the member's real profile.
   violations.push(...checkFabricatedCredibilityStat(script, opts));
+  // PART 1 — the body must genuinely acknowledge the active Avatar Stressor's
+  // worry. INERT when no activeStressor is supplied (member hasn't built it).
+  violations.push(...checkStressorAcknowledgement(script, opts));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

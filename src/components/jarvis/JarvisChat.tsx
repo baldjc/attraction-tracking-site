@@ -718,8 +718,8 @@ export default function JarvisChat({
   const greeting = memberFirstName ? `Hi ${memberFirstName}` : "Hi there";
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <header className="border-b border-abv-border px-4 py-4 sm:px-6">
+    <div className="flex h-[calc(100vh-4rem)] flex-col bg-abv-bg">
+      <header className="border-b border-abv-border bg-abv-card px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <JarvisAvatar online />
@@ -756,7 +756,7 @@ export default function JarvisChat({
               onClick={() => setContextOpen((v) => !v)}
               aria-haspopup="dialog"
               aria-expanded={contextOpen}
-              className="flex items-center gap-1.5 rounded-lg border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong lg:hidden"
+              className="flex items-center gap-1.5 rounded-full border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong lg:hidden"
             >
               <SparklesIcon className="h-3.5 w-3.5 text-abv-ai-tools" aria-hidden />
               Context
@@ -781,7 +781,7 @@ export default function JarvisChat({
                 aria-haspopup="menu"
                 aria-expanded={historyOpen}
                 title="Your past conversations with Jarvis"
-                className="flex items-center gap-1.5 rounded-lg border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong"
+                className="flex items-center gap-1.5 rounded-full border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong"
               >
                 <ClockIcon className="h-3.5 w-3.5" aria-hidden />
                 History
@@ -867,7 +867,7 @@ export default function JarvisChat({
               type="button"
               onClick={newConversation}
               disabled={busy}
-              className="rounded-lg bg-abv-ai-tools px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50"
+              className="rounded-full bg-abv-dark px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
               + New conversation
             </button>
@@ -886,14 +886,14 @@ export default function JarvisChat({
                 type="button"
                 onClick={newConversation}
                 disabled={busy}
-                className="rounded-lg bg-abv-ai-tools px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-50"
+                className="rounded-full bg-abv-dark px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 Start fresh
               </button>
               <button
                 type="button"
                 onClick={() => setMonthBannerDismissed(true)}
-                className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong"
+                className="rounded-full border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong"
               >
                 Not now
               </button>
@@ -1004,7 +1004,7 @@ export default function JarvisChat({
                   setShowResearchPanel(false);
                   setResearchText("");
                 }}
-                className="rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text disabled:opacity-50"
+                className="rounded-full border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1022,7 +1022,7 @@ export default function JarvisChat({
                   setResearchText("");
                   setShowResearchPanel(false);
                 }}
-                className="rounded-lg bg-abv-ai-tools px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                className="rounded-full bg-abv-dark px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 {researchBusy ? "Reading…" : "Add research"}
               </button>
@@ -1047,7 +1047,7 @@ export default function JarvisChat({
             type="button"
             disabled={busy || researchBusy}
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1 rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-full border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
           >
             <PlusIcon className="h-3.5 w-3.5" aria-hidden />
             {researchBusy ? "Reading…" : "Attach file/image"}
@@ -1056,13 +1056,13 @@ export default function JarvisChat({
             type="button"
             disabled={busy || researchBusy}
             onClick={() => setShowResearchPanel((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-lg border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-full border border-abv-border px-3 py-1.5 text-xs text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
           >
             <PlusIcon className="h-3.5 w-3.5" aria-hidden />
             Add link/text
           </button>
         </div>
-        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-card px-2 py-1.5 transition focus-within:border-abv-border-strong">
+        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-card px-2 py-1.5 transition focus-within:border-abv-azure">
           <button
             type="button"
             onClick={() => toast.info("Voice input is coming soon.")}
@@ -1090,7 +1090,7 @@ export default function JarvisChat({
             type="submit"
             disabled={busy || !input.trim()}
             aria-label="Send"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-abv-ai-tools text-white transition hover:opacity-90 disabled:opacity-40"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-abv-dark text-white transition hover:opacity-90 disabled:opacity-40"
           >
             {busy ? (
               <ArrowPathIcon className="h-4 w-4 animate-spin" aria-hidden />
@@ -1220,7 +1220,7 @@ function ProposalCard({
         <button
           onClick={() => onAction(messageId, "reopen")}
           disabled={anyPending}
-          className="mt-2 rounded-lg border border-abv-border px-4 py-2 text-sm text-abv-text disabled:opacity-50"
+          className="mt-2 rounded-full border border-abv-border px-4 py-2 text-sm text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
         >
           {isPending("reopen") ? "Bringing it back…" : "Bring this draft back"}
         </button>
@@ -1230,8 +1230,8 @@ function ProposalCard({
 
   return (
     <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-card px-4 py-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-abv-ai-tools">
-        Draft script · Not saved yet
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-abv-azure">
+        ⚡ Video idea · Proposed
       </p>
       <p className="mt-1.5 font-display text-lg font-bold leading-tight text-abv-text">
         “{proposal.title}”
@@ -1259,14 +1259,14 @@ function ProposalCard({
           <button
             onClick={() => onAction(messageId, "confirming")}
             disabled={anyPending}
-            className="rounded-lg bg-abv-ai-tools px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-full bg-abv-dark px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
           >
             Approve &amp; save
           </button>
           <button
             onClick={() => onAction(messageId, "decline")}
             disabled={anyPending}
-            className="rounded-lg border border-abv-border px-4 py-2 text-sm text-abv-text disabled:opacity-50"
+            className="rounded-full border border-abv-border px-4 py-2 text-sm text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
           >
             Dismiss
           </button>
@@ -1284,14 +1284,14 @@ function ProposalCard({
             <button
               onClick={() => onAction(messageId, "save")}
               disabled={anyPending}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             >
               {isPending("save") ? "Saving…" : "Yes, save it"}
             </button>
             <button
               onClick={() => onAction(messageId, "reopen")}
               disabled={anyPending}
-              className="rounded-lg border border-abv-border px-4 py-2 text-sm text-abv-text disabled:opacity-50"
+              className="rounded-full border border-abv-border px-4 py-2 text-sm text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
             >
               Not yet
             </button>
@@ -1348,7 +1348,7 @@ function JarvisAvatar({
   return (
     <span className="relative inline-flex shrink-0">
       <span
-        className={`${dim} inline-flex items-center justify-center rounded-full bg-abv-ai-tools text-white`}
+        className={`${dim} inline-flex items-center justify-center rounded-full bg-abv-dark text-white`}
       >
         <SparklesIcon className={icon} aria-hidden />
       </span>

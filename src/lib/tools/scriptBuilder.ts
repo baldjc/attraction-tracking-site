@@ -414,7 +414,7 @@ function buildInitialUserMessage(args: {
   lines.push("");
 
   if (activeStressor) {
-    lines.push("## Active Avatar Stressor (acknowledge in the BODY)");
+    lines.push("## Active Avatar Stressor (REQUIRED — acknowledge in the BODY)");
     lines.push("");
     lines.push(
       `This idea is being scripted under the **${activeStressor.name}** Avatar Stressor — the specific worry this avatar carries, in their own voice:`,
@@ -422,7 +422,7 @@ function buildInitialUserMessage(args: {
     lines.push(`> "${activeStressor.coreStress}"`);
     lines.push("");
     lines.push(
-      "Weave ONE or TWO genuine acknowledgements of THIS stressor into the body (the psychology layer), in the avatar's register. Empowered, never aggrieved — name the worry, then steady it. Distribute the beats; never stack them and never put them in the title, thumbnail, or packaging, and don't let them bloat the two-beat intro. If you can't do it honestly, leave it out rather than forcing it.",
+      "REQUIRED (server-checked — the draft is rejected and you are re-prompted if it's missing): weave ONE or TWO genuine acknowledgements of THIS worry into the body (the psychology layer). Reuse two or three distinctive words from the quoted question verbatim, paired with felt language (\"the part that actually keeps you up\", \"the fear of…\", \"what you're really weighing\", \"that hesitation is normal\"), so the beat is unmistakably about THIS stressor and not generic. Empowered, never aggrieved — name the worry, then steady it. Distribute the beats; never stack them, and never put them in the title, thumbnail, packaging, or the two-beat intro.",
     );
     lines.push("");
   }
@@ -1016,6 +1016,17 @@ function suggestRetryFix(v: ScriptViolation, hasProfile = true): string {
       '("after years of running this analysis for families across the city..."),',
       "or pick a different approved sideways drop. Never invent a precise OR",
       "vague cadence, deal count, or year span to sound authoritative.",
+    ].join(" ");
+  }
+  if (v.rule === "stressor_acknowledgement") {
+    // PART 1 — the body never acknowledged the Active Avatar Stressor's worry.
+    // The violation message already names the stressor + its quoted question;
+    // surface it verbatim so the retry is a targeted insert, not a rewrite.
+    return [
+      v.message,
+      "Add this as ONE genuine beat in the BODY's psychology layer only —",
+      "not the title, thumbnail, hook, or two-beat intro. Keep everything else",
+      "in the draft (structure, voice, citations, visual tags) unchanged.",
     ].join(" ");
   }
   return v.message;
@@ -1792,6 +1803,9 @@ export async function buildScript(
       bingeTargetTitle: bingeTargetTitle ?? undefined,
       leadMagnetConfigured: assignedCampaign !== null,
       leadMagnetName: assignedCampaign?.name,
+      // PART 1 — enforce the Active Avatar Stressor acknowledgement at
+      // generation. INERT when null (member hasn't built the stressor).
+      activeStressor: activeStressor ?? null,
       // Market updates pass the lean (1,600) floor explicitly so a data-rich
       // 1,600+ word draft is never flagged degraded just because a profile loaded.
       hasNeighbourhoodProfile: useLeanFloor ? false : undefined,

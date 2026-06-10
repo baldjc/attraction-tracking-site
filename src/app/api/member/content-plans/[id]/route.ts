@@ -107,7 +107,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   // value would let a member repoint a plan at an arbitrary Drive folder and then
   // enumerate its files via the impersonated (delegation) Drive client — an IDOR
   // into anything the impersonated Workspace user can read.
-  const { title, status, theme, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, youtubeDescription, pinnedComment, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, thumbnailWinnerId, manualSteps, propertyTypeFocus } = body;
+  const { title, status, theme, rotationSlot, shootDate, shootLocation, publishDate, editDueDate, priority, notes, script, researchNotes, thoughts, thumbnailWords, footageLink, youtubeDescription, pinnedComment, linkedCampaignId, linkedScriptId, thumbnailFileId, thumbnailFileName, thumbnailWinnerId, manualSteps, propertyTypeFocus } = body;
+  // PART 3 — the planner board now groups by rotation THEME (rotationSlot), so a
+  // card drag writes rotationSlot. Whitelist to the five known slot keys; treat
+  // undefined as "field omitted" (no write), empty/off-list as "clear" (→ null,
+  // i.e. the Unassigned column) rather than persisting an invalid slot.
+  const ALLOWED_ROTATION_SLOTS = new Set([
+    "market_update", "neighbourhood_fact", "contrarian_take", "do_not", "should_you",
+  ]);
+  let cleanRotationSlot: string | null | undefined;
+  if (rotationSlot === undefined) {
+    cleanRotationSlot = undefined;
+  } else if (!rotationSlot) {
+    cleanRotationSlot = null;
+  } else if (typeof rotationSlot === "string" && ALLOWED_ROTATION_SLOTS.has(rotationSlot)) {
+    cleanRotationSlot = rotationSlot;
+  } else {
+    cleanRotationSlot = null;
+  }
   // Wave 4 — same whitelist as POST. Treat undefined as "field omitted"
   // (partial PATCH semantics, no write), empty string as "clear", and any
   // other off-list string as "clear" (safer than persisting garbage).
@@ -236,6 +253,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           ...(title !== undefined && { title: title.trim() }),
           ...(status !== undefined && { status }),
           ...(theme !== undefined && { theme: theme ?? null }),
+          ...(cleanRotationSlot !== undefined && { rotationSlot: cleanRotationSlot }),
           ...(shootDate !== undefined && { shootDate: shootDate ? new Date(shootDate) : null }),
           ...(shootLocation !== undefined && { shootLocation: shootLocation || null }),
           ...(publishDate !== undefined && { publishDate: publishDate ? new Date(publishDate) : null }),
