@@ -22,6 +22,16 @@ export const AUTO_MERGE_CONFIDENCE = 0.9;
 /** Names are batched so a wide market doesn't blow the context window. */
 const FUZZY_BATCH_SIZE = 120;
 
+/**
+ * How many batches run at once. Batches are independent (each de-dupes only its
+ * own names), so a wide market's batches can run concurrently. Sequential calls
+ * blew the request/gateway timeout on large vocabs (e.g. ~40 batches × several
+ * seconds each → the dry-run returned a bodyless 504 the UI showed as
+ * "Could not compute a cleanup."). Bounded concurrency keeps the wall time
+ * comfortably under the route's budget without hammering the Anthropic API.
+ */
+const FUZZY_CONCURRENCY = 6;
+
 export interface FuzzyMergeProposal {
   /** The canonical display name that should absorb `from`. */
   into: string;
@@ -139,9 +149,22 @@ export async function runFuzzyPass(
   let inputTokens = 0;
   let outputTokens = 0;
 
+  const batches: string[][] = [];
   for (let i = 0; i < names.length; i += FUZZY_BATCH_SIZE) {
     const batch = names.slice(i, i + FUZZY_BATCH_SIZE);
-    if (batch.length < 2) continue;
+    if (batch.length >= 2) batches.push(batch);
+  }
+
+  // One batch → its proposals + token usage. Never throws: a failed batch is
+  // logged and contributes nothing, leaving the deterministic stage intact.
+  const runBatch = async (
+    batch: string[],
+  ): Promise<{
+    proposals: FuzzyMergeProposal[];
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+  }> => {
     try {
       const resp = await anthropic.messages.create({
         model: HAIKU_MODEL,
@@ -152,21 +175,39 @@ export async function runFuzzyPass(
         .filter((b): b is Anthropic.TextBlock => b.type === "text")
         .map((b) => b.text)
         .join("");
-      inputTokens += resp.usage.input_tokens;
-      outputTokens += resp.usage.output_tokens;
-      costUsd +=
-        resp.usage.input_tokens * HAIKU_INPUT_COST +
-        resp.usage.output_tokens * HAIKU_OUTPUT_COST;
       const known = new Set(batch.map((n) => n.toLowerCase()));
+      const proposals: FuzzyMergeProposal[] = [];
       for (const p of parseProposals(text)) {
         // Both endpoints must be names we actually sent (no hallucinated names).
         if (!known.has(p.into.toLowerCase()) || !known.has(p.from.toLowerCase()))
           continue;
-        all.push(p);
+        proposals.push(p);
       }
+      return {
+        proposals,
+        inputTokens: resp.usage.input_tokens,
+        outputTokens: resp.usage.output_tokens,
+        costUsd:
+          resp.usage.input_tokens * HAIKU_INPUT_COST +
+          resp.usage.output_tokens * HAIKU_OUTPUT_COST,
+      };
     } catch (err) {
       console.error("[kb-merge][fuzzy] batch failed (non-fatal)", err);
       // Continue other batches; deterministic stage already stands.
+      return { proposals: [], inputTokens: 0, outputTokens: 0, costUsd: 0 };
+    }
+  };
+
+  // Run batches with bounded concurrency. Sequential awaits blew the request
+  // timeout on wide markets; batches are independent so they parallelise safely.
+  for (let i = 0; i < batches.length; i += FUZZY_CONCURRENCY) {
+    const wave = batches.slice(i, i + FUZZY_CONCURRENCY);
+    const results = await Promise.all(wave.map(runBatch));
+    for (const r of results) {
+      all.push(...r.proposals);
+      inputTokens += r.inputTokens;
+      outputTokens += r.outputTokens;
+      costUsd += r.costUsd;
     }
   }
 
