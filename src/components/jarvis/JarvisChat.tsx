@@ -325,9 +325,11 @@ export default function JarvisChat({
   const displayContext: JarvisContext = {
     ...context,
     voice: {
-      label: customVoiceActive ? customVoiceLabel : "Default voice",
+      label: customVoiceActive ? "My voice" : "Default voice",
       detail: customVoiceActive
-        ? "Jarvis writes in your uploaded voice. Switch back to the default register anytime."
+        ? customVoiceLabel
+          ? `Jarvis writes in your uploaded voice — ${customVoiceLabel}. Switch back to the default register anytime.`
+          : "Jarvis writes in your uploaded voice. Switch back to the default register anytime."
         : voiceDefaultSummary,
     },
   };

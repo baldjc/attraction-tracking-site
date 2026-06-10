@@ -52,9 +52,9 @@ export default function ContextPanel({
       <div
         role="dialog"
         aria-label="What Jarvis knows about you"
-        className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-abv-border bg-abv-card shadow-abv-lg"
+        className="absolute right-0 top-full z-40 mt-2 flex max-h-[calc(100vh-7rem)] w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-abv-border bg-abv-card shadow-abv-lg"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-abv-border px-4 py-3">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-abv-border px-4 py-3">
           <div className="min-w-0">
             <p className="font-display text-sm font-bold text-abv-text">
               What Jarvis knows about you
@@ -73,7 +73,7 @@ export default function ContextPanel({
           </button>
         </div>
 
-        <div className="flex flex-col gap-3.5 px-4 py-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-4 py-4">
           {ROWS.map(({ key, label, icon: Icon }) => {
             const item = context[key];
             return (
@@ -114,7 +114,7 @@ export default function ContextPanel({
           })}
         </div>
 
-        <div className="border-t border-abv-border px-4 py-3">
+        <div className="shrink-0 border-t border-abv-border px-4 py-3">
           <Link
             href={context.updateHref}
             className="inline-flex items-center gap-1.5 rounded-lg bg-abv-ai-tools px-3 py-2 text-xs font-medium text-white transition hover:opacity-90"
