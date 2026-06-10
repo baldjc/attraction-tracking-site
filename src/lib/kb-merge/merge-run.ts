@@ -259,12 +259,141 @@ function proposalFromReport(report: MergeRunReport): CanonicalProposal {
   };
 }
 
+/** Rebuild the "biggest merges" summary after the group set changes. */
+function rebuildTopMerges(groups: CanonicalGroup[]): MergeRunGroupSummary[] {
+  return groups
+    .filter((g) => g.variants.length > 1)
+    .map((g) => ({
+      canonical: g.display,
+      variantCount: g.variants.length,
+      variants: g.variants,
+    }))
+    .sort((a, b) => b.variantCount - a.variantCount)
+    .slice(0, 50);
+}
+
+/**
+ * Fold member-approved review-queue items into the proposal in place. Each key is
+ * `${from}->${into}` (matching the review UI). For every match we move `from`'s
+ * group variants into `into`'s group, drop the `from` group, move the proposal
+ * from reviewQueue → fuzzyApplied (so persistence records it as a fuzzy alias
+ * with its confidence), then rebuild the raw→display map + canonicalCount. This
+ * is the SAME fold an auto-merge does in buildCanonicalProposal — the only
+ * difference is the member, not the confidence threshold, approved it.
+ *
+ * Idempotent: a key whose `from` group is already gone (e.g. a resumed apply
+ * after the augmented report was persisted) is skipped. Returns the number of
+ * groups actually folded.
+ */
+function foldReviewSelections(
+  proposal: CanonicalProposal,
+  selectedKeys: string[],
+): number {
+  if (selectedKeys.length === 0) return 0;
+  const selected = new Set(selectedKeys);
+  const byDisplay = new Map<string, CanonicalGroup>();
+  for (const g of proposal.groups) byDisplay.set(g.display.toLowerCase(), g);
+
+  let folded = 0;
+  for (const item of [...proposal.reviewQueue]) {
+    const key = `${item.from}->${item.into}`;
+    if (!selected.has(key)) continue;
+    // It's been actioned — remove from the review queue regardless of outcome.
+    proposal.reviewQueue = proposal.reviewQueue.filter((r) => r !== item);
+
+    const fromGroup = byDisplay.get(item.from.toLowerCase());
+    const intoGroup = byDisplay.get(item.into.toLowerCase());
+    if (!fromGroup || !intoGroup || fromGroup === intoGroup) continue;
+
+    for (const v of fromGroup.variants) {
+      if (!intoGroup.variants.includes(v)) intoGroup.variants.push(v);
+    }
+    intoGroup.variants.sort((a, b) => a.localeCompare(b));
+    intoGroup.fuzzyMerged = true;
+    byDisplay.delete(fromGroup.display.toLowerCase());
+    proposal.groups = proposal.groups.filter((g) => g !== fromGroup);
+    proposal.fuzzyApplied = [...proposal.fuzzyApplied, item];
+    folded++;
+  }
+
+  if (folded > 0) {
+    const map = new Map<string, string>();
+    for (const g of proposal.groups)
+      for (const v of g.variants) map.set(v.toLowerCase(), g.display);
+    proposal.map = map;
+    proposal.canonicalCount = proposal.groups.length;
+  }
+  return folded;
+}
+
 export interface ApplyResult {
   mergeRunId: string;
   uploadsReaggregated: number;
   factsRelabelled: number;
   canonicalCount: number;
   floorClearing: MergeRunReport["floorClearing"];
+}
+
+/**
+ * Persist a proposal whose review-queue selections have been folded back onto the
+ * run's report (groups/counts/topMerges). Shared by the in-apply fold and the
+ * pre-enqueue fold (foldReviewSelectionsIntoRun) so the two paths can never drift.
+ */
+async function persistFoldedReport(
+  mergeRunId: string,
+  report: MergeRunReport,
+  proposal: CanonicalProposal,
+): Promise<void> {
+  const updatedReport: MergeRunReport = {
+    ...report,
+    groups: proposal.groups,
+    fuzzyApplied: proposal.fuzzyApplied,
+    reviewQueue: proposal.reviewQueue,
+    fuzzyAppliedCount: proposal.fuzzyApplied.length,
+    reviewQueueCount: proposal.reviewQueue.length,
+    canonicalCount: proposal.canonicalCount,
+    collapsed: Math.max(0, report.rawCount - proposal.canonicalCount),
+    topMerges: rebuildTopMerges(proposal.groups),
+  };
+  await prisma.mergeRun.update({
+    where: { id: mergeRunId },
+    data: {
+      report: updatedReport as unknown as object,
+      canonicalCount: updatedReport.canonicalCount,
+      reviewQueueCount: updatedReport.reviewQueueCount,
+      fuzzyProposedCount: updatedReport.fuzzyAppliedCount,
+    },
+  });
+}
+
+/**
+ * Durably fold the member's ticked review-queue selections into a DRY_RUN run's
+ * plan BEFORE the apply is handed to the background worker.
+ *
+ * WHY: the durable path enqueues a pg-boss job keyed by mergeRunId. A second
+ * apply click (e.g. a different selection) would be DEDUPED by that singletonKey,
+ * so a selection carried only in the job payload could be silently dropped. By
+ * recording the selection on the run here, the persisted report — not a
+ * droppable payload — is the source of truth; the worker then applies with an
+ * empty selection and reproduces the plan from the report. Idempotent (re-folding
+ * an already-folded selection is a no-op) and a no-op unless the run is DRY_RUN.
+ */
+export async function foldReviewSelectionsIntoRun(
+  userId: string,
+  mergeRunId: string,
+  selectedReviewKeys: string[],
+): Promise<void> {
+  if (selectedReviewKeys.length === 0) return;
+  const run = await prisma.mergeRun.findFirst({
+    where: { id: mergeRunId, userId },
+    select: { status: true, report: true },
+  });
+  if (!run || run.status !== "DRY_RUN") return;
+  const report = run.report as unknown as MergeRunReport;
+  const proposal = proposalFromReport(report);
+  const foldedCount = foldReviewSelections(proposal, selectedReviewKeys);
+  if (foldedCount === 0) return;
+  await persistFoldedReport(mergeRunId, report, proposal);
 }
 
 /**
@@ -276,6 +405,7 @@ export interface ApplyResult {
 export async function applyMergeRun(
   userId: string,
   mergeRunId: string,
+  opts: { selectedReviewKeys?: string[] } = {},
 ): Promise<ApplyResult> {
   const run = await prisma.mergeRun.findFirst({
     where: { id: mergeRunId, userId },
@@ -338,6 +468,22 @@ export async function applyMergeRun(
   const report = run.report as unknown as MergeRunReport;
   const proposal = proposalFromReport(report);
 
+  // 0. Fold any review-queue near-duplicates the member explicitly ticked into
+  //    the plan (human-approved, same fold as an auto-merge). For the durable
+  //    (worker) path the selection was already folded + persisted at enqueue time
+  //    (foldReviewSelectionsIntoRun), so here it re-folds an EMPTY selection
+  //    (no-op) and simply reproduces the plan from the persisted report. For the
+  //    in-request path it folds the passed selection now. Either way we persist
+  //    the augmented report up front so a resumed apply reproduces the same plan.
+  //    Idempotent on resume.
+  const foldedCount = foldReviewSelections(
+    proposal,
+    opts.selectedReviewKeys ?? [],
+  );
+  if (foldedCount > 0) {
+    await persistFoldedReport(mergeRunId, report, proposal);
+  }
+
   // 1. Persist canonical areas + aliases.
   await persistCanonicalMap(userId, proposal);
 
@@ -352,7 +498,22 @@ export async function applyMergeRun(
   });
   let uploadsReaggregated = 0;
   const failedUploads: string[] = [];
+  // Renew the APPLYING lease as we go. The stale-reclaim window above is 5 min,
+  // but a first big backlog re-aggregates every upload and can run far longer
+  // (~30 min on the worker). Without a renewal, a live apply would look "stale"
+  // after 5 min and a concurrent trigger could reclaim it and run the heavy
+  // mutation a second time. Bumping updatedAt (status APPLYING → APPLYING) keeps
+  // a living apply's lease fresh; only a genuinely dead holder lets it expire.
+  const LEASE_RENEW_MS = 60 * 1000;
+  let lastLeaseRenewAt = Date.now();
   for (const u of uploads) {
+    if (Date.now() - lastLeaseRenewAt > LEASE_RENEW_MS) {
+      await prisma.mergeRun.updateMany({
+        where: { id: mergeRunId, userId, status: "APPLYING" },
+        data: { status: "APPLYING" },
+      });
+      lastLeaseRenewAt = Date.now();
+    }
     try {
       const { table } = await aggregateUploadFromDb(u.id);
       await persistAggregatedMetrics(u.id, userId, table);

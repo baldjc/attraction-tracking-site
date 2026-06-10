@@ -20,11 +20,13 @@ import PgBoss from "pg-boss";
 export const QUEUE_VALIDATE_UPLOAD = "validate-upload";
 export const QUEUE_REVIEWER_COACH_RUN = "reviewer-coach-run";
 export const QUEUE_GLANCE_TEST = "glance-test";
+export const QUEUE_KB_MERGE_APPLY = "kb-merge-apply";
 
 export const ALL_QUEUES = [
   QUEUE_VALIDATE_UPLOAD,
   QUEUE_REVIEWER_COACH_RUN,
   QUEUE_GLANCE_TEST,
+  QUEUE_KB_MERGE_APPLY,
 ] as const;
 
 // ── Job payload types ────────────────────────────────────────────────────────
@@ -38,6 +40,13 @@ export interface ReviewerCoachRunJob {
 export interface GlanceTestJob {
   channelRef: string;
   runBy: string;
+}
+export interface KbMergeApplyJob {
+  mergeRunId: string;
+  // KB owner whose areas/facts are re-aggregated; also governs the dispatch flag.
+  userId: string;
+  // `${from}->${into}` review-queue items opted into the merge (may be empty).
+  selectedReviewKeys?: string[];
 }
 
 /**
@@ -179,6 +188,27 @@ export async function enqueueGlanceTest(
   return boss.send(QUEUE_GLANCE_TEST, data, {
     singletonKey: data.channelRef,
     retryLimit: 0,
+    expireInMinutes: 60,
+  });
+}
+
+export async function enqueueKbMergeApply(
+  data: KbMergeApplyJob,
+): Promise<string | null> {
+  const boss = await getEnqueueBoss();
+  return boss.send(QUEUE_KB_MERGE_APPLY, data, {
+    // One apply in flight per run; a double-clicked Confirm dedupes to a single
+    // job (null return = already queued, treated as success by the dispatcher).
+    singletonKey: data.mergeRunId,
+    // applyMergeRun guards itself with a DRY_RUN→APPLYING CAS and a stale-APPLYING
+    // reclaim, so we do NOT want pg-boss auto-retrying (a retry would either
+    // collide with the CAS or risk re-running heavy work). Process death leaves
+    // the run resumable via a later apply trigger — matching the old in-request
+    // behaviour, which also had no auto-retry.
+    retryLimit: 0,
+    // Generous headroom: a first big backlog re-aggregates every upload and can
+    // run ~30 min. Keep well above that so a slow-but-alive apply is never
+    // expired out from under the worker.
     expireInMinutes: 60,
   });
 }

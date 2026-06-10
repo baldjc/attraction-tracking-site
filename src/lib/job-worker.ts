@@ -21,6 +21,7 @@ import { runValidation, markUploadFailed } from "@/lib/fact-validator";
 import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
 import { executeCoachRun } from "@/lib/reviewer-run";
 import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
+import { applyMergeRun } from "@/lib/kb-merge/merge-run";
 import {
   getQueueConnectionString,
   ensureQueues,
@@ -28,9 +29,11 @@ import {
   QUEUE_VALIDATE_UPLOAD,
   QUEUE_REVIEWER_COACH_RUN,
   QUEUE_GLANCE_TEST,
+  QUEUE_KB_MERGE_APPLY,
   type ValidateUploadJob,
   type ReviewerCoachRunJob,
   type GlanceTestJob,
+  type KbMergeApplyJob,
 } from "@/lib/job-queue";
 import { QUEUE_HEALTH_KEY, type QueueHealth } from "@/lib/queue-health";
 
@@ -132,6 +135,23 @@ async function handleGlanceTest(data: GlanceTestJob): Promise<void> {
   }
 }
 
+async function handleKbMergeApply(data: KbMergeApplyJob): Promise<void> {
+  try {
+    // Same business call the route makes in-request. applyMergeRun is the sole
+    // owner of the DRY_RUN→APPLYING CAS, stale reclaim, idempotent re-aggregation,
+    // and the APPLIED flip — so this handler just invokes it and records outcome.
+    // A business failure (e.g. partial re-aggregation) throws and leaves the run
+    // resumable; we record a fail and do NOT auto-retry (retryLimit 0).
+    await applyMergeRun(data.userId, data.mergeRunId, {
+      selectedReviewKeys: data.selectedReviewKeys ?? [],
+    });
+    recordOutcome(true);
+  } catch (err) {
+    console.error("[worker] kb-merge-apply failed for", data.mergeRunId, err);
+    recordOutcome(false);
+  }
+}
+
 // Parse a positive-integer env var, falling back (with a warning) when unset,
 // non-numeric, or <= 0 so a typo can never silently set concurrency to NaN/0.
 function positiveIntEnv(name: string, fallback: number): number {
@@ -189,6 +209,16 @@ export async function startWorker(): Promise<void> {
     { batchSize: 1 },
     async (jobs) => {
       for (const job of jobs) await handleGlanceTest(job.data);
+    },
+  );
+
+  // Apply is heavy and DB-write-intensive (re-aggregates every upload) — one at a
+  // time per VM, processed serially within a batch.
+  await boss.work<KbMergeApplyJob>(
+    QUEUE_KB_MERGE_APPLY,
+    { batchSize: 1 },
+    async (jobs) => {
+      for (const job of jobs) await handleKbMergeApply(job.data);
     },
   );
 

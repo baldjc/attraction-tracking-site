@@ -30,3 +30,26 @@ so a member can retry.
   resume becomes unsafe — gate it or make it idempotent.
 - `discardMergeRun` intentionally only accepts DRY_RUN; an APPLYING run is mid-apply
   and must not be discardable.
+
+## Durable (background-worker) apply variant
+
+apply can be handed to the pg-boss worker (gated by `durable_job_queue`); the
+in-request path is the always-correct fallback. Two non-obvious constraints fall
+out of moving a ~30-min job off-request:
+
+- **The run — not the job payload — is the source of truth for the member's
+  review-queue selection.** The job is enqueued with `singletonKey = mergeRunId`,
+  so a second apply click (a *different* selection) before the worker claims is
+  silently DEDUPED and its payload dropped. Fix: fold the selection onto the run
+  (`foldReviewSelectionsIntoRun`, DRY_RUN-only, idempotent, shares
+  `persistFoldedReport` with the in-apply fold so the paths can't drift) BEFORE
+  enqueue, then enqueue with an EMPTY selection. The worker reproduces the plan
+  from the persisted report. **Why:** anything carried only in a deduped job
+  payload is lost; persist intent before handing off.
+- **A long apply must renew its APPLYING lease.** The stale-reclaim window is ~5
+  min but a first big backlog runs ~30 min on the worker; without renewal a live
+  apply looks crashed and a concurrent trigger reclaims + double-runs the heavy
+  mutation. Bump `updatedAt` (`updateMany` status `APPLYING→APPLYING`, status-
+  guarded so it can't resurrect a run another path moved off APPLYING) every ~60s
+  inside the re-aggregation loop. **Why:** the reclaim heuristic assumes a frozen
+  `updatedAt` == dead holder; a living long job must keep proving it's alive.

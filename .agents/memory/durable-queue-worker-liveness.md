@@ -34,6 +34,16 @@ jobs sit forever (the exact stranding failure the durable queue was meant to pre
   (or boots once then dies) — the classic "one beat then frozen" symptom. Keep `tsx` in
   `dependencies` (not devDependencies, which can be pruned in prod). Same applies to any
   runtime TS runner for a deployed process.
+- **Capability gate, not just liveness, makes rollout order-independent.** A fresh
+  heartbeat proves *a* worker is alive, not that it serves *your* queue. The worker
+  publishes `depthByQueue` for every queue in `ALL_QUEUES`, so a queue's key is
+  present only once the worker carrying that handler is deployed. To safely add a
+  NEW queue without a deploy-order footgun, gate enqueue on BOTH a fresh heartbeat
+  AND `depthByQueue` containing the queue key (see `isKbMergeApplyDrainable` in
+  job-dispatch.ts); otherwise fall back to the in-request path. This lets the flag
+  be enabled before the worker is redeployed — old worker lacks the key ⇒ sync
+  fallback ⇒ nothing strands ⇒ self-corrects once the new worker beats. Still
+  deploy worker-first as best practice; the gate is the safety net.
 - The first rollout (canary) user is gated via a new object-form flag entry:
   `durable_job_queue = { enabled: false, allowedUserIds: [<canaryUserId>] }` (enabled:false +
   allowlist = on for that user only). The admin PUT route validates every id against `users`.

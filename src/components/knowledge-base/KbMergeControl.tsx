@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
 
@@ -90,7 +90,11 @@ export default function KbMergeControl() {
     });
   }
 
-  async function applyRun(runId: string, report: MergeReport) {
+  async function applyRun(
+    runId: string,
+    report: MergeReport,
+    selectedReviewKeys: string[] = [],
+  ) {
     setState({ phase: "applying", runId, report });
 
     let res: Response;
@@ -98,7 +102,7 @@ export default function KbMergeControl() {
       res = await fetch("/api/member/knowledge-base/merge/apply", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mergeRunId: runId }),
+        body: JSON.stringify({ mergeRunId: runId, selectedReviewKeys }),
       });
     } catch {
       // The browser stopped waiting. A large cleanup re-aggregates every upload
@@ -115,11 +119,27 @@ export default function KbMergeControl() {
 
     const data = (await res.json().catch(() => null)) as {
       error?: string;
+      queued?: boolean;
     } | null;
 
     if (res.ok) {
+      // Durable-queue path: the apply was handed to the background worker and is
+      // running off-request. It's not done yet, so show "in progress", not the
+      // success toast (the run flips to APPLIED when the worker finishes; a later
+      // refresh surfaces it).
+      if (data?.queued) {
+        toast.info(
+          "Cleanup started — it's applying in the background. Refresh in a few minutes to see the result.",
+        );
+        setState({ phase: "idle" });
+        void loadLatest();
+        router.refresh();
+        return;
+      }
+
+      const totalCollapsed = report.collapsed + selectedReviewKeys.length;
       toast.success(
-        `Knowledge Base cleaned up — ${report.collapsed} name${report.collapsed === 1 ? "" : "s"} collapsed.`,
+        `Knowledge Base cleaned up — ${totalCollapsed} name${totalCollapsed === 1 ? "" : "s"} collapsed.`,
       );
       setLatest(null);
       setState({ phase: "idle" });
@@ -264,7 +284,7 @@ export default function KbMergeControl() {
           runId={reviewing.runId}
           report={reviewing.report}
           applying={reviewing.phase === "applying"}
-          onApply={() => applyRun(reviewing.runId, reviewing.report)}
+          onApply={(keys) => applyRun(reviewing.runId, reviewing.report, keys)}
           onDiscard={() => discardRun(reviewing.runId)}
           onClose={() => setState({ phase: "idle" })}
         />
@@ -283,13 +303,32 @@ function MergeReviewModal({
   runId: string;
   report: MergeReport;
   applying: boolean;
-  onApply: () => void;
+  onApply: (selectedReviewKeys: string[]) => void;
   onDiscard: () => void;
   onClose: () => void;
 }) {
   const floorDelta = report.floorClearing.after - report.floorClearing.before;
   const nothingToDo =
     report.collapsed === 0 && report.reviewQueueCount === 0;
+
+  // Member-opted-in review-queue merges. Each key is `${from}->${into}`, matching
+  // what the apply route expects.
+  const reviewKeys = useMemo(
+    () => report.reviewQueue.map((p) => `${p.from}->${p.into}`),
+    [report.reviewQueue],
+  );
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const allSelected =
+    reviewKeys.length > 0 && reviewKeys.every((k) => selected.has(k));
+  const toggle = (key: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(reviewKeys));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -363,34 +402,59 @@ function MergeReviewModal({
 
             {report.reviewQueue.length > 0 && (
               <div className="mt-5">
-                <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Lower-confidence near-duplicates (not merged)
-                </h4>
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    Lower-confidence near-duplicates
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    disabled={applying}
+                    className="text-xs font-medium text-[var(--abv-azure)] hover:underline disabled:opacity-50"
+                  >
+                    {allSelected ? "Clear all" : "Select all"}
+                  </button>
+                </div>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  These were left separate on purpose — they fell below the
-                  safe-merge threshold. Applying this cleanup will NOT merge
-                  them.
+                  These fell below the safe auto-merge threshold, so they&apos;re
+                  left separate by default. Tick any you&apos;d still like to
+                  merge — they&apos;ll be folded in when you apply
+                  {selected.size > 0 ? ` (${selected.size} selected)` : ""}.
                 </p>
-                <ul className="mt-2 space-y-1 text-xs">
-                  {report.reviewQueue.slice(0, 15).map((p) => (
-                    <li
-                      key={`${p.from}->${p.into}`}
-                      className="rounded border border-gray-200 px-2 py-1.5 dark:border-gray-800"
-                    >
-                      <span className="font-medium text-gray-800 dark:text-gray-200">
-                        {p.from}
-                      </span>{" "}
-                      → {p.into}{" "}
-                      <span className="text-gray-400">
-                        ({Math.round(p.confidence * 100)}%)
-                      </span>
-                      {p.reason && (
-                        <span className="block text-gray-500 dark:text-gray-400">
-                          {p.reason}
-                        </span>
-                      )}
-                    </li>
-                  ))}
+                <ul className="mt-2 max-h-64 space-y-1 overflow-auto pr-1 text-xs">
+                  {report.reviewQueue.map((p) => {
+                    const key = `${p.from}->${p.into}`;
+                    return (
+                      <li
+                        key={key}
+                        className="rounded border border-gray-200 dark:border-gray-800"
+                      >
+                        <label className="flex cursor-pointer items-start gap-2 px-2 py-1.5">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(key)}
+                            onChange={() => toggle(key)}
+                            disabled={applying}
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--abv-ink)] disabled:opacity-50"
+                          />
+                          <span className="flex-1">
+                            <span className="font-medium text-gray-800 dark:text-gray-200">
+                              {p.from}
+                            </span>{" "}
+                            → {p.into}{" "}
+                            <span className="text-gray-400">
+                              ({Math.round(p.confidence * 100)}%)
+                            </span>
+                            {p.reason && (
+                              <span className="block text-gray-500 dark:text-gray-400">
+                                {p.reason}
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -409,11 +473,15 @@ function MergeReviewModal({
           {!nothingToDo && (
             <button
               type="button"
-              onClick={onApply}
+              onClick={() => onApply([...selected])}
               disabled={applying}
               className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {applying ? "Cleaning up…" : "Yes, clean it up"}
+              {applying
+                ? "Cleaning up…"
+                : selected.size > 0
+                  ? `Merge ${selected.size} selected + clean up`
+                  : "Yes, clean it up"}
             </button>
           )}
         </div>
