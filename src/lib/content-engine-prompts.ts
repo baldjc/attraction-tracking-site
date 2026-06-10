@@ -150,6 +150,26 @@ export function getActiveThemeEnforceBuySide(contentThemes: unknown, theme: stri
   return false;
 }
 
+/**
+ * Resolve the active Avatar Stressor's name + coreStress (the avatar's stress
+ * question, in their own voice) from the member's saved contentThemes. Used by
+ * the Script Builder to weave a genuine acknowledgement of that stressor into
+ * the script BODY (psychology layer). Returns null when the named stressor
+ * isn't found or carries no coreStress language — callers fall back to asking
+ * (Jarvis) or to no acknowledgement rather than inventing one.
+ */
+export function getActiveThemeStress(
+  contentThemes: unknown,
+  theme: string,
+): { name: string; coreStress: string } | null {
+  const active = extractActiveTheme(contentThemes, theme);
+  if (!active) return null;
+  const coreStress =
+    typeof active.coreStress === "string" ? active.coreStress.trim() : "";
+  if (!coreStress) return null;
+  return { name: theme, coreStress };
+}
+
 export function buildBatchSystemPrompt(opts: {
   avatarProfile: unknown;
   contentThemes: unknown;

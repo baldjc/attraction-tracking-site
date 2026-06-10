@@ -76,6 +76,7 @@ import { canonicalVariantKeys } from "@/lib/market-config";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import { enrichPlanWithRelatedFacts } from "@/lib/script-plan-enrichment";
+import { getActiveThemeStress } from "@/lib/content-engine-prompts";
 import {
   METRIC_NAME_LABELS,
   type RotationSlotKey,
@@ -176,6 +177,7 @@ export async function POST(req: NextRequest) {
       linkedCampaignId: true,
       bingeVideoId: true,
       propertyTypeFocus: true,
+      theme: true,
     },
   });
   if (!plan) return jsonError(404, "plan_not_found");
@@ -431,9 +433,19 @@ export async function POST(req: NextRequest) {
   // an admin impersonating a member correctly scripts as that member.
   const memberRecord = await prisma.user.findUnique({
     where: { id: userId },
-    select: { fullName: true },
+    select: { fullName: true, contentThemes: true },
   });
   const memberFullName = memberRecord?.fullName?.trim() || null;
+  // ── Active Avatar Stressor (CP#2) ────────────────────────────────────
+  // The plan's `theme` column stores the Avatar Stressor this idea was
+  // generated under. Resolve its coreStress (the avatar's worry, in their own
+  // voice) from the member's saved avatar so the Script Builder can weave 1–2
+  // body-only acknowledgements of it. Null when no stressor is set or it carries
+  // no stress language — the builder then omits it (Jarvis is where an
+  // ambiguous/missing stressor gets actively resolved before a build).
+  const activeStressor = plan.theme
+    ? getActiveThemeStress(memberRecord?.contentThemes, plan.theme)
+    : null;
   // Other members' full names — input to the validator's cross-member leak
   // guard. Only multi-token names are kept (the validator also requires this)
   // to avoid flagging common first names that appear in ordinary dialogue.
@@ -760,6 +772,7 @@ export async function POST(req: NextRequest) {
           assignedBingeVideo,
           regenerationBrief: body.regenerationBrief ?? null,
           memberFullName,
+          activeStressor,
           forbiddenIdentities,
           bingeTargetConfigured,
           bingeTargetTitle,

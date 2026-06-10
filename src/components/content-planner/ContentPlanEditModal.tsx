@@ -1333,8 +1333,8 @@ Produce a research brief I can hand to a script writer. For **each talking point
               </ChipPopover>
 
               <ChipPopover
-                label="Theme"
-                value={form.theme ? formatTheme(form.theme) : "No theme"}
+                label="Avatar Stressor"
+                value={form.theme ? formatTheme(form.theme) : "No Stressor"}
               >
                 {(close) => (
                   <div className="p-1 min-w-[220px] max-h-72 overflow-y-auto">
@@ -1948,7 +1948,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                       >
                         <p className="text-[13px] text-[var(--abv-text)] truncate">{selectedBinge.title}</p>
                         <p className="text-[11px] text-[var(--abv-text)]/55 truncate">
-                          {formatTheme(selectedBinge.theme) || <span className="italic">No theme</span>}
+                          {formatTheme(selectedBinge.theme) || <span className="italic">No Stressor</span>}
                         </p>
                       </button>
                       <button
@@ -2002,7 +2002,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                                   >
                                     <p className="text-sm font-medium text-[var(--abv-text)] truncate">{opt.title}</p>
                                     <p className="text-[11px] text-[var(--abv-text)]/55 truncate">
-                                      {formatTheme(opt.theme) || <span className="italic">No theme</span>}
+                                      {formatTheme(opt.theme) || <span className="italic">No Stressor</span>}
                                     </p>
                                   </button>
                                 </li>
@@ -2025,7 +2025,7 @@ Produce a research brief I can hand to a script writer. For **each talking point
                           <div className="min-w-0 flex-1">
                             <p className="text-[13px] text-[var(--abv-text)] truncate">{b.title}</p>
                             <p className="text-[11px] text-[var(--abv-text)]/55 truncate">
-                              {formatTheme(b.theme) || <span className="italic">No theme</span>}
+                              {formatTheme(b.theme) || <span className="italic">No Stressor</span>}
                             </p>
                           </div>
                           <button

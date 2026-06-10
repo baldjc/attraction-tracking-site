@@ -189,7 +189,12 @@ function AvatarProfileCard({
   const [showMigrationBanner, setShowMigrationBanner] = useState(() =>
     Array.isArray(avatar.contentThemes) &&
     avatar.contentThemes.length > 0 &&
-    avatar.contentThemes.some((t) => typeof t !== "string" && !t.canonicalName)
+    avatar.contentThemes.some(
+      (t) =>
+        typeof t === "string" ||
+        !t.canonicalName ||
+        !CANONICAL_THEMES.some((ct) => ct.name === t.canonicalName),
+    )
   );
   const [showRemapModal, setShowRemapModal] = useState(false);
   const [remapSelections, setRemapSelections] = useState<Record<number, string>>(() => {
@@ -284,7 +289,7 @@ function AvatarProfileCard({
               ariaLabel="Avatar Description" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-2">Content Themes <span className="font-normal text-[var(--abv-text)]/35">({themes.length}/{MAX_THEMES})</span></label>
+            <label className="block text-xs font-semibold text-[var(--abv-text)]/50 uppercase tracking-wider mb-2">Avatar Stressors <span className="font-normal text-[var(--abv-text)]/35">({themes.length}/{MAX_THEMES})</span></label>
             <div className="space-y-4 mb-3">
               {themes.map((t, i) => (
                 <div key={i} className="border border-[var(--abv-ai-tools)]/20 rounded-lg overflow-hidden">
@@ -299,8 +304,8 @@ function AvatarProfileCard({
                     <label className="block text-xs text-[var(--abv-text)]/40 mb-1">Context &amp; Prompting</label>
                     <MarkdownTextarea value={t.context} onChange={(v: string) => { setThemes((prev) => prev.map((x, j) => j === i ? { ...x, context: v } : x)); }}
                       rows={3}
-                      placeholder="Describe the stresses, angles, tone, and content engine prompting for this theme…"
-                      ariaLabel={`Theme ${i + 1} Context`} />
+                      placeholder="Describe the stresses, angles, tone, and content engine prompting for this Avatar Stressor…"
+                      ariaLabel={`Avatar Stressor ${i + 1} Context`} />
                   </div>
                   <div className="px-3 pb-3">
                     <label className="flex items-start gap-2 cursor-pointer">
@@ -308,8 +313,8 @@ function AvatarProfileCard({
                         onChange={(e) => { const v = e.target.checked; setThemes((prev) => prev.map((x, j) => j === i ? { ...x, enforceBuySideTitles: v } : x)); }}
                         className="mt-0.5 rounded border-gray-300 text-[var(--abv-ai-tools)] focus:ring-[var(--abv-ai-tools)]/40" />
                       <div>
-                        <span className="text-xs font-semibold text-[var(--abv-text)]/60">Enforce buy-side titles for this theme</span>
-                        <p className="text-xs text-[var(--abv-text)]/40 leading-relaxed mt-0.5">Adds the buy-side hard constraint and title validation for this theme only. Use for sell-side or transition themes like The Equity.</p>
+                        <span className="text-xs font-semibold text-[var(--abv-text)]/60">Enforce buy-side titles for this Avatar Stressor</span>
+                        <p className="text-xs text-[var(--abv-text)]/40 leading-relaxed mt-0.5">Adds the buy-side hard constraint and title validation for this Avatar Stressor only. Use for sell-side or transition Stressors like The Equity.</p>
                       </div>
                     </label>
                   </div>
@@ -335,7 +340,7 @@ function AvatarProfileCard({
                   }}
                   className="w-full border border-dashed border-[var(--abv-ai-tools)]/40 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40 bg-white"
                 >
-                  <option value="" disabled>— choose canonical theme —</option>
+                  <option value="" disabled>— choose Avatar Stressor —</option>
                   {availableThemes.map((ct) => (
                     <option key={ct.id} value={ct.id}>
                       {ct.emoji} {ct.name} — {ct.coreStress}
@@ -344,7 +349,7 @@ function AvatarProfileCard({
                 </select>
               ) : themes.length >= MAX_THEMES ? (
                 <p className="text-xs text-[var(--abv-text)]/30 italic py-1">
-                  Maximum {MAX_THEMES} themes reached
+                  Maximum {MAX_THEMES} Avatar Stressors reached
                 </p>
               ) : null;
             })()}
@@ -355,11 +360,35 @@ function AvatarProfileCard({
   }
 
   async function saveRemap() {
-    setRemapSaving(true);
     const themes = Array.isArray(avatar.contentThemes) ? [...avatar.contentThemes] : [];
+    const canonicalSet = new Set(CANONICAL_THEMES.map((ct) => ct.name));
+    // Resolve every entry to a canonical-8 name BEFORE saving. A dropdown pick
+    // wins; otherwise fall back to an existing canonicalName only if it is
+    // genuinely one of the 8. Anything unresolved blocks the save so the banner
+    // can never clear on a non-canonical mapping.
+    const resolved = themes.map((t, i) => {
+      const sel = remapSelections[i];
+      if (sel && canonicalSet.has(sel)) return sel;
+      if (typeof t !== "string" && t.canonicalName && canonicalSet.has(t.canonicalName)) {
+        return t.canonicalName;
+      }
+      return "";
+    });
+    if (resolved.some((r) => !r)) {
+      setToast("Map every Stressor to one of the 8 canonical Avatar Stressors before saving.");
+      return;
+    }
+    setRemapSaving(true);
     const updated = themes.map((t, i) => {
-      if (typeof t === "string") return { name: t, canonicalName: remapSelections[i] ?? t };
-      const canonicalName = remapSelections[i] ?? t.canonicalName ?? t.name;
+      const canonicalName = resolved[i];
+      if (typeof t === "string") {
+        return {
+          name: canonicalName,
+          canonicalName,
+          enforceBuySideTitles: canonicalName === "The Equity",
+          state: "empty" as const,
+        };
+      }
       return {
         ...t,
         canonicalName,
@@ -388,7 +417,7 @@ function AvatarProfileCard({
       {showMigrationBanner && (
         <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <p className="text-xs text-amber-800 leading-relaxed">
-            <strong>Theme update needed:</strong> This avatar was built before we locked in our 8 canonical content themes. Map your existing themes to the canonical list so the Theme Builder and Content Engine work properly.
+            <strong>Avatar Stressor update needed:</strong> This avatar was built before we locked in our 8 canonical Avatar Stressors. Map your existing Stressors to the canonical list so the Stressor Builder and Content Engine work properly.
           </p>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => setShowRemapModal(true)} className="text-xs font-semibold text-amber-800 hover:underline whitespace-nowrap">Remap Now</button>
@@ -404,11 +433,11 @@ function AvatarProfileCard({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--abv-text)]/10">
-              <h2 className="text-sm font-bold text-[var(--abv-text)]">Map themes to canonical list</h2>
+              <h2 className="text-sm font-bold text-[var(--abv-text)]">Map Avatar Stressors to canonical list</h2>
               <button onClick={() => setShowRemapModal(false)} className="text-[var(--abv-text)]/40 hover:text-[var(--abv-text)]"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <div className="px-5 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
-              <p className="text-xs text-[var(--abv-text)]/60 leading-relaxed">Your existing theme prompts will be preserved — only the name/canonical mapping changes.</p>
+              <p className="text-xs text-[var(--abv-text)]/60 leading-relaxed">Your existing Avatar Stressor prompts will be preserved — only the name/canonical mapping changes.</p>
               {(Array.isArray(avatar.contentThemes) ? avatar.contentThemes : []).map((t, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-sm text-[var(--abv-text)]/60 shrink-0 w-40 truncate">{getThemeName(t)}</span>
@@ -418,7 +447,7 @@ function AvatarProfileCard({
                     onChange={(e) => setRemapSelections((prev) => ({ ...prev, [i]: e.target.value }))}
                     className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-[var(--abv-text)] focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40 bg-white"
                   >
-                    <option value="">— choose canonical theme —</option>
+                    <option value="">— choose Avatar Stressor —</option>
                     {CANONICAL_THEMES.map((ct) => (
                       <option key={ct.id} value={ct.name}>{ct.emoji} {ct.name} — {ct.coreStress}</option>
                     ))}
@@ -465,7 +494,7 @@ function AvatarProfileCard({
       <div className={`border rounded-xl overflow-hidden ${!hasThemes ? "border-amber-300" : "border-[var(--abv-text)]/10"}`}>
         <div className={`flex items-center justify-between px-4 py-2.5 border-b ${!hasThemes ? "bg-amber-50 border-amber-200" : "bg-[var(--abv-bg)] border-[var(--abv-text)]/8"}`}>
           <div>
-            <span className="text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wider">Content Themes</span>
+            <span className="text-xs font-semibold text-[var(--abv-text)]/60 uppercase tracking-wider">Avatar Stressors</span>
             <p className="text-xs text-[var(--abv-text)]/40 mt-0.5">Power the Content Engine with personalised video ideas</p>
           </div>
           {hasThemes && (
@@ -476,9 +505,9 @@ function AvatarProfileCard({
         </div>
         {!hasThemes ? (
           <div className="bg-amber-50 px-4 py-4">
-            <p className="text-sm font-semibold text-amber-700 mb-1">⚠ No content themes set</p>
+            <p className="text-sm font-semibold text-amber-700 mb-1">⚠ No Avatar Stressors set</p>
             <p className="text-xs text-amber-600 leading-relaxed">
-              Themes are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — we'll extract them automatically.
+              Avatar Stressors are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — we'll extract them automatically.
             </p>
           </div>
         ) : (
@@ -1172,8 +1201,8 @@ function AvatarArchitectInner() {
             <div className="flex gap-3">
               <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
               <div>
-                <p className="text-sm font-semibold text-[var(--abv-text)]">Build Your Themes</p>
-                <p className="text-xs text-[var(--abv-text)]/55 leading-relaxed mt-0.5">Use the Theme Builder to flesh out each of your content themes (up to 4) with the depth the Content Engine needs to generate personalised video ideas.</p>
+                <p className="text-sm font-semibold text-[var(--abv-text)]">Build Your Avatar Stressors</p>
+                <p className="text-xs text-[var(--abv-text)]/55 leading-relaxed mt-0.5">Use the Stressor Builder to flesh out each of your Avatar Stressors with the depth the Content Engine needs to generate personalised video ideas.</p>
               </div>
             </div>
           </div>
@@ -1248,8 +1277,8 @@ function AvatarArchitectInner() {
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-full bg-[var(--abv-ai-tools)] text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
               <div>
-                <h2 className="text-lg font-bold text-[var(--abv-text)]">Theme Builder</h2>
-                <p className="text-xs text-[var(--abv-text)]/55">Select a theme below to build out its depth with the coach — stresses, angles, tone, and Content Engine prompts.</p>
+                <h2 className="text-lg font-bold text-[var(--abv-text)]">Stressor Builder</h2>
+                <p className="text-xs text-[var(--abv-text)]/55">Select an Avatar Stressor below to build out its depth with the coach — stresses, angles, tone, and Content Engine prompts.</p>
               </div>
             </div>
 
@@ -1344,7 +1373,7 @@ function AvatarArchitectInner() {
                             : "bg-[var(--abv-ai-tools)] text-white hover:bg-[#4a8ab0]"
                         }`}
                       >
-                        {isActive ? "Close Builder" : slotState === "building" ? "Continue Building →" : "Build This Theme →"}
+                        {isActive ? "Close Builder" : slotState === "building" ? "Continue Building →" : "Build This Stressor →"}
                       </button>
                     </div>
                   </div>
@@ -1405,21 +1434,21 @@ function AvatarArchitectInner() {
                 {pendingThemeData && !themeSaved && (
                   <div className="mx-4 mb-2 flex items-center justify-between gap-3 bg-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/30 rounded-lg p-3">
                     <div>
-                      <p className="text-sm font-semibold text-[var(--abv-text)]">Theme ready: <strong>{pendingThemeData.name}</strong></p>
+                      <p className="text-sm font-semibold text-[var(--abv-text)]">Avatar Stressor ready: <strong>{pendingThemeData.name}</strong></p>
                       <p className="text-xs text-[var(--abv-text)]/55 mt-0.5">Save it to your avatar profile so the Content Engine can use it.</p>
                     </div>
                     <button
                       onClick={saveThemeData}
                       className="px-4 py-2 bg-[var(--abv-ai-tools)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--abv-ai-tools)]/90 transition-colors shrink-0"
                     >
-                      Save Theme
+                      Save Avatar Stressor
                     </button>
                   </div>
                 )}
                 {themeSaved && (
                   <div className="mx-4 mb-2 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
                     <CheckIcon className="w-4 h-4 text-green-600" />
-                    <p className="text-sm font-medium text-green-800">Theme saved to your avatar profile.</p>
+                    <p className="text-sm font-medium text-green-800">Avatar Stressor saved to your avatar profile.</p>
                   </div>
                 )}
 

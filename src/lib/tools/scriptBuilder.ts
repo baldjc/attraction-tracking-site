@@ -245,6 +245,7 @@ function buildInitialUserMessage(args: {
   assignedBingeVideo: AssignedBingeVideo | null;
   regenerationBrief: RegenerationBrief | null;
   memberFullName: string | null;
+  activeStressor: { name: string; coreStress: string } | null;
 }): string {
   const {
     plan,
@@ -258,6 +259,7 @@ function buildInitialUserMessage(args: {
     assignedCampaign,
     assignedBingeVideo,
     regenerationBrief,
+    activeStressor,
   } = args;
   const citedResearch = args.citedResearch ?? [];
   const hasResearch = citedResearch.length > 0;
@@ -410,6 +412,20 @@ function buildInitialUserMessage(args: {
       `**Sub-personas to name in the body:** ${plan.subPersonas.join(", ")}`,
     );
   lines.push("");
+
+  if (activeStressor) {
+    lines.push("## Active Avatar Stressor (acknowledge in the BODY)");
+    lines.push("");
+    lines.push(
+      `This idea is being scripted under the **${activeStressor.name}** Avatar Stressor — the specific worry this avatar carries, in their own voice:`,
+    );
+    lines.push(`> "${activeStressor.coreStress}"`);
+    lines.push("");
+    lines.push(
+      "Weave ONE or TWO genuine acknowledgements of THIS stressor into the body (the psychology layer), in the avatar's register. Empowered, never aggrieved — name the worry, then steady it. Distribute the beats; never stack them and never put them in the title, thumbnail, or packaging, and don't let them bloat the two-beat intro. If you can't do it honestly, leave it out rather than forcing it.",
+    );
+    lines.push("");
+  }
 
   lines.push("## Cited facts (USE THESE — do NOT invent stats)");
   lines.push("");
@@ -1370,6 +1386,13 @@ export interface BuildScriptParams {
   assignedBingeVideo: AssignedBingeVideo | null;
   regenerationBrief: RegenerationBrief | null;
   memberFullName: string | null;
+  /**
+   * CP#2 — the active Avatar Stressor (name + the avatar's coreStress worry) the
+   * idea was generated under. When present, the writer weaves 1–2 body-only
+   * acknowledgements of it (psychology layer). Optional so non-route callers
+   * (Jarvis, evals, tests) compile; absent/null → no acknowledgement.
+   */
+  activeStressor?: { name: string; coreStress: string } | null;
   forbiddenIdentities: string[];
   bingeTargetConfigured: boolean;
   bingeTargetTitle: string | null;
@@ -1453,6 +1476,7 @@ export async function buildScript(
     assignedBingeVideo,
     regenerationBrief,
     memberFullName,
+    activeStressor,
     forbiddenIdentities,
     bingeTargetConfigured,
     bingeTargetTitle,
@@ -1609,6 +1633,7 @@ export async function buildScript(
             citedResearch,
             marketConfig,
             memberFullName,
+            activeStressor: activeStressor ?? null,
             neighbourhoodContext,
             sourceOfTruthMetrics,
             propertyTypeByHood,

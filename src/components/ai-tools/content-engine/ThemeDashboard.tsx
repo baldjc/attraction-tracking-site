@@ -27,7 +27,7 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
   const aiThinking = useAiThinking({
     mode: "phase",
     fallbackPhases: [
-      "Generating ideas across all themes…",
+      "Generating ideas across all Avatar Stressors…",
       "This usually takes 30–60 seconds…",
     ],
   });
@@ -150,7 +150,7 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
               <button
                 onClick={() => setReordering(true)}
                 className="w-9 h-9 rounded-lg border border-[var(--abv-text)]/20 dark:border-white/20 flex items-center justify-center text-[var(--abv-text)]/50 dark:text-white/50 hover:text-[var(--abv-text)] dark:hover:text-white hover:border-[var(--abv-text)]/40 dark:hover:border-white/40 transition-colors"
-                title="Reorder themes"
+                title="Reorder Avatar Stressors"
               >
                 ↕
               </button>
@@ -170,9 +170,9 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
         <div className="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
           <span className="text-amber-500 text-lg flex-shrink-0">⚠️</span>
           <div>
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Your avatar themes are from an older format</p>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Your Avatar Stressors are from an older format</p>
             <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-              Re-run the Avatar Architect to get emoji, colour, and stress quotes on your theme cards. The Content Engine still works fully in the meantime.
+              Re-run the Avatar Architect to get emoji, colour, and stress quotes on your Avatar Stressor cards. The Content Engine still works fully in the meantime.
             </p>
           </div>
         </div>

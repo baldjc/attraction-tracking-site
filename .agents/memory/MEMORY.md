@@ -74,3 +74,4 @@
 - [Jarvis thread switching](jarvis-thread-switching.md) — bare /member/jarvis reloads latest thread; "new conversation" needs `?thread=new` sentinel + page-level `key=` remount (client useState won't re-sync on query nav).
 - [City dimension in on-demand cuts](city-dimension-ondemand-scoping.md) — city is on-demand-cut-only (no DB column); multi-city neighbourhood gate must count distinct cities by a NORMALIZED key or format variants of one city break the single-city byte-for-byte invariant.
 - [Voice-mode display coherence](voice-mode-display-coherence.md) — Jarvis voice chip + selector must use the Script Builder's same >=500 guide threshold, or members see a "custom" voice that never applies.
+- [Avatar Stressor vs Theme vocab](avatar-stressor-vs-theme-vocab.md) — member-facing: 8 stress questions = "Avatar Stressor", 5-slot rotation = "Theme"; but the `theme`/`content_theme` COLUMN stores a Stressor name (identifiers unchanged).

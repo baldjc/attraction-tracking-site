@@ -173,7 +173,7 @@ function DraftRow({
         </p>
         <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/40">
           Last edit {updatedLabel}
-          {draft.rotationSlot && ` · theme: ${draft.rotationSlot.replace(/_/g, " ")}`}
+          {draft.rotationSlot && ` · Theme: ${draft.rotationSlot.replace(/_/g, " ")}`}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">

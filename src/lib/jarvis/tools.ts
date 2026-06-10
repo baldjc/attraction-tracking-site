@@ -24,6 +24,7 @@ import { canonicalVariantKeys } from "@/lib/market-config";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
+import { getActiveThemeStress } from "@/lib/content-engine-prompts";
 import {
   METRIC_NAME_LABELS,
   ROTATION_SLOTS,
@@ -119,6 +120,17 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         clarityPremise: {
           type: "string",
           description: "Optional. The CLARITY beat's core takeaway.",
+        },
+        stressor: {
+          type: "string",
+          description:
+            "Optional but preferred. The name of the Avatar Stressor this " +
+            "video is written under — the specific worry the avatar carries " +
+            "(one of the member's chosen Avatar Stressors, e.g. \"The Transition\", " +
+            "\"The Equity\", \"The Decision\"). When set, the script weaves 1–2 " +
+            "body-only acknowledgements of that stressor (psychology layer, never " +
+            "the title). Settle this with the member BEFORE drafting; omit ONLY if " +
+            "genuinely none applies. NEVER invent a stressor the member doesn't have.",
         },
         campaignId: {
           type: "string",
@@ -1005,6 +1017,13 @@ export interface BuildScriptArgs {
   linkedFactIds: string[];
   clarityPremise?: string;
   /**
+   * CP#2 — the Avatar Stressor name this video is written under (settled with
+   * the member before drafting). Resolved to the avatar's coreStress here so the
+   * script weaves 1–2 body-only acknowledgements of it. Unknown/absent → no
+   * acknowledgement (never invented).
+   */
+  stressor?: string | null;
+  /**
    * Member-confirmed lead-magnet Campaign id (chosen BEFORE drafting). Resolved
    * + ownership-checked here; an unknown/foreign id is treated as "none" (the
    * draft falls back to generic pitch language — never fabricated).
@@ -1448,6 +1467,19 @@ export async function runBuildScript(args: {
     estimatedRuntime: null,
   };
 
+  // CP#2 — resolve the active Avatar Stressor's coreStress (the avatar's worry,
+  // in their own voice) so the body can carry 1–2 genuine acknowledgements.
+  const stressorName = ideaCard.stressor?.trim() || null;
+  const stressorUser = stressorName
+    ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: { contentThemes: true },
+      })
+    : null;
+  const activeStressor = stressorName
+    ? getActiveThemeStress(stressorUser?.contentThemes, stressorName)
+    : null;
+
   const result = await buildScript({
     planContext,
     citedFacts,
@@ -1461,6 +1493,7 @@ export async function runBuildScript(args: {
     assignedBingeVideo,
     regenerationBrief: null,
     memberFullName,
+    activeStressor,
     forbiddenIdentities,
     bingeTargetConfigured,
     bingeTargetTitle,

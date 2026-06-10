@@ -156,7 +156,7 @@ function InlineThemeSelect({ theme, themes, onChange }: {
       <select
         value={theme ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
-        aria-label="Theme"
+        aria-label="Avatar Stressor"
         className="appearance-none rounded-full pl-2.5 pr-6 py-1 font-semibold cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
         style={
           v
@@ -164,7 +164,7 @@ function InlineThemeSelect({ theme, themes, onChange }: {
             : { fontSize: "11.5px", color: "var(--abv-text-dim)", border: "1px solid var(--abv-border)" }
         }
       >
-        <option value="">— Theme —</option>
+        <option value="">— Stressor —</option>
         {themes.map((t) => (
           <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>
         ))}
@@ -599,7 +599,7 @@ export default function ContentPlanTable({
         </div>
         <div className="relative pr-2">
           <button onClick={() => handleSort("theme")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-            Theme <SortIcon col="theme" />
+            Avatar Stressor <SortIcon col="theme" />
           </button>
           <ResizeHandle col="theme" />
         </div>

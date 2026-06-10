@@ -294,7 +294,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
   if (hasNoThemes && plans.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-sm text-[var(--abv-text)]/40">
-        Set up your avatar in the Avatar Architect to see your content themes here. For now, you can assign themes manually in the Table view.
+        Set up your avatar in the Avatar Architect to see your Avatar Stressors here. For now, you can assign Stressors manually in the Table view.
       </div>
     );
   }
@@ -486,7 +486,7 @@ export default function BoardView({ apiBase, serviceTier, isAdmin, searchQuery =
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Theme</label>
+                <label className="block text-xs font-medium text-[var(--abv-text)]/60 mb-1">Avatar Stressor</label>
                 <select
                   value={addForm.theme ?? ""}
                   onChange={(e) => setAddForm((f) => ({ ...f, theme: e.target.value }))}

@@ -191,9 +191,9 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-2xl mb-3">{themeEmoji ?? "💬"}</p>
-            <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white">Explore the <span style={{ color: themeColour }}>{themeName}</span> theme</p>
+            <p className="text-sm font-medium text-[var(--abv-text)] dark:text-white">Explore the <span style={{ color: themeColour }}>{themeName}</span> Avatar Stressor</p>
             <p className="text-xs text-[var(--abv-text)]/50 dark:text-white/50 mt-1 max-w-xs mx-auto">
-              Ask for specific ideas, request variations, or explore different angles within this theme.
+              Ask for specific ideas, request variations, or explore different angles within this Avatar Stressor.
             </p>
           </div>
         )}
@@ -235,7 +235,7 @@ export default function ContentEngineChat({ theme, onBack }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder={`Ask about the "${themeName}" theme...`}
+            placeholder={`Ask about the "${themeName}" Avatar Stressor...`}
             disabled={loading}
             className="flex-1 bg-white dark:bg-[#0f1419] border border-[var(--abv-text)]/20 dark:border-white/20 rounded-lg px-4 py-2.5 text-sm text-[var(--abv-text)] dark:text-white placeholder-[var(--abv-text)]/30 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--abv-ai-tools)]/40"
           />
