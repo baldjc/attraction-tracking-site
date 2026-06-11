@@ -31,6 +31,7 @@ import prisma from "@/lib/prisma";
 import { dispatchValidation } from "@/lib/job-dispatch";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
 import { logAdminAction } from "@/lib/admin-log";
+import { isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -62,6 +63,21 @@ export async function POST(
   });
   if (!upload) {
     return NextResponse.json({ error: "Upload not found" }, { status: 404 });
+  }
+
+  // Market re-aggregation break-glass — resolved against the upload OWNER (not
+  // the admin), and with NO staff bypass, so an admin re-validate is frozen for
+  // a frozen member too. This deletes-before-replaces the owner's facts/
+  // aggregates/story leads, so it must respect the freeze.
+  if (await isMarketReaggKillSwitchActiveForUser(upload.userId)) {
+    return NextResponse.json(
+      {
+        error:
+          "Re-validation is paused for this member (market re-aggregation kill-switch active). Existing facts were left untouched.",
+        code: "REAGGREGATION_PAUSED",
+      },
+      { status: 423 },
+    );
   }
 
   if (upload.status === "validating") {

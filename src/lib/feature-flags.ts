@@ -237,3 +237,44 @@ export async function isPlannerKillSwitchActiveForUser(
     return false;
   }
 }
+
+/**
+ * Market re-aggregation kill-switch — break-glass control for the dual-run
+ * window. When active for a member, the DESTRUCTIVE re-aggregation paths
+ * (admin re-validate, member methodology re-validate, KB merge-apply, KB reset)
+ * return HTTP 423 so a re-run can't delete-before-replace the member's existing
+ * market_facts / aggregated_metrics / market_story_leads (the shared store the
+ * legacy AI tools cite). Brand-NEW monthly uploads are intentionally NOT gated
+ * by this — a fresh upload gets its own uploadId with no prior rows to clobber.
+ *
+ * Independent of `planner_kill_switch` (separate key) so re-aggregation can be
+ * frozen WITHOUT blocking plan creation, and vice-versa. Same object-form
+ * semantics: `{enabled:true}` = global freeze; `{enabled:false,allowedUserIds:
+ * [id]}` = per-member freeze; `{enabled:false,allowedUserIds:[]}` = resume.
+ *
+ * Same design constraints as the planner switch: NOT in DEFAULT_FLAGS (so the
+ * admin feature-visibility PUT can set it in object form), raw AppSetting read
+ * with NO staff bypass (only `userId`), and fail-OPEN + loud on read error.
+ */
+export const MARKET_REAGG_KILL_SWITCH_KEY = "market_reaggregation_kill_switch";
+
+export async function isMarketReaggKillSwitchActiveForUser(
+  userId: string | null | undefined,
+): Promise<boolean> {
+  try {
+    const setting = await prisma.appSetting.findUnique({
+      where: { key: FEATURE_SETTING_KEY },
+    });
+    if (!setting) return false;
+    const parsed = JSON.parse(setting.value) as Record<string, FlagValue>;
+    const v = parsed[MARKET_REAGG_KILL_SWITCH_KEY];
+    if (v === undefined) return false;
+    return resolveFlag(v, userId ?? undefined);
+  } catch (err) {
+    console.error(
+      "[market_reaggregation_kill_switch] flag read failed — defaulting to NOT frozen:",
+      (err as Error)?.message ?? err,
+    );
+    return false;
+  }
+}

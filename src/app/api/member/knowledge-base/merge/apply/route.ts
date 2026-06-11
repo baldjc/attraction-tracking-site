@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireKnowledgeBaseAccess } from "@/lib/knowledge-base-server";
 import { applyMergeRun } from "@/lib/kb-merge/merge-run";
 import { tryEnqueueKbMergeApply } from "@/lib/job-dispatch";
+import { isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 export const runtime = "nodejs";
 // Apply re-aggregates every upload — give it room.
@@ -19,6 +20,20 @@ export const maxDuration = 300;
 export async function POST(req: NextRequest) {
   const access = await requireKnowledgeBaseAccess();
   if (!access.ok) return access.response;
+
+  // Market re-aggregation break-glass — applying a merge re-aggregates EVERY
+  // upload onto canonical areas (relabels + rewrites facts/aggregates), so
+  // freeze it when the switch is active.
+  if (await isMarketReaggKillSwitchActiveForUser(access.user.id)) {
+    return Response.json(
+      {
+        error:
+          "Knowledge-Base cleanup is temporarily paused while we roll out an update. Your data is unchanged — please check back shortly.",
+        code: "REAGGREGATION_PAUSED",
+      },
+      { status: 423 },
+    );
+  }
 
   let body: { mergeRunId?: unknown; selectedReviewKeys?: unknown };
   try {

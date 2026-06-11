@@ -9,7 +9,7 @@
  */
 import { type NextRequest, NextResponse } from "next/server";
 import { resolveUserFromSession } from "@/lib/session-utils";
-import { getFeatureFlags } from "@/lib/feature-flags";
+import { getFeatureFlags, isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 import prisma from "@/lib/prisma";
 import { applyConfirmedMerge } from "@/lib/jarvis/merge";
 
@@ -22,6 +22,19 @@ export async function POST(req: NextRequest) {
 
   const flags = await getFeatureFlags({ userId, userRole: resolved.role });
   if (!flags.tool_jarvis) return NextResponse.json({ error: "not_enabled" }, { status: 404 });
+
+  // Market re-aggregation break-glass — this is the in-chat KB merge-apply path
+  // (same destructive re-aggregation as the KB apply route), so freeze it too.
+  if (await isMarketReaggKillSwitchActiveForUser(userId)) {
+    return NextResponse.json(
+      {
+        error:
+          "Knowledge-Base cleanup is temporarily paused while we roll out an update. Your data is unchanged — please check back shortly.",
+        code: "REAGGREGATION_PAUSED",
+      },
+      { status: 423 },
+    );
+  }
 
   let body: { threadId?: string; mergeRunId?: string };
   try {

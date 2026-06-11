@@ -8,12 +8,13 @@
 
 import prisma from "@/lib/prisma";
 import { applyMergeRun, type ApplyResult } from "@/lib/kb-merge/merge-run";
+import { isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 export type ApplyMergeResult =
   | { ok: true; result: ApplyResult; alreadyApplied: boolean }
   | {
       ok: false;
-      code: "not_found" | "forbidden" | "not_gated" | "bad_state";
+      code: "not_found" | "forbidden" | "not_gated" | "bad_state" | "paused";
       message: string;
     };
 
@@ -99,6 +100,21 @@ export async function applyConfirmedMerge(args: {
       ok: false,
       code: "bad_state",
       message: `This merge run is ${run.status} and can no longer be applied.`,
+    };
+  }
+
+  // Market re-aggregation break-glass — applying re-aggregates every upload onto
+  // canonical areas (the same destructive path as the KB apply route). Covers
+  // the in-chat apply_merge tool, which reaches this function via the orchestrator
+  // WITHOUT passing through the guarded /api/jarvis/merge/confirm route. Returns
+  // the graceful ok:false shape so the orchestrator surfaces a clean chat message
+  // (applyMergeRun itself also self-guards as a hard backstop).
+  if (await isMarketReaggKillSwitchActiveForUser(userId)) {
+    return {
+      ok: false,
+      code: "paused",
+      message:
+        "Knowledge-Base cleanup is temporarily paused while we roll out an update. The member's data is unchanged — try again shortly.",
     };
   }
 

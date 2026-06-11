@@ -191,6 +191,61 @@ export PGURL="$(node -e 'const u=new URL(process.env.DATABASE_URL);u.hostname=u.
 psql "$PGURL" -c "UPDATE app_settings SET value = jsonb_set(value::jsonb, '{planner_kill_switch}', '{\"enabled\":true,\"allowedUserIds\":[]}'::jsonb)::text WHERE key='feature_visibility';"
 ```
 
+### 3c. Market re-aggregation kill-switch — `market_reaggregation_kill_switch`
+
+Object-form flag, **independent of `planner_kill_switch`** (separate key, so you
+can freeze market re-aggregation WITHOUT blocking plan creation, and vice-versa).
+When active for a user, the **destructive re-aggregation-of-existing-data**
+paths are **refused (HTTP 423)** so a re-run can't delete-before-replace the
+member's existing `market_facts` / `aggregated_metrics` / `market_story_leads`
+(the shared store the legacy AI tools cite — this is the 6→0 Story Leads
+incident). Designed for the month-long dual-run window where the legacy tools run
+alongside the new planner against one shared market-data foundation.
+
+**Caveat (intentional):** brand-new monthly uploads are **NOT** gated — a new
+upload gets its own `uploadId` with no prior rows to clobber, so members can
+still upload fresh market data while the switch is on. Only re-aggregation of
+*existing* uploads is frozen.
+
+The 423 guard is wired into **every** destructive re-aggregation entry point
+(resolved with NO staff bypass, so an admin acting for a frozen member is frozen
+too):
+
+- `POST /api/admin/market-data/upload/[id]/revalidate` (admin re-validate) — by the upload **OWNER** id
+- `POST /api/member/methodology-revalidate` (member "re-validate my last 3 months") — by session member
+- `POST /api/member/knowledge-base/merge/apply` (KB merge apply — re-aggregates every upload onto canonical areas) — by session member
+- `POST /api/jarvis/merge/confirm` (in-chat "Yes, clean it up" — same destructive apply) — by session member
+- `POST /api/member/knowledge-base/reset` (full wipe of market data / KB stores) — by session member
+
+Left intentionally OPEN (not gated): `POST /api/member/market-data/upload`
+(brand-new uploads, per the caveat). Note: `POST /api/debug/validate` re-runs
+validation on an existing upload but is a debug-only endpoint and is left
+ungated — do not expose it to members during the dual-run.
+
+- **Per-member freeze:** set `{ "enabled": false, "allowedUserIds": ["<userId>"] }`
+- **Global freeze (all members):** set `{ "enabled": true }`
+- **Resume:** set `{ "enabled": false, "allowedUserIds": [] }`
+
+```bash
+# GLOBAL freeze
+curl -sS -X PUT "$NEXTAUTH_URL/api/admin/feature-visibility" \
+  -H 'content-type: application/json' -b "<admin-session-cookie>" \
+  -d '{"key":"market_reaggregation_kill_switch","value":{"enabled":true,"allowedUserIds":[]}}'
+
+# PER-MEMBER freeze
+curl -sS -X PUT "$NEXTAUTH_URL/api/admin/feature-visibility" \
+  -H 'content-type: application/json' -b "<admin-session-cookie>" \
+  -d '{"key":"market_reaggregation_kill_switch","value":{"enabled":false,"allowedUserIds":["<userId>"]}}'
+```
+
+Emergency fallback (app/admin UI down) — write the flag directly (non-destructive
+config update; merges the key into the existing JSON):
+
+```bash
+export PGURL="$(node -e 'const u=new URL(process.env.DATABASE_URL);u.hostname=u.hostname.replace(/-pooler/,"");u.searchParams.delete("pgbouncer");u.searchParams.delete("channel_binding");if(!u.searchParams.get("sslmode"))u.searchParams.set("sslmode","require");process.stdout.write(u.toString())')"
+psql "$PGURL" -c "UPDATE app_settings SET value = jsonb_set(value::jsonb, '{market_reaggregation_kill_switch}', '{\"enabled\":true,\"allowedUserIds\":[]}'::jsonb)::text WHERE key='feature_visibility';"
+```
+
 ### 3b. Migration queue kill-switch — `durable_job_queue`
 
 The background migration/queue path is independently gated by the object-form

@@ -33,6 +33,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { dispatchValidation } from "@/lib/job-dispatch";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
+import { isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -135,6 +136,21 @@ export async function POST() {
   const user = await resolveUserFromSession();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Market re-aggregation break-glass — this re-runs the validator on EXISTING
+  // uploads (delete-before-replace of facts/aggregates/story leads), so freeze
+  // it when the switch is active. Brand-new uploads use a different route and
+  // stay open.
+  if (await isMarketReaggKillSwitchActiveForUser(user.id)) {
+    return NextResponse.json(
+      {
+        error:
+          "Re-validation is temporarily paused while we roll out an update. Your existing market data is unchanged — please check back shortly.",
+        code: "REAGGREGATION_PAUSED",
+      },
+      { status: 423 },
+    );
   }
 
   const est = await computeRevalidationEstimate(user.id);

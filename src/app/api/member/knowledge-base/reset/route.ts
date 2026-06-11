@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireKnowledgeBaseAccess } from "@/lib/knowledge-base-server";
+import { isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 // Full member-scoped reset of neighbourhood data. The "one-action wipe" for a
 // member whose stores are full of junk (raw MLS codes, "Unknown") that would
@@ -53,6 +54,22 @@ export async function POST(req: NextRequest) {
 
   const doKb = scope === "kb" || scope === "both";
   const doMarket = scope === "market" || scope === "both";
+
+  // Market re-aggregation break-glass — only the market-data scopes delete the
+  // shared market_facts / aggregated_metrics / market_story_leads store, so
+  // freeze ONLY when this reset touches market data. A "kb"-only reset clears
+  // vocab/profiles/merge tables (not the shared store the legacy tools cite), so
+  // it stays open — keeps the freeze scoped to re-aggregation, no over-block.
+  if (doMarket && (await isMarketReaggKillSwitchActiveForUser(userId))) {
+    return Response.json(
+      {
+        error:
+          "Resetting your market data is temporarily paused while we roll out an update. Nothing was changed — please check back shortly.",
+        code: "REAGGREGATION_PAUSED",
+      },
+      { status: 423 },
+    );
+  }
 
   const removed = {
     vocab: 0,

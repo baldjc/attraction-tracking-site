@@ -407,6 +407,19 @@ export async function applyMergeRun(
   mergeRunId: string,
   opts: { selectedReviewKeys?: string[] } = {},
 ): Promise<ApplyResult> {
+  // Market re-aggregation break-glass — deepest backstop for EVERY apply path
+  // (member route, Jarvis route, Jarvis orchestrator tool, and the durable
+  // worker, which can run an already-enqueued apply after the flag flips on).
+  // Thrown BEFORE the CAS claim below, so a frozen run stays in DRY_RUN and is
+  // fully resumable once the freeze is lifted. The HTTP/chat callers short-
+  // circuit with a clean 423/message before reaching here; this throw only
+  // fires for paths that bypassed those guards.
+  if (await isMarketReaggKillSwitchActiveForUser(userId)) {
+    throw new Error(
+      "Market re-aggregation is paused (kill-switch active); merge apply refused.",
+    );
+  }
+
   const run = await prisma.mergeRun.findFirst({
     where: { id: mergeRunId, userId },
     select: { id: true, status: true, report: true },
