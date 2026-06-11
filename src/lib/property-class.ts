@@ -51,3 +51,22 @@ export function isSingleFamilyClass(raw: string | null | undefined): boolean {
   if (NON_SINGLE_FAMILY_MARKERS.some((m) => s.includes(m))) return false;
   return SINGLE_FAMILY_MARKERS.some((m) => s.includes(m));
 }
+
+/**
+ * True when a value reads as a property CLASS term (single-family OR any of the
+ * non-single-family classes — condo, townhouse, semi-detached, duplex …) rather
+ * than an architectural STYLE (2 Storey, Bungalow). Used by the cut router to
+ * keep a class-valued request off the mapped Style column: a member with a
+ * distinct raw "Property Type" column holds classes like "Single Family" there,
+ * so routing such a value to `style` would make compute_cut honestly refuse it.
+ * Genuine style values match no class marker and stay on the style dimension.
+ */
+export function isPropertyClassValue(raw: string | null | undefined): boolean {
+  if (raw == null) return false;
+  const s = raw.toString().trim().toLowerCase();
+  if (!s) return false;
+  return (
+    SINGLE_FAMILY_MARKERS.some((m) => s.includes(m)) ||
+    NON_SINGLE_FAMILY_MARKERS.some((m) => s.includes(m))
+  );
+}

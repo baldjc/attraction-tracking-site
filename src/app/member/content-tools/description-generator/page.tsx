@@ -99,6 +99,34 @@ function DescriptionGeneratorPageInner() {
       .catch(() => {});
   }, []);
 
+  // When arriving with a planId, prefill the video title + source transcript
+  // from the plan (and its latest script artifact). Functional setters keep any
+  // text the user already typed.
+  useEffect(() => {
+    if (!urlPlanId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [planRes, artifactsRes] = await Promise.all([
+          fetch(`/api/member/content-plans/${urlPlanId}`),
+          fetch(`/api/member/content-plans/${urlPlanId}/artifacts`),
+        ]);
+        if (cancelled) return;
+        const planData = planRes.ok ? await planRes.json() : null;
+        const artifactsData = artifactsRes.ok ? await artifactsRes.json() : null;
+
+        const latestScript = artifactsData?.artifacts?.script?.[0];
+        const planTitle = planData?.plan?.title;
+        const planScript = planData?.plan?.script;
+
+        if (planTitle) setTitle((prev) => prev || planTitle);
+        const scriptValue = latestScript?.content || planScript;
+        if (scriptValue) setTranscript((prev) => prev || scriptValue);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [urlPlanId]);
+
   // Sprint 3 Part D: when arriving with a planId, look up linkedCampaignId
   // on the plan and preselect a default tracking link for that campaign.
   useEffect(() => {

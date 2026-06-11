@@ -58,6 +58,7 @@ import {
 } from "@/lib/tools/computeCut";
 import { coerceExtractedClaims } from "@/lib/jarvis/research-ingest";
 import { formatMlsPeriod } from "@/lib/mls-verify-reminder";
+import { isPropertyClassValue } from "@/lib/property-class";
 
 // ── Tool schemas (Anthropic tool-use) ───────────────────────────────────────
 
@@ -792,6 +793,47 @@ const COMPUTE_CUT_NUMERIC_FIELDS: CutNumericField[] = [
   "yearBuilt",
 ];
 
+/**
+ * Build the categorical CutFilters from the model's tool args, routing a style
+ * FILTER whose value is actually a property CLASS to the propertyClass column.
+ *
+ * Members with a distinct raw "Property Type" column (e.g. Chris: Single Family
+ * / Condo) hold those CLASS values there — NOT in the mapped Style column, which
+ * for them carries architectural form. When the model passes such a class value
+ * as `filterStyle`, compute_cut honestly refuses it (the value isn't in the
+ * style column) and the build trace prints a spurious "No rows match 'Single
+ * Family' in this member's style column". Re-routing the class value to
+ * propertyClass here fixes the routing at the source so the refusal never fires
+ * on a normal build. Genuine style values (2 Storey, Bungalow …) match no class
+ * marker and stay on the style dimension untouched.
+ */
+function buildCutFilters(args: {
+  filterPropertyClass?: string;
+  filterNeighbourhood?: string;
+  filterCity?: string;
+  filterStyle?: string;
+  filterPriceBracket?: string;
+}): CutFilter[] {
+  const filters: CutFilter[] = [];
+  const pushFilter = (field: CutFilter["field"], value?: string) => {
+    const v = value?.trim();
+    if (v) filters.push({ field, value: v });
+  };
+  pushFilter("propertyClass", args.filterPropertyClass);
+  pushFilter("neighbourhood", args.filterNeighbourhood);
+  pushFilter("city", args.filterCity);
+  // Reroute a class-valued style filter to propertyClass (see fn doc), but only
+  // when the model didn't already supply an explicit propertyClass filter.
+  const styleValue = args.filterStyle?.trim();
+  if (styleValue && !args.filterPropertyClass?.trim() && isPropertyClassValue(styleValue)) {
+    pushFilter("propertyClass", styleValue);
+  } else {
+    pushFilter("style", args.filterStyle);
+  }
+  pushFilter("priceBracket", args.filterPriceBracket);
+  return filters;
+}
+
 /** Parse + sanitize the raw numericFilters arg from the model into typed filters. */
 function parseNumericFilters(raw: unknown): CutNumericFilter[] {
   if (!Array.isArray(raw)) return [];
@@ -830,16 +872,7 @@ export async function executeComputeCut(
     };
   }
 
-  const filters: CutFilter[] = [];
-  const pushFilter = (field: CutFilter["field"], value?: string) => {
-    const v = value?.trim();
-    if (v) filters.push({ field, value: v });
-  };
-  pushFilter("propertyClass", args.filterPropertyClass);
-  pushFilter("neighbourhood", args.filterNeighbourhood);
-  pushFilter("city", args.filterCity);
-  pushFilter("style", args.filterStyle);
-  pushFilter("priceBracket", args.filterPriceBracket);
+  const filters = buildCutFilters(args);
 
   const numericFilters = parseNumericFilters(args.numericFilters);
 
@@ -906,16 +939,7 @@ export async function executeComputeYoYCut(
     };
   }
 
-  const filters: CutFilter[] = [];
-  const pushFilter = (field: CutFilter["field"], value?: string) => {
-    const v = value?.trim();
-    if (v) filters.push({ field, value: v });
-  };
-  pushFilter("propertyClass", args.filterPropertyClass);
-  pushFilter("neighbourhood", args.filterNeighbourhood);
-  pushFilter("city", args.filterCity);
-  pushFilter("style", args.filterStyle);
-  pushFilter("priceBracket", args.filterPriceBracket);
+  const filters = buildCutFilters(args);
 
   const numericFilters = parseNumericFilters(args.numericFilters);
 

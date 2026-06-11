@@ -46,6 +46,28 @@ export function rotationSlotToTheme(slot: RotationSlotKey): string {
 }
 
 /**
+ * Member-facing labels for the rotation slot as shown in the Content Planner
+ * "Theme" column (Table + mobile feed). These are intentionally more
+ * descriptive than `ROTATION_SLOT_LABELS` (which mirrors the wizard's terse
+ * picker copy) — e.g. "Neighbourhood Comparison" / "Do Not / Warning". The
+ * planner "Theme" column shows the rotation slot, NOT the Avatar Stressor
+ * (`ContentPlan.theme`), which is a separate attribute edited in the modal.
+ */
+export const PLANNER_THEME_LABELS: Record<RotationSlotKey, string> = {
+  market_update: "Market Update",
+  neighbourhood_fact: "Neighbourhood Comparison",
+  contrarian_take: "Contrarian Take",
+  do_not: "Do Not / Warning",
+  should_you: "Should / Should Not",
+};
+
+/** Resolve a rotation-slot value to its planner "Theme" label, or null. */
+export function plannerThemeLabel(slot: string | null | undefined): string | null {
+  if (!slot) return null;
+  return PLANNER_THEME_LABELS[slot as RotationSlotKey] ?? null;
+}
+
+/**
  * Human-readable label for a MarketFact.metricName. Wave 2.5 — the
  * validator persists the raw token the LLM emits (e.g. "SP_LP_ratio",
  * "MOI", "median_sale_price") which is fine for downstream prompt

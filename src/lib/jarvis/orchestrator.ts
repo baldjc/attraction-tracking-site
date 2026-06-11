@@ -72,6 +72,10 @@ export async function runJarvisTurn(args: {
   /** External research the member attached to this thread (Research Reader).
    *  Surfaced to Jarvis as EXTERNAL context — never the member's own facts. */
   researchSources?: JarvisResearchSource[];
+  /** REFINE mode: the existing planner video this thread is refining. When set,
+   *  every proposal built this turn is stamped with it so an approved save
+   *  UPDATES that same ContentPlan instead of creating a new one. */
+  targetContentPlanId?: string;
   emit: JarvisEmit;
   signal?: AbortSignal;
   /** Mutated in place as tokens accrue, so the caller can bill usage even if
@@ -88,6 +92,7 @@ export async function runJarvisTurn(args: {
     campaigns,
     recentVideos,
     researchSources,
+    targetContentPlanId,
     emit,
     signal,
     usage,
@@ -190,6 +195,7 @@ export async function runJarvisTurn(args: {
       const resultBlock = await runTool({
         userId,
         threadId,
+        targetContentPlanId,
         tu,
         emit,
         signal,
@@ -255,6 +261,7 @@ export async function runJarvisTurn(args: {
 async function runTool(ctx: {
   userId: string;
   threadId: string;
+  targetContentPlanId?: string;
   tu: Anthropic.ToolUseBlock;
   emit: JarvisEmit;
   signal?: AbortSignal;
@@ -263,7 +270,7 @@ async function runTool(ctx: {
   allowText: (t: string) => void;
   toolCalls: ToolCallRecord[];
 }): Promise<Anthropic.ToolResultBlockParam> {
-  const { userId, threadId, tu, emit, signal, onFact, onProposal, allowText, toolCalls } = ctx;
+  const { userId, threadId, targetContentPlanId, tu, emit, signal, onFact, onProposal, allowText, toolCalls } = ctx;
   const input = (tu.input ?? {}) as Record<string, unknown>;
 
   const record = (status: "ok" | "error", summary: string) => {
@@ -484,6 +491,8 @@ async function runTool(ctx: {
         bingeVideoId: built.bingeVideoId,
         dataPeriod: built.dataPeriod,
         researchSourceIds: built.researchSourceIds,
+        // REFINE mode: route an approved save back to the SAME planner video.
+        ...(targetContentPlanId ? { targetContentPlanId } : {}),
       };
       onProposal(proposalState);
       record("ok", `Drafted "${built.title}".`);

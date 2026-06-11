@@ -13,6 +13,7 @@ import {
   PlayCircleIcon,
 } from "@heroicons/react/24/outline";
 import { STATUS_STYLES, filterPlans } from "@/lib/content-plan-utils";
+import { plannerThemeLabel } from "@/lib/content-engine-validation";
 import type { ContentPlan } from "./ContentPlanEditModal";
 
 interface Props {
@@ -182,10 +183,10 @@ export default function MobileCardFeed({
 
                 <div className="flex items-center justify-between text-xs text-[var(--abv-text)]/60 gap-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    {p.theme && (
+                    {plannerThemeLabel(p.rotationSlot) && (
                       <span className="inline-flex items-center gap-1 truncate">
                         <PlayCircleIcon className="w-4 h-4 text-[var(--abv-text)]/40 shrink-0" />
-                        <span className="truncate">{p.theme}</span>
+                        <span className="truncate">{plannerThemeLabel(p.rotationSlot)}</span>
                       </span>
                     )}
                     {nextDateStr && (
@@ -249,7 +250,7 @@ export default function MobileCardFeed({
                       >
                         {p.status}
                       </span>
-                      {p.theme && <span className="text-[11px] text-[var(--abv-text)]/50 truncate">{p.theme}</span>}
+                      {plannerThemeLabel(p.rotationSlot) && <span className="text-[11px] text-[var(--abv-text)]/50 truncate">{plannerThemeLabel(p.rotationSlot)}</span>}
                     </div>
                     <p className="text-sm font-medium text-[var(--abv-text)] truncate">{p.title || "Untitled"}</p>
                   </button>

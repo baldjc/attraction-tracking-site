@@ -341,6 +341,34 @@ function RepurposeContentPageInner() {
     } catch { /* ignore */ }
   }, []);
 
+  // When arriving with a planId, prefill the video title + source transcript
+  // from the plan (and its latest script artifact). Functional setters keep any
+  // text the user already typed (e.g. from the sessionStorage prefill above).
+  useEffect(() => {
+    if (!planId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [planRes, artifactsRes] = await Promise.all([
+          fetch(`/api/member/content-plans/${planId}`),
+          fetch(`/api/member/content-plans/${planId}/artifacts`),
+        ]);
+        if (cancelled) return;
+        const planData = planRes.ok ? await planRes.json() : null;
+        const artifactsData = artifactsRes.ok ? await artifactsRes.json() : null;
+
+        const latestScript = artifactsData?.artifacts?.script?.[0];
+        const planTitle = planData?.plan?.title;
+        const planScript = planData?.plan?.script;
+
+        if (planTitle) setTitle((prev) => prev || planTitle);
+        const scriptValue = latestScript?.content || planScript;
+        if (scriptValue) setTranscript((prev) => prev || scriptValue);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [planId]);
+
   const [loading, setLoading] = useState(false);
   const aiThinking = useAiThinking({
     mode: "phase",

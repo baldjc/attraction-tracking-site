@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { threadId?: string; message?: string };
+  let body: { threadId?: string; message?: string; refinePlanId?: string };
   try {
     body = await req.json();
   } catch {
@@ -113,11 +113,16 @@ export async function POST(req: NextRequest) {
   const rows = await prisma.contentManagerMessage.findMany({
     where: { threadId },
     orderBy: { createdAt: "asc" },
-    select: { role: true, content: true },
+    select: { role: true, content: true, proposalState: true },
   });
   const history: JarvisHistoryTurn[] = [];
   const priorLedger: LedgerFact[] = [];
   const seenFactIds = new Set<string>();
+  // Latest refine-target carried by a prior proposal in THIS thread. The client
+  // only sends `refinePlanId` on the seeded turn, so on thread reopen/reload we
+  // recover the target from the persisted proposal chain — otherwise an approved
+  // refine could fall back to creating a duplicate plan (see save.ts).
+  let inheritedTargetPlanId: string | undefined;
   for (const r of rows) {
     const c = r.content as unknown as MessageContent;
     if (r.role === "tool") {
@@ -130,6 +135,12 @@ export async function POST(req: NextRequest) {
         }
       }
       continue;
+    }
+    if (r.role === "assistant" && r.proposalState) {
+      const ps = r.proposalState as { targetContentPlanId?: string } | null;
+      if (ps && typeof ps.targetContentPlanId === "string" && ps.targetContentPlanId) {
+        inheritedTargetPlanId = ps.targetContentPlanId;
+      }
     }
     if ((r.role === "user" || r.role === "assistant") && c && c.kind === "text") {
       history.push({ role: r.role, text: c.text });
@@ -172,6 +183,28 @@ export async function POST(req: NextRequest) {
         },
       }),
     ]);
+  // ── REFINE mode: validate the hand-off target plan (ownership + live) ─────
+  // The planner "↻ Regenerate" action sends `refinePlanId`; we only honour it
+  // when the plan exists, belongs to this member, and isn't soft-deleted. The
+  // orchestrator stamps it onto any proposal so an approved save UPDATES that
+  // same video instead of creating a duplicate (see save.ts).
+  // Prefer the explicit hand-off id from the seeded turn; on later turns of the
+  // same refine thread the client no longer sends it, so fall back to the target
+  // recovered from the persisted proposal chain above. Either way we re-validate
+  // ownership + liveness so a since-deleted/unowned plan falls back cleanly.
+  let targetContentPlanId: string | undefined;
+  const candidateRefinePlanId =
+    (typeof body.refinePlanId === "string" && body.refinePlanId
+      ? body.refinePlanId
+      : undefined) ?? inheritedTargetPlanId;
+  if (candidateRefinePlanId) {
+    const targetPlan = await prisma.contentPlan.findFirst({
+      where: { id: candidateRefinePlanId, userId, deletedAt: null },
+      select: { id: true },
+    });
+    targetContentPlanId = targetPlan?.id;
+  }
+
   const memberFullName = memberRecord?.fullName?.trim() || null;
   const campaigns = campaignRows.map((c) => ({
     id: c.id,
@@ -254,6 +287,7 @@ export async function POST(req: NextRequest) {
           campaigns,
           recentVideos,
           researchSources,
+          targetContentPlanId,
           emit,
           signal: internalAbort.signal,
           usage,

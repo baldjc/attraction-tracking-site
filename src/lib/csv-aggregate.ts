@@ -42,6 +42,15 @@ import {
   type OffMarketSubMapping,
 } from "@/lib/market-status-buckets";
 
+/**
+ * Synthetic propertyType for the combined single-family rollup emitted when a
+ * member segments propertyType by their STYLE column under the single-family
+ * restriction. Pools every SF row (all styles, condos excluded) so downstream
+ * consumers (fact-validator chunks, dashboard, scripts) have a real "Detached"
+ * aggregate alongside the granular per-style buckets.
+ */
+export const DETACHED_ROLLUP_TYPE = "Detached";
+
 export interface AggregatedGroup {
   /** "All Neighbourhoods" for city-wide rollups. */
   neighbourhood: string;
@@ -845,6 +854,35 @@ function buildBuckets(
       // rows when the restriction is active; overall buckets keep every class.
       if (pt !== null && styleSfRestriction && !rowIsSf) continue;
       tallyRow(ensure(groupKey(n, pt, tier)), row, isDuplexMerge);
+    }
+
+    // Combined single-family "Detached" rollup. When a member segments
+    // propertyType by their STYLE column under the single-family restriction
+    // (e.g. Chris: "2 Storey", "Bungalow", "Bi-Level"), the per-style buckets
+    // above keep the granular detail, but nothing pools them into a single
+    // detached view. Downstream the fact-validator's buildChunks() routes groups
+    // into detached/attached/apartment by REGEX on propertyType — raw style
+    // values match none of them, so every group falls through into the
+    // null-typed "rollups" chunk: the detached chunk comes back empty, no
+    // per-neighbourhood "Detached" facts exist, story-lead generation starves
+    // (leads→0), and "detached homes" prose can't bind an MOI. Emit an explicit
+    // Detached-typed rollup that pools every SF row (excluding condos/apartments)
+    // at the neighbourhood + citywide levels so ranking, leads, and prose have a
+    // real combined detached aggregate. Guarded so a member whose style already
+    // normalizes to "Detached" isn't double-counted.
+    if (
+      styleSfRestriction &&
+      isSingleFamilyClass(row.propertyClass) &&
+      row.propertyType !== DETACHED_ROLLUP_TYPE
+    ) {
+      const detachedKeys: Array<[string, string, string | null]> = [
+        [row.neighbourhood, DETACHED_ROLLUP_TYPE, row.priceTier],
+        [row.neighbourhood, DETACHED_ROLLUP_TYPE, null],
+        ["All Neighbourhoods", DETACHED_ROLLUP_TYPE, null],
+      ];
+      for (const [n, pt, tier] of detachedKeys) {
+        tallyRow(ensure(groupKey(n, pt, tier)), row, isDuplexMerge);
+      }
     }
   }
 

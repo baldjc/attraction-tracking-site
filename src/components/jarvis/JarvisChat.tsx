@@ -283,6 +283,14 @@ export default function JarvisChat({
   );
   const [voiceBusy, setVoiceBusy] = useState(false);
 
+  // REFINE mode — the planner video this thread is refining (seeded by the
+  // planner "↻ Regenerate" hand-off). Sent on every turn so the build's proposal
+  // routes an approved save BACK to this same plan. The ref mirrors state so the
+  // `send` closure always reads the current target without re-creating.
+  const [refinePlanId, setRefinePlanId] = useState<string | null>(null);
+  const refinePlanIdRef = useRef<string | null>(null);
+  refinePlanIdRef.current = refinePlanId;
+
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -431,7 +439,11 @@ export default function JarvisChat({
         const resp = await fetch("/api/jarvis", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ threadId, message: trimmed }),
+          body: JSON.stringify({
+            threadId,
+            message: trimmed,
+            ...(refinePlanIdRef.current ? { refinePlanId: refinePlanIdRef.current } : {}),
+          }),
           signal: ctrl.signal,
         });
 
@@ -570,21 +582,65 @@ export default function JarvisChat({
     [busy, threadId, toast],
   );
 
+  // Planner "↻ Regenerate" → refine hand-off. Fetch the existing plan (+ its
+  // script artifact) so Jarvis opens with the real script + title in context,
+  // remember the refine target for this thread (so an approved save routes back
+  // to the SAME plan), then auto-send an OPENER that makes Jarvis ASK what to
+  // change — it must not blindly rebuild. Falls back to a context-less opener if
+  // the plan fetch fails (the target is still set, so the save still routes back).
+  const startRefineFromPlan = useCallback(
+    async (planId: string, framing: string) => {
+      setRefinePlanId(planId);
+      refinePlanIdRef.current = planId;
+      let title = "";
+      let script = "";
+      try {
+        const [planRes, artRes] = await Promise.all([
+          fetch(`/api/member/content-plans/${planId}`),
+          fetch(`/api/member/content-plans/${planId}/artifacts`),
+        ]);
+        const planData = planRes.ok ? await planRes.json() : null;
+        const artData = artRes.ok ? await artRes.json() : null;
+        title = planData?.plan?.title ?? "";
+        script =
+          artData?.artifacts?.script?.[0]?.content || planData?.plan?.script || "";
+      } catch {
+        /* fall back to a context-less opener — the target plan is still set */
+      }
+      const opener = [
+        framing.trim() ||
+          "I'd like to refine an existing script for one of my planner videos.",
+        title ? `\n\nVideo title: ${title}` : "",
+        script ? `\n\nHere's the current script:\n\n---\n${script}\n---` : "",
+        "\n\nDon't rewrite it yet — start by asking me what I'd like to change. " +
+          "Keep everything that's working and only adjust what I ask for, staying " +
+          "grounded in my real numbers and lead magnet.",
+      ].join("");
+      void send(opener);
+    },
+    [send],
+  );
+
   // Dashboard "Build a script" hand-off. The dashboard stashes a one-shot,
   // member-scoped prompt and routes here with ?thread=new. On mount we READ +
   // REMOVE it (one-shot, ref-guarded against React double-invoke), but only
   // auto-send when it belongs to THIS member and the thread is genuinely empty.
   // Consuming unconditionally means a stale/foreign seed is cleared either way
   // and can never linger into a later "+ New conversation" or another member.
+  // A seed carrying a `refinePlanId` enters refine mode instead (above).
   const seededRef = useRef(false);
   useEffect(() => {
     if (seededRef.current) return;
     seededRef.current = true;
-    const prompt = consumeJarvisSeed(memberId);
-    if (!prompt) return;
+    const seed = consumeJarvisSeed(memberId);
+    if (!seed) return;
     if (initialMessages.length > 0) return; // never inject into an existing convo
-    void send(prompt);
-  }, [memberId, initialMessages.length, send]);
+    if (seed.refinePlanId) {
+      void startRefineFromPlan(seed.refinePlanId, seed.prompt);
+    } else {
+      void send(seed.prompt);
+    }
+  }, [memberId, initialMessages.length, send, startRefineFromPlan]);
 
   // Session-gated resume. On a BARE page load (resumeEligible — never the
   // explicit `?thread=new` fresh start), reopen the thread this browser session
@@ -686,6 +742,10 @@ export default function JarvisChat({
     } catch {
       /* ignore */
     }
+    // Leave refine mode — an explicit fresh start is a brand-new build, never a
+    // continuation of the planner video we were refining.
+    setRefinePlanId(null);
+    refinePlanIdRef.current = null;
     setThreadId(null);
     setMessages([]);
     setResearchChips([]);

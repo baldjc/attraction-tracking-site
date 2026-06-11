@@ -48,6 +48,62 @@ async function routeApprovedDraftToPlanner(args: {
 }): Promise<string | undefined> {
   const { userId, savedScriptId, proposalMessageId, proposal } = args;
   try {
+    // ── REFINE mode: update the SAME planner video in place ─────────────────
+    // When this proposal was built to refine an existing video, save back into
+    // that ContentPlan instead of creating a new one — but only when it still
+    // exists, is owned by this member, and isn't soft-deleted. A missing /
+    // unowned target falls through to the normal create-or-reuse path below so
+    // an approved draft is never lost.
+    if (proposal.targetContentPlanId) {
+      const target = await prisma.contentPlan.findFirst({
+        where: { id: proposal.targetContentPlanId, userId, deletedAt: null },
+        select: { id: true, title: true, rotationSlot: true },
+      });
+      if (target) {
+        await prisma.contentPlan.update({
+          where: { id: target.id },
+          data: {
+            script: proposal.script,
+            linkedScriptId: savedScriptId,
+            linkedFactIds: proposal.linkedFactIds ?? [],
+            linkedResearchSourceIds: proposal.researchSourceIds ?? [],
+            // The member-confirmed references the refined draft was built
+            // against. onDelete:SetNull on both relations self-heals stale ids.
+            linkedCampaignId: proposal.campaignId ?? null,
+            bingeVideoId: proposal.bingeVideoId ?? null,
+            // Update title / rotation theme ONLY when the refined draft actually
+            // changed them, so a pure script tweak never reshuffles the board.
+            ...(proposal.title && proposal.title !== target.title
+              ? { title: proposal.title }
+              : {}),
+            ...(proposal.rotationSlot && proposal.rotationSlot !== target.rotationSlot
+              ? {
+                  rotationSlot: proposal.rotationSlot,
+                  theme: rotationSlotToTheme(proposal.rotationSlot),
+                }
+              : {}),
+          },
+        });
+        // Stamp the plan id onto the proposal so re-saves stay idempotent and
+        // the chat can deep-link to the (same) planner item.
+        if (proposal.contentPlanId !== target.id) {
+          await prisma.contentManagerMessage.update({
+            where: { id: proposalMessageId },
+            data: {
+              proposalState: {
+                ...proposal,
+                status: "created",
+                savedScriptId,
+                contentPlanId: target.id,
+              } as unknown as Prisma.InputJsonValue,
+            },
+          });
+        }
+        return target.id;
+      }
+      // Target gone / not owned → fall through to create-or-reuse.
+    }
+
     const existing = await prisma.contentPlan.findFirst({
       where: { userId, linkedScriptId: savedScriptId },
       select: { id: true },

@@ -11,12 +11,14 @@ import {
   getPlanThumbnailUrl,
 } from "@/lib/content-plan-utils";
 import { getStatusPillStyle, getThemeVisual } from "@/lib/content-plan-style";
+import { PLANNER_THEME_LABELS, plannerThemeLabel } from "@/lib/content-engine-validation";
 
 interface ContentPlan {
   id: string;
   title: string;
   status: string;
   theme: string | null;
+  rotationSlot: string | null;
   shootDate: string | null;
   shootLocation: string | null;
   publishDate: string | null;
@@ -69,6 +71,12 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+// Defect 4 — the planner Table "Theme" column shows the rotation slot
+// (ContentPlan.rotationSlot), NOT the Avatar Stressor (ContentPlan.theme,
+// which is a separate attribute). Labels are centralized in
+// content-engine-validation so the Table + mobile feed stay in lockstep.
+const PLANNER_THEME_SLOTS = Object.keys(PLANNER_THEME_LABELS);
 
 function ThemePill({ theme }: { theme: string | null }) {
   if (!theme) {
@@ -144,19 +152,21 @@ function InlineStatusSelect({ status, options, onChange }: {
   );
 }
 
-function InlineThemeSelect({ theme, themes, onChange }: {
-  theme: string | null;
-  themes: Array<{ name: string; emoji?: string | null; colour?: string | null }>;
+function InlineRotationSlotSelect({ slot, onChange }: {
+  slot: string | null;
   onChange: (v: string | null) => void;
 }) {
-  const v = theme ? getThemeVisual(theme) : null;
-  const known = themes.map((t) => t.name);
+  // Only treat the value as a Theme if it's one of the five known rotation
+  // slots — legacy `theme` (stressor) strings must NEVER render here.
+  const known = slot != null && PLANNER_THEME_LABELS[slot as keyof typeof PLANNER_THEME_LABELS] ? slot : "";
+  const label = plannerThemeLabel(known);
+  const v = label ? getThemeVisual(label) : null;
   return (
     <span className="relative inline-flex max-w-full">
       <select
-        value={theme ?? ""}
+        value={known}
         onChange={(e) => onChange(e.target.value || null)}
-        aria-label="Avatar Stressor"
+        aria-label="Theme"
         className="appearance-none rounded-full pl-2.5 pr-6 py-1 font-semibold cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
         style={
           v
@@ -164,11 +174,10 @@ function InlineThemeSelect({ theme, themes, onChange }: {
             : { fontSize: "11.5px", color: "var(--abv-text-dim)", border: "1px solid var(--abv-border)" }
         }
       >
-        <option value="">— Stressor —</option>
-        {themes.map((t) => (
-          <option key={t.name} value={t.name}>{t.emoji ? `${t.emoji} ${t.name}` : t.name}</option>
+        <option value="">— Theme —</option>
+        {PLANNER_THEME_SLOTS.map((s) => (
+          <option key={s} value={s}>{PLANNER_THEME_LABELS[s]}</option>
         ))}
-        {theme && !known.includes(theme) && <option value={theme}>{theme}</option>}
       </select>
       <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: v ? v.fg : "var(--abv-text-dim)" }} />
     </span>
@@ -244,7 +253,6 @@ export default function ContentPlanTable({
 }: Props) {
   const [plans, setPlans] = useState<ContentPlan[]>([]);
   const [serviceTier, setServiceTier] = useState<string>(forcedServiceTier ?? "foundations");
-  const [themes, setThemes] = useState<Array<{ name: string; emoji?: string | null; colour?: string | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -354,7 +362,6 @@ export default function ContentPlanTable({
 
   useEffect(() => {
     fetchPlans();
-    fetchThemes();
     fetch("/api/member/feature-flags")
       .then((r) => r.json())
       .then((d) => {
@@ -387,21 +394,11 @@ export default function ContentPlanTable({
       if (!res.ok) throw new Error(data.error ?? "Failed to load");
       setPlans(data.plans ?? []);
       if (!forcedServiceTier && data.serviceTier) setServiceTier(data.serviceTier);
-      if (data.themes?.length > 0) setThemes(data.themes);
     } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }
-
-  async function fetchThemes() {
-    try {
-      const base = apiBase.replace(/\/content-plans.*/, "");
-      const res = await fetch(`${base}/content-plans/themes`);
-      const data = await res.json();
-      if (res.ok && data.themes?.length > 0) setThemes(data.themes);
-    } catch {}
   }
 
   async function handleDelete(id: string) {
@@ -485,6 +482,16 @@ export default function ContentPlanTable({
         if (!aTitle) return 1;
         if (!bTitle) return -1;
         return mult * aTitle.localeCompare(bTitle);
+      }
+
+      // The "Theme" column displays the rotation slot label, so sort by it.
+      if (sortKey === "theme") {
+        const aL = plannerThemeLabel(a.rotationSlot) ?? "";
+        const bL = plannerThemeLabel(b.rotationSlot) ?? "";
+        if (!aL && !bL) return 0;
+        if (!aL) return 1;
+        if (!bL) return -1;
+        return mult * aL.localeCompare(bL);
       }
 
       const aStr = (aVal as string | null) ?? "";
@@ -599,7 +606,7 @@ export default function ContentPlanTable({
         </div>
         <div className="relative pr-2">
           <button onClick={() => handleSort("theme")} className="text-left hover:text-[var(--abv-text)] transition-colors">
-            Avatar Stressor <SortIcon col="theme" />
+            Theme <SortIcon col="theme" />
           </button>
           <ResizeHandle col="theme" />
         </div>
@@ -694,12 +701,12 @@ export default function ContentPlanTable({
                 />
               </div>
 
-              {/* Theme — inline editable */}
+              {/* Theme (rotation slot) — inline editable. The Avatar Stressor
+                  is a separate attribute and is edited in the row modal. */}
               <div className="min-w-0">
-                <InlineThemeSelect
-                  theme={plan.theme}
-                  themes={themes}
-                  onChange={(v) => patchPlan(plan.id, { theme: v })}
+                <InlineRotationSlotSelect
+                  slot={plan.rotationSlot}
+                  onChange={(v) => patchPlan(plan.id, { rotationSlot: v })}
                 />
               </div>
 

@@ -438,7 +438,25 @@ function buildInitialUserMessage(args: {
     }
     lines.push("");
     lines.push(
-      "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line immediately AFTER the first real data point has landed (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice a genuine acknowledgement of THIS worry: reuse two or three distinctive words from the quoted fear above verbatim, paired with felt language (\"the part that actually keeps you up\", \"the fear of…\", \"what you're really weighing\", \"that hesitation is normal\") so the beat is unmistakably about THIS stressor and not generic. Empowered, never aggrieved — name the worry, then steady it. A DATA observation or a STRATEGY/advice line does NOT satisfy this beat. The tagged beat is mandatory and server-checked; you MAY add one lighter callback later (UNTAGGED — emit exactly ONE `[STRESSOR BEAT]` tag total), but never stack the two back-to-back.",
+      "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice this worry as PURE FELT EMOTION — what it FEELS like to carry it — NOT a reaction to a number and NOT advice. Do not attach the beat to a statistic: it is the human feeling underneath the data, not a comment on the data. Reuse two or three distinctive words from the quoted fear above verbatim so it is unmistakably THIS avatar's fear, paired with felt language (\"the part that actually keeps you up,\" \"the fear of…,\" \"what you're really weighing,\" \"that hesitation is normal\"). Empowered, never aggrieved — name the worry, then steady it. A DATA observation (\"this is shockingly tight,\" \"think about that\") or a STRATEGY/advice line does NOT satisfy this beat — those are reactions to the market, not the avatar's fear.",
+    );
+    lines.push("");
+    lines.push(
+      "Adapt ONE of these felt-acknowledgement patterns into the presenter's own voice — substitute the avatar's OWN words from the quoted fear above (do NOT copy a pattern verbatim, and keep it pure feeling with no number and no tactic):",
+    );
+    lines.push("");
+    lines.push(
+      "- \"Here's the part that probably sits heaviest — the fear of [the avatar's own worry, in their words] — and honestly, you wouldn't be human if that didn't weigh on you.\"",
+    );
+    lines.push(
+      "- \"What you're really turning over isn't the asking price — it's [the avatar's own worry] — and that hesitation is completely fair to sit with.\"",
+    );
+    lines.push(
+      "- \"The quiet worry underneath all of this is [the avatar's own worry] — the fear of being the one who's stuck living with the wrong call — and I want to name that, because it's real.\"",
+    );
+    lines.push("");
+    lines.push(
+      "The tagged beat is mandatory and server-checked; you MAY add one lighter callback later (UNTAGGED — emit exactly ONE `[STRESSOR BEAT]` tag total), but never stack the two back-to-back.",
     );
     lines.push("");
   }

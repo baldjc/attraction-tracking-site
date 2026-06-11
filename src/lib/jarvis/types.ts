@@ -86,6 +86,14 @@ export interface ProposalState {
    */
   contentPlanId?: string;
   /**
+   * REFINE mode target: the EXISTING planner video this draft is refining. When
+   * set, an approved save UPDATES that ContentPlan in place (new script + linked
+   * script) instead of creating a new one — set by the planner "↻ Regenerate"
+   * hand-off (see seed.ts) and stamped by the orchestrator onto every proposal
+   * built in a refine thread. Absent on a normal "build a new script" flow.
+   */
+  targetContentPlanId?: string;
+  /**
    * External ResearchSource ids this draft was grounded against (Research
    * Reader). Persisted onto the saved script + ContentPlan so the two-source
    * provenance survives approval. Absent → a normal market-only draft.

@@ -10,6 +10,7 @@ import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS, getPlanThumbnailUrl
 import { hasDriveFolderAccess } from "@/lib/service-tier";
 import { useToast } from "@/components/ToastProvider";
 import { buildMlsVerifyLine, formatMlsPeriod } from "@/lib/mls-verify-reminder";
+import { writeJarvisRefineSeed } from "@/lib/jarvis/seed";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -840,17 +841,34 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
     }
   }, [scrollAndFocus, focusPlanningPanel]);
 
+  // ↻ Regenerate → open THIS video in Jarvis (Content Manager) in "refine this
+  // script" mode rather than doing a blind one-shot rebuild. We flush any
+  // pending autosave first (so Jarvis loads the latest script), stash a
+  // member-scoped refine seed carrying this planId, then route to the chat. On
+  // member approval the refined draft saves BACK to this same planner video
+  // (save.ts → routeApprovedDraftToPlanner), never a duplicate.
   const handleRegenerate = useCallback(async () => {
     if (!scriptBuilderV2Enabled) {
       alert("Script Builder v2 isn't enabled for your tier yet.");
       return;
     }
-    const msg = form.script.trim()
-      ? "Regenerate this script? Current content will be replaced. (You can undo from autosave history within 60s.)"
-      : "Build a new script with the v2 pipeline?";
-    if (!confirm(msg)) return;
-    await handleBuildV2();
-  }, [scriptBuilderV2Enabled, form.script, handleBuildV2]);
+    if (
+      !confirm(
+        "Open this script in the Content Manager to refine it? You'll be able to tell it what to change, and the updated script saves back to this same video.",
+      )
+    )
+      return;
+    await flush();
+    // userId is present on the GET /content-plans/[id] response at runtime even
+    // though it's absent from the ContentPlan TS type.
+    const memberId = (initialPlan as unknown as { userId?: string }).userId ?? "";
+    writeJarvisRefineSeed(
+      memberId,
+      planId,
+      "I'd like to refine the script for one of my planner videos.",
+    );
+    router.push("/member/jarvis?thread=new");
+  }, [scriptBuilderV2Enabled, flush, initialPlan, planId, router]);
 
   // Click handler for the hero CTA. Each step routes the cursor to the
   // most-likely next input, or advances `status` when the leftover work
