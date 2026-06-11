@@ -115,7 +115,7 @@ const memberLinks = [
   { href: "/member/dashboard",       label: "Dashboard",       icon: HomeIcon,                 featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null },
 
   // CREATE — the two homes lead: Content Manager (chat) + Content Planner (home base)
-  { href: "/member/jarvis",          label: "Content Manager", icon: ChatBubbleLeftRightIcon,  featureKey: "tool_jarvis", colour: "var(--abv-ai-tools)", tierRequired: null,          section: "CREATE" },
+  { href: "/member/jarvis",          label: "Content Manager - Jarvis", icon: ChatBubbleLeftRightIcon,  featureKey: "tool_jarvis", colour: "var(--abv-ai-tools)", tierRequired: null,          section: "CREATE" },
   // Content Planner also carries section: "CREATE" so the header survives when
   // the (flag-gated) Content Manager link above is filtered out for a member.
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS, section: "CREATE" },
