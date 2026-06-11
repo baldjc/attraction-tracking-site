@@ -1,15 +1,24 @@
 ---
-name: Empathy beats as fixed positional slots
-description: How the stressor + values empathy beats are made to appear by-construction (injected positional tags), mirroring the lead-magnet mechanism, and why the bracket-tag approach is detector-safe.
+name: Empathy beats = fixed injected slots
+description: Stressor + Values empathy beats are positional slots injected from contentThemes (like the lead magnet), spread across three prompt surfaces that must move in lockstep.
 ---
 
-The avatar-stressor and team-values empathy beats are emitted as FIXED POSITIONAL SLOTS with injected content, mirroring the `[LEAD MAGNET n/3]` mechanism — they appear **by construction** every build, not via dosage hope.
+# Empathy beats are FIXED POSITIONAL SLOTS with injected content
 
-**Mechanism (three files, must stay in lockstep):**
-- `content-engine-prompts.ts` — `getActiveThemeStress()` returns `{ name, coreStress, fearLines[] }`; `extractThemeFearLines()` pulls quoted bullets ending in `?` from the `content_engine_prompt` "Specific stresses" section (cap 4, dedupe). The `?` anchor is load-bearing: it excludes title-example bullets (statements), keeping only fears.
-- `scriptBuilder.ts` — `## Active Avatar Stressor` block injects coreStress+fearLines and defines the required `[STRESSOR BEAT]` slot; new `## Team Values Beats` block defines `[VALUES BEAT 1/2]` + `[VALUES BEAT 2/2]` with a canonical belief scaffold (members have NO stored team-values field, only freeform gated voiceGuide). LOCKED CONTENT RULES item 7 + OUTPUT block reference the slots.
-- `script-builder-mode-prompt.ts` — stressor para points to `[STRESSOR BEAT]`; BODY STRUCTURE has a FIXED EMPATHY BEATS subsection; Values Peppering header references the tags; self-check items 21/22; **the permitted-labels list ("What you DO label") MUST include the new tags** — there is an earlier "These are the ONLY permitted labels. No others." rule that will otherwise contradict and suppress the new tags.
+The Script Builder's avatar-stressor and team-values empathy beats are emitted **by construction** as positional production tags — mirroring the `[LEAD MAGNET n/3]` mechanism — NOT as dosage targets the model is asked to "hit":
 
-**Why bracket tags are safe:** `script-content-rules.ts` strips ALL `[...]` generically (`body.replace(/\[[^\]]*\]/g," ")`) before any detector scans AND before the member-facing read. So the new tags never reach members and never trip the empathy detectors — the detectors read the dialogue AFTER the tags. The detectors (`stressor_acknowledgement`, `values_peppering_dosage` ≥2) stay UNCHANGED as the semantic backstop; the tags themselves are production cues only (not presence-checked server-side, exactly like `[LEAD MAGNET n/3]`).
+- `[STRESSOR BEAT]` — exactly ONE, in the psychology layer, right after the first real data point.
+- `[VALUES BEAT 1/2]` + `[VALUES BEAT 2/2]` — exactly two, distributed across the body.
 
-**Scope boundary for this line of work:** generation/template + content injection ONLY. Do NOT add server-side tag-presence checks or touch the detectors — the by-construction injection + existing semantic detectors is the intended design.
+The actual *content* is injected, not invented: `getActiveThemeStress()` (content-engine-prompts.ts) returns `{ name, coreStress, fearLines }`, and scriptBuilder.ts injects the quoted `coreStress` + up to 4 `fearLines` so the beat names the avatar's OWN worry (felt language) instead of a data/strategy line.
+
+**Why:** a dosage-only instruction let the model satisfy the detector with a generic/data line — Defect 3 was "stressor beat renders a data line not the avatar's fear." Making it a positional slot fed with the avatar's real fear questions makes the felt acknowledgement load-bearing every build; the `script-content-rules.ts` detectors (`stressor_acknowledgement`, `values_peppering_dosage`) stay as the backstop, intentionally separate from the injection path — do not fold them together.
+
+**How to apply (LOCKSTEP across THREE prompt surfaces — change all or the model fights itself, e.g. emits zero or two `[STRESSOR BEAT]` tags):**
+1. `scriptBuilder.ts` — the injected `## Active Avatar Stressor — REQUIRED FIXED BEAT` and `## Team Values Beats — TWO REQUIRED FIXED BEATS` blocks, plus LOCKED CONTENT RULE 7 and the `## OUTPUT` block reference. `activeStressor` type must carry `fearLines`.
+2. `script-builder-mode-prompt.ts` — stressor-acknowledgement paragraph, the permitted-tag list, BODY STRUCTURE → "FIXED EMPATHY BEATS" subsection, "Values Peppering" header, and self-check items 21/22.
+3. `content-engine-prompts.ts` — `getActiveThemeStress` / `extractThemeFearLines`.
+
+**fearLines extraction gotcha:** `extractThemeFearLines` matches only **straight-quoted bullets ending in `?`** (`^\s*[-*]\s*"(.+?\?)"\s*$`) from the theme's `content_engine_prompt` "Specific stresses" — the `?` anchor cleanly excludes quoted Title-example *statements*. Curly quotes or non-quoted bullets yield an empty `fearLines` array; this is **non-fatal** because `coreStress` is always injected and is what makes the slot required. (Verified live: Chris Proctor's two themes "The Decision" / "The Neighbourhood" each yield coreStress + 4 fearLines.)
+
+Related: `script-stressor-ack-body-scope.md` (the detector-side body-scope rules) and `avatar-stressor-vs-theme-vocab.md` (member-facing naming: 8 questions = "Avatar Stressor", 5-slot rotation = "Theme").
