@@ -246,7 +246,7 @@ function buildInitialUserMessage(args: {
   assignedBingeVideo: AssignedBingeVideo | null;
   regenerationBrief: RegenerationBrief | null;
   memberFullName: string | null;
-  activeStressor: { name: string; coreStress: string } | null;
+  activeStressor: { name: string; coreStress: string; fearLines?: string[] } | null;
 }): string {
   const {
     plan,
@@ -421,18 +421,56 @@ function buildInitialUserMessage(args: {
   lines.push("");
 
   if (activeStressor) {
-    lines.push("## Active Avatar Stressor (REQUIRED — acknowledge in the BODY)");
+    lines.push("## Active Avatar Stressor — REQUIRED FIXED BEAT (`[STRESSOR BEAT]`)");
     lines.push("");
     lines.push(
       `This idea is being scripted under the **${activeStressor.name}** Avatar Stressor — the specific worry this avatar carries, in their own voice:`,
     );
     lines.push(`> "${activeStressor.coreStress}"`);
+    if (activeStressor.fearLines && activeStressor.fearLines.length) {
+      lines.push("");
+      lines.push(
+        "The same worry, expanded in the avatar's OWN words — raw material for the felt beat (voice it as one human fear; do NOT read it back as a list):",
+      );
+      for (const fear of activeStressor.fearLines) {
+        lines.push(`> "${fear}"`);
+      }
+    }
     lines.push("");
     lines.push(
-      "REQUIRED (server-checked — the draft is rejected and you are re-prompted if it's missing): weave ONE or TWO genuine acknowledgements of THIS worry into the body (the psychology layer). Reuse two or three distinctive words from the quoted question verbatim, paired with felt language (\"the part that actually keeps you up\", \"the fear of…\", \"what you're really weighing\", \"that hesitation is normal\"), so the beat is unmistakably about THIS stressor and not generic. Empowered, never aggrieved — name the worry, then steady it. Distribute the beats; never stack them, and never put them in the title, thumbnail, packaging, or the two-beat intro.",
+      "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line immediately AFTER the first real data point has landed (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice a genuine acknowledgement of THIS worry: reuse two or three distinctive words from the quoted fear above verbatim, paired with felt language (\"the part that actually keeps you up\", \"the fear of…\", \"what you're really weighing\", \"that hesitation is normal\") so the beat is unmistakably about THIS stressor and not generic. Empowered, never aggrieved — name the worry, then steady it. A DATA observation or a STRATEGY/advice line does NOT satisfy this beat. The tagged beat is mandatory and server-checked; you MAY add one lighter callback later, but never stack the two back-to-back.",
     );
     lines.push("");
   }
+
+  // ── Team Values Beats (REQUIRED FIXED SLOTS) ─────────────────────────
+  // Mirrors the lead-magnet mechanism: two positional slots the writer fills
+  // with genuine belief statements, so the values beats appear BY CONSTRUCTION
+  // every build instead of relying on the model to hit a dosage target. The
+  // `[VALUES BEAT n/2]` tags (like every `[...]` annotation) are stripped before
+  // the `values_peppering_dosage` detector scans dialogue — the detector reads
+  // the belief lines that follow each tag, which is exactly the injected content.
+  lines.push("## Team Values Beats — TWO REQUIRED FIXED BEATS (`[VALUES BEAT 1/2]`, `[VALUES BEAT 2/2]`)");
+  lines.push("");
+  lines.push(
+    "FIXED BEATS — positional slots like `[LEAD MAGNET n/3]`, NOT a dosage target. Emit BOTH tags `[VALUES BEAT 1/2]` and `[VALUES BEAT 2/2]`, each on its own line, distributed across the body (never stacked, never in the opening). On the line right after each tag, voice ONE genuine team BELIEF / philosophy / commitment about how you treat clients — what you stand for — anchored where it fits THIS video's topic and the avatar's situation. Adapt these model belief statements into the presenter's own voice (do NOT copy them verbatim, and do NOT repeat the same belief at both slots):",
+  );
+  lines.push("");
+  lines.push(
+    "- \"We believe every family deserves to feel confident going into the biggest financial decision of their life.\"",
+  );
+  lines.push(
+    "- \"Our whole approach is built around making sure you understand what you're paying for.\"",
+  );
+  lines.push("- \"You deserve to walk in knowing the real numbers, not a sales pitch.\"");
+  lines.push(
+    "- \"No family should ever feel rushed into the biggest decision of their life.\"",
+  );
+  lines.push("");
+  lines.push(
+    "Each beat MUST be a stated BELIEF, server-checked (`values_peppering_dosage`). Market strategy, audience segmentation, or advice spoken with \"we\" (\"the families we work with\", \"the families who win\", \"we'd point you toward\") does NOT count — those are tactics, not values. No hobbies, family stories, or personal autobiography.",
+  );
+  lines.push("");
 
   lines.push("## Cited facts (USE THESE — do NOT invent stats)");
   lines.push("");
@@ -827,14 +865,14 @@ function buildInitialUserMessage(args: {
   );
   lines.push("6. **Canadian spelling throughout** (neighbourhood, colour, centre, analyse).");
   lines.push(
-    "7. **Empathy + connection-language dosage (BODY, distributed):** the body must carry — woven across the WHOLE script, NEVER stacked in one section — at least **4 connection phrases** (viewer-directed recognition / voicing the viewer's questions: \"it makes sense that you'd think…\", \"you might be thinking…\", \"here's what that means for you\", \"if you've been…\"), at least **2 GENUINE values-peppering beats** (a BELIEF / philosophy / commitment about how you treat clients: \"we believe every family deserves to feel confident\", \"our whole approach is built around making sure you understand what you're paying for\", \"you deserve to walk in knowing the real numbers\". Market strategy, audience segmentation, or advice spoken with \"we\" — \"the families we work with\", \"the families who win\", \"we'd point you toward\" — do NOT count; those are tactics, not values), and at least **6 editorial / signature moments** (empowered reactions to WHAT THE DATA IS DOING: \"shockingly\", \"stupid tight\", \"think about that\", \"hold that thought\", \"did you catch that?\", a repetition-for-emphasis, one fourth-wall aside). Editorial reactions describe the MARKET, never your own feelings — first-person aggrieved lines (\"I'm annoyed/frustrated\", \"it drives me crazy\") are a hard failure. This is NOT a quota to pad: weave it into the existing data + psychology layers.",
+    "7. **Empathy + connection-language dosage (BODY, distributed):** the body must carry — woven across the WHOLE script, NEVER stacked in one section — at least **4 connection phrases** (viewer-directed recognition / voicing the viewer's questions: \"it makes sense that you'd think…\", \"you might be thinking…\", \"here's what that means for you\", \"if you've been…\"), the **2 GENUINE values-peppering beats** you emit at the fixed `[VALUES BEAT 1/2]` and `[VALUES BEAT 2/2]` slots (each a BELIEF / philosophy / commitment about how you treat clients: \"we believe every family deserves to feel confident\", \"our whole approach is built around making sure you understand what you're paying for\", \"you deserve to walk in knowing the real numbers\". Market strategy, audience segmentation, or advice spoken with \"we\" — \"the families we work with\", \"the families who win\", \"we'd point you toward\" — do NOT count; those are tactics, not values), and at least **6 editorial / signature moments** (empowered reactions to WHAT THE DATA IS DOING: \"shockingly\", \"stupid tight\", \"think about that\", \"hold that thought\", \"did you catch that?\", a repetition-for-emphasis, one fourth-wall aside). The avatar-stressor acknowledgement at the fixed `[STRESSOR BEAT]` slot is ALSO required (see the Active Avatar Stressor block). Editorial reactions describe the MARKET, never your own feelings — first-person aggrieved lines (\"I'm annoyed/frustrated\", \"it drives me crazy\") are a hard failure. This is NOT a quota to pad: weave it into the existing data + psychology layers.",
   );
   lines.push("");
 
   lines.push("## OUTPUT");
   lines.push("");
   lines.push(
-    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` woven naturally into the FIRST body insight as one context-anchored sentence (a bolted-on gift block is BANNED), `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). " +
+    "Produce the FULL talking-head script in the format the system prompt specifies (ARC opening: Attention + Revelation only — NO Connection beat, NO lead magnet in opening; the Revelation carries the EXPERTISE BRIDGE with ONE sideways credibility drop from the approved list, and every number in it MUST trace to the member's real credentials profile — never invent a cadence like \"every 53 hours\". Then DATA → PSYCHOLOGY → CLARITY body with `[LEAD MAGNET 1/3]` woven naturally into the FIRST body insight as one context-anchored sentence (a bolted-on gift block is BANNED), the `[STRESSOR BEAT]` slot in the PSYCHOLOGY layer right after the first data point, the `[VALUES BEAT 1/2]` and `[VALUES BEAT 2/2]` slots distributed across the body, `[LEAD MAGNET 2/3]` deep pitch at ~40-45%, and a CLOSING that is a counter-intuitive FORWARD/BINGE hook to the next video — NOT a recap, NOT a sales pitch, no push-CTA — with `[LEAD MAGNET 3/3]` as a half-sentence riding that hook), with `[VISUAL: ...]` tags throughout. Every quantitative claim must be a clean traceable value — no placeholder/filler numbers (\"the 0K range\", \"$500,000-to-the 600K\", \"a meaningful amount\", dangling \"average sitting.\"). " +
       (isMarketUpdate
         ? "This is a market update — it earns its length from DATA, not profile prose. Target roughly 1,700-1,950 dialogue words and NEVER below 1,600 (a 1,600-word market update is already a full 10-12 minutes — do NOT pad to chase a higher number). Reach that length through grounded DEPTH: segment every metric by property type, compare neighbourhoods, interpret each number and its viewer implication, and add sub-persona guidance" +
           (hasProfile
@@ -1450,7 +1488,7 @@ export interface BuildScriptParams {
    * acknowledgements of it (psychology layer). Optional so non-route callers
    * (Jarvis, evals, tests) compile; absent/null → no acknowledgement.
    */
-  activeStressor?: { name: string; coreStress: string } | null;
+  activeStressor?: { name: string; coreStress: string; fearLines?: string[] } | null;
   forbiddenIdentities: string[];
   bingeTargetConfigured: boolean;
   bingeTargetTitle: string | null;

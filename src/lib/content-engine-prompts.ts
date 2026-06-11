@@ -151,23 +151,54 @@ export function getActiveThemeEnforceBuySide(contentThemes: unknown, theme: stri
 }
 
 /**
+ * Pull the avatar's own fear questions out of a theme's `content_engine_prompt`.
+ * The "Specific stresses" section lists them as quoted bullets that END IN "?"
+ * (e.g. `- "Will this hold its value or slowly erode?"`). The trailing
+ * question-mark anchor cleanly excludes the theme's "Title examples" bullets
+ * (which are quoted STATEMENTS, no "?"). Returns at most 4, de-duplicated and
+ * trimmed — raw material the Script Builder voices as felt empathy, NOT a list
+ * to quote verbatim.
+ */
+function extractThemeFearLines(contentEnginePrompt: unknown): string[] {
+  if (typeof contentEnginePrompt !== "string" || !contentEnginePrompt.trim()) {
+    return [];
+  }
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of contentEnginePrompt.split(/\r?\n/)) {
+    const m = raw.match(/^\s*[-*]\s*"(.+?\?)"\s*$/);
+    if (!m) continue;
+    const fear = m[1].trim();
+    const key = fear.toLowerCase();
+    if (fear.length < 8 || seen.has(key)) continue;
+    seen.add(key);
+    out.push(fear);
+    if (out.length >= 4) break;
+  }
+  return out;
+}
+
+/**
  * Resolve the active Avatar Stressor's name + coreStress (the avatar's stress
- * question, in their own voice) from the member's saved contentThemes. Used by
- * the Script Builder to weave a genuine acknowledgement of that stressor into
- * the script BODY (psychology layer). Returns null when the named stressor
- * isn't found or carries no coreStress language — callers fall back to asking
- * (Jarvis) or to no acknowledgement rather than inventing one.
+ * question, in their own voice) from the member's saved contentThemes, plus the
+ * richer `fearLines` (the avatar's own worry questions from the theme's
+ * content_engine_prompt). Used by the Script Builder to INJECT a genuine,
+ * specific acknowledgement of that stressor into the script BODY (psychology
+ * layer) via the fixed `[STRESSOR BEAT]` slot. Returns null when the named
+ * stressor isn't found or carries no coreStress language — callers fall back to
+ * asking (Jarvis) or to no acknowledgement rather than inventing one.
  */
 export function getActiveThemeStress(
   contentThemes: unknown,
   theme: string,
-): { name: string; coreStress: string } | null {
+): { name: string; coreStress: string; fearLines: string[] } | null {
   const active = extractActiveTheme(contentThemes, theme);
   if (!active) return null;
   const coreStress =
     typeof active.coreStress === "string" ? active.coreStress.trim() : "";
   if (!coreStress) return null;
-  return { name: theme, coreStress };
+  const fearLines = extractThemeFearLines(active.content_engine_prompt);
+  return { name: theme, coreStress, fearLines };
 }
 
 export function buildBatchSystemPrompt(opts: {
