@@ -7,7 +7,6 @@ import remarkGfm from "remark-gfm";
 import {
   ClockIcon,
   SparklesIcon,
-  VideoCameraIcon,
   ShieldCheckIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -1409,7 +1408,28 @@ function toolLabel(name: string): string {
   return name;
 }
 
-/** Jarvis identity avatar — blue gradient disc with a light ring + camera icon. */
+/** Movie clapperboard (slate) icon — no equivalent exists in Heroicons. */
+function ClapperboardIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
+      <path d="m6.2 5.3 3.1 3.9" />
+      <path d="m12.4 3.4 3.1 4" />
+      <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+    </svg>
+  );
+}
+
+/** Jarvis identity avatar — blue gradient disc with a light ring + clapperboard. */
 function JarvisAvatar({ size = "md" }: { size?: "sm" | "md" }) {
   const dim = size === "sm" ? "h-8 w-8" : "h-11 w-11";
   const icon = size === "sm" ? "h-4 w-4" : "h-5 w-5";
@@ -1417,7 +1437,7 @@ function JarvisAvatar({ size = "md" }: { size?: "sm" | "md" }) {
     <span
       className={`${dim} inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white ring-2 ring-sky-200 ring-offset-2 ring-offset-abv-card`}
     >
-      <VideoCameraIcon className={icon} aria-hidden />
+      <ClapperboardIcon className={icon} />
     </span>
   );
 }
