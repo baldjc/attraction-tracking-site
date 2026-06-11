@@ -56,7 +56,7 @@ const MD_COMPONENTS = {
   ),
   hr: () => <hr className="my-3 border-abv-border" />,
   a: ({ children, href }: { children?: ReactNode; href?: string }) => (
-    <a href={href} target="_blank" rel="noreferrer" className="text-[var(--abv-azure)] underline">
+    <a href={href} target="_blank" rel="noreferrer" className="text-blue-500 underline">
       {children}
     </a>
   ),
@@ -831,7 +831,7 @@ export default function JarvisChat({
               aria-expanded={contextOpen}
               className="flex items-center gap-1.5 rounded-full border border-abv-border px-3 py-1.5 text-xs font-medium text-abv-text transition hover:border-abv-border-strong lg:hidden"
             >
-              <SparklesIcon className="h-3.5 w-3.5 text-abv-ai-tools" aria-hidden />
+              <SparklesIcon className="h-3.5 w-3.5 text-blue-500" aria-hidden />
               Context
             </button>
             {contextOpen && (
@@ -901,7 +901,7 @@ export default function JarvisChat({
                               }}
                               className={`flex w-full flex-col items-start gap-0.5 rounded-lg border-l-2 px-3 py-2 text-left transition hover:bg-abv-bg ${
                                 isActive
-                                  ? "border-abv-ai-tools bg-abv-bg"
+                                  ? "border-blue-500 bg-abv-bg"
                                   : "border-transparent"
                               }`}
                             >
@@ -910,7 +910,7 @@ export default function JarvisChat({
                                   {t.title || "Untitled conversation"}
                                 </span>
                                 {isActive && (
-                                  <span className="shrink-0 rounded-full bg-abv-ai-tools/15 px-1.5 py-0.5 text-[10px] font-medium text-abv-ai-tools">
+                                  <span className="shrink-0 rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-500">
                                     Active
                                   </span>
                                 )}
@@ -1135,7 +1135,7 @@ export default function JarvisChat({
             Add link/text
           </button>
         </div>
-        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-card px-2 py-1.5 transition focus-within:border-abv-azure">
+        <div className="mx-auto flex max-w-3xl items-end gap-1.5 rounded-2xl border border-abv-border bg-abv-card px-2 py-1.5 transition focus-within:border-blue-500">
           <button
             type="button"
             onClick={() => toast.info("Voice input is coming soon.")}
@@ -1303,14 +1303,14 @@ function ProposalCard({
 
   return (
     <div className="max-w-[90%] rounded-2xl border border-abv-border bg-abv-card px-4 py-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-abv-azure">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-500">
         ⚡ Video idea · Proposed
       </p>
       <p className="mt-1.5 font-display text-lg font-bold leading-tight text-abv-text">
         “{proposal.title}”
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-abv-ai-tools/10 px-2 py-0.5 text-xs font-medium text-abv-ai-tools">
+        <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-500">
           {labelForSlot(proposal.rotationSlot)}
         </span>
         {sourceCount > 0 && (
@@ -1387,7 +1387,7 @@ function ToolStatusRow({ row }: { row: ToolRow }) {
         <XCircleIcon className="h-3.5 w-3.5 shrink-0 text-abv-crimson" aria-hidden />
       ) : running ? (
         <ArrowPathIcon
-          className="h-3.5 w-3.5 shrink-0 animate-spin text-abv-ai-tools"
+          className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-500"
           aria-hidden
         />
       ) : (
@@ -1462,7 +1462,7 @@ function ContextChip({
       aria-haspopup="dialog"
       className="inline-flex max-w-[11rem] items-center gap-1.5 rounded-full border border-abv-border bg-abv-bg px-2.5 py-1 text-xs text-abv-text transition hover:border-abv-border-strong"
     >
-      <Icon className="h-3.5 w-3.5 shrink-0 text-abv-ai-tools" aria-hidden />
+      <Icon className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-hidden />
       <span className="shrink-0 text-abv-text-secondary">{label}</span>
       <span className="truncate font-medium">{value}</span>
     </button>

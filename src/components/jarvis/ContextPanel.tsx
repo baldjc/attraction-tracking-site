@@ -78,7 +78,7 @@ export default function ContextPanel({
             const item = context[key];
             return (
               <div key={key} className="flex gap-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-abv-ai-tools/10 text-abv-ai-tools">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-500/10 text-blue-500">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <div className="min-w-0">
@@ -93,7 +93,7 @@ export default function ContextPanel({
                           key={i}
                           className="flex gap-1.5 text-xs leading-relaxed text-abv-text-secondary"
                         >
-                          <span aria-hidden className="text-abv-ai-tools">
+                          <span aria-hidden className="text-blue-500">
                             •
                           </span>
                           <span className="min-w-0">{b}</span>
@@ -117,7 +117,7 @@ export default function ContextPanel({
         <div className="shrink-0 border-t border-abv-border px-4 py-3">
           <Link
             href={context.updateHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-abv-ai-tools px-3 py-2 text-xs font-medium text-white transition hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-xs font-medium text-white transition hover:opacity-90"
           >
             Update my context
             <ArrowUpRightIcon className="h-3.5 w-3.5" aria-hidden />
@@ -161,7 +161,7 @@ function VoiceSelector({ control }: { control: VoiceControl }) {
               onClick={() => onSelect(value)}
               className={`rounded-md px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
                 active
-                  ? "bg-abv-ai-tools text-white"
+                  ? "bg-blue-500 text-white"
                   : "text-abv-text-secondary hover:text-abv-text"
               }`}
             >
@@ -173,7 +173,7 @@ function VoiceSelector({ control }: { control: VoiceControl }) {
       {!hasCustomGuide ? (
         <Link
           href={manageHref}
-          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-abv-ai-tools hover:underline"
+          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-blue-500 hover:underline"
         >
           Upload your voice doc
           <ArrowUpRightIcon className="h-3 w-3" aria-hidden />
