@@ -46,6 +46,40 @@ gates passed on a script with zero genuine empathy.
   `hedged_market_state`) are GENERATION-ONLY: inert unless
   `opts.enforceConnectionDosage`. Never broaden them to the save/hand-edit path.
 
+# stressor_beat_voice — coach-speak ban (distinct from stressor_acknowledgement)
+
+The stressor beat is policed by TWO generation-only gates that pull opposite ways:
+`stressor_acknowledgement` REQUIRES the body to name the worry; `stressor_beat_voice`
+REJECTS naming it in therapist/life-coach voice. Banned in the beat: "you wouldn't
+be human", "here's the part that…", "sits heaviest", "keeps you up", "nobody tells
+you", "you'd be crazy not to", permission-to-feel ("it's okay to feel", "that
+hesitation is normal", "fair to sit with", "weigh on you", "a lot to carry/sit
+with", "I want to name that"), and invented timeline scenes ("months after you
+close"). Approved felt voice stays: "the fear of…", "what you're really weighing",
+"what you keep coming back to", "what you're actually afraid of".
+
+**Why:** the beat plumbing (fires, voices the SELECTED stressor, empathy-only) was
+already correct — only the WORDING read like a life coach. Fix is voice-only; do
+NOT touch resolution/firing/scope-lock/marker-stripping.
+
+**How to apply / lockstep:**
+- The two gates must not fight: any cliché that `stressor_beat_voice` BANS must NOT
+  be an ACCEPT marker in `STRESSOR_ACK_MARKERS`, or a coach-speak ack satisfies the
+  ack gate while the voice gate rejects it → reprompt loop.
+- `checkStressorBeatVoice` MUST scan `dosageScanBody(script).scanBody`, not the full
+  script — same body-scoping as the ack gate — or a banned phrase in the hook /
+  intro options / citations / production tags false-positives a clean beat.
+- The banned list is duplicated across the validator regex (`STRESSOR_BEAT_VOICE_BANNED`)
+  AND THREE prompt surfaces: `scriptBuilder.ts` FIXED BEAT hint + its
+  `suggestRetryFix("stressor_beat_voice")` retry hint, and `script-builder-mode-prompt.ts`
+  (the stressor-ack VOICE paragraph + the FIXED EMPATHY BEATS line). Move all in lockstep.
+- Gate is ERROR severity but DEGRADES (ships flagged), never hard-blocks — same
+  retry/degrade loop as the other generation gates.
+- An OFF-PROFILE stressor (e.g. "The Decision" on a neighbourhood video) produces
+  messy DATA output (many unanchored-stat softens, unsourced claims) and may degrade
+  on those — that is NOT a voice-fix regression; judge the voice fix on the member's
+  CONFIGURED stressor build.
+
 # Secondary deterministic guards
 - `lead_magnet_naming`: the configured `leadMagnetName` must appear verbatim
   (alphanumeric-normalised) in the body ≥1×. Catches a renamed magnet (e.g.

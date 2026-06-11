@@ -109,6 +109,12 @@ export type ScriptViolationRule =
    *  language co-located with the avatar's own stress vocabulary. INERT when
    *  no `activeStressor` is supplied (e.g. the member hasn't built it). */
   | "stressor_acknowledgement"
+  /** The stressor beat names the right worry but in therapist/coach-speak
+   *  ("you wouldn't be human", "sits heaviest", "it's okay to feel") or an
+   *  invented timeline scene, instead of the presenter's own plain voice.
+   *  Generation only (INERT unless opts.enforceConnectionDosage) and only when
+   *  an activeStressor is present. */
+  | "stressor_beat_voice"
   /** Empathy + connection-language dosage gate (generation only — INERT unless
    *  opts.enforceConnectionDosage). The body must carry the voice guide's
    *  prescribed dosage of connection phrases / values peppering / editorial
@@ -3565,7 +3571,6 @@ const STRESSOR_ACK_MARKERS: RegExp[] = [
   /keep(?:s|ing)?\s+you\s+up/i,
   /up\s+at\s+night/i,
   /los(?:e|ing)\s+(?:any\s+)?sleep/i,
-  /the\s+part\s+that\s+(?:actually|really)\s+keeps?\s+you/i,
   // Explicit fear/dread NOUNS (not the bare verb "worry", which fires on data
   // lines like "the density pressure you might worry about").
   /the\s+fear\s+of\b/i,
@@ -3592,9 +3597,6 @@ const STRESSOR_ACK_MARKERS: RegExp[] = [
   /\bparalyz/i,
   /\boverwhelm(?:ed|ing)?\b/i,
   /\bnagging\b/i,
-  // Steadying / permission-to-feel framings.
-  /that\s+hesitation\s+is\s+(?:normal|fair|understandable|okay)/i,
-  /(?:that|this|it)(?:'s| is)\s+(?:a\s+lot\s+to|fair\s+to|okay\s+to)\s+(?:carry|sit\s+with|weigh|feel)/i,
 ];
 
 /**
@@ -3714,11 +3716,75 @@ function checkStressorAcknowledgement(
         `ONE clear, empowered acknowledgement of it into the BODY (psychology ` +
         `layer — NOT the title, thumbnail, hook, or two-beat intro): name the ` +
         `specific worry from the avatar's own question — "${stressor.coreStress}" ` +
-        `— in felt language (e.g. "the part that actually keeps you up", "the ` +
-        `fear of…", "what you're really weighing", "that hesitation is normal"), ` +
-        `then steady it. Reuse two or three distinctive words from that question ` +
-        `verbatim so it reads specific to THIS avatar, not generic.`,
+        `— in plain, in-voice felt language (e.g. "the fear of…", "what you're ` +
+        `really weighing", "what you're actually afraid of"), then steady it. ` +
+        `Reuse two or three distinctive words from that question verbatim so it ` +
+        `reads specific to THIS avatar, not generic.`,
       snippet: stressor.coreStress.slice(0, 120),
+    },
+  ];
+}
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/*  stressor_beat_voice — the stressor beat must sound like the PRESENTER, not  */
+/*  a therapist. The mechanism (beat fires, voices the selected stressor, stays */
+/*  empathy) is correct; this guards the WORDING. Bans coach/therapist clichés  */
+/*  and narrated-emotion "permission to feel" framings, plus invented           */
+/*  hypothetical scenes with a timeline. The real worry stays — only the        */
+/*  coach-speak phrasing is rejected. Generation only (INERT unless             */
+/*  opts.enforceConnectionDosage) AND only when an activeStressor is present.    */
+/*  ERROR severity → drives the same re-prompt + degrade loop as the other      */
+/*  generation gates; kept consistent with STRESSOR_ACK_MARKERS (the same       */
+/*  cliché framings are no longer accepted as a genuine acknowledgement).       */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+const STRESSOR_BEAT_VOICE_BANNED: { pattern: RegExp; label: string }[] = [
+  { pattern: /\byou\s+wouldn'?t\s+be\s+human\b/i, label: `"you wouldn't be human"` },
+  { pattern: /\bhere'?s\s+the\s+part\s+that\b/i, label: `"here's the part that…"` },
+  { pattern: /\bsits?\s+heaviest\b/i, label: `"sits heaviest"` },
+  { pattern: /\bkeeps?\s+you\s+up\b/i, label: `"keeps you up"` },
+  { pattern: /\bnobody\s+tells?\s+you\b/i, label: `"nobody tells you"` },
+  { pattern: /\byou'?d\s+be\s+crazy\s+not\s+to\b/i, label: `"you'd be crazy not to"` },
+  { pattern: /\bit'?s\s+(?:okay|ok)\s+to\s+feel\b/i, label: `"it's okay to feel…"` },
+  { pattern: /\bweigh(?:s|ed|ing)?\s+on\s+you\b/i, label: `"weigh on you"` },
+  { pattern: /\bthat\s+hesitation\s+is\s+(?:normal|fair|understandable|okay)\b/i, label: `"that hesitation is normal"` },
+  { pattern: /\bfair\s+to\s+sit\s+with\b/i, label: `"fair to sit with"` },
+  { pattern: /\b(?:a\s+lot|too\s+much)\s+to\s+(?:carry|sit\s+with|hold)\b/i, label: `"a lot to carry / sit with"` },
+  { pattern: /\bi\s+(?:just\s+)?want\s+to\s+name\s+that\b/i, label: `"I want to name that"` },
+  { pattern: /\bmonths?\s+after\s+you\s+(?:close|move\s+in|moved\s+in|buy|sign)\b/i, label: `an invented "months after you close" timeline scene` },
+];
+
+function checkStressorBeatVoice(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  if (!opts.enforceConnectionDosage) return [];
+  const stressor = opts.activeStressor;
+  if (!stressor || !stressor.coreStress?.trim()) return [];
+
+  // Scope to the BODY (mirrors checkStressorAcknowledgement / dosage scoping):
+  // the beat lives in the psychology layer, so a banned cliché in the hook,
+  // intro options, citations, or production tags must not trip this gate.
+  const { scanBody } = dosageScanBody(script);
+  const hits: string[] = [];
+  for (const { pattern, label } of STRESSOR_BEAT_VOICE_BANNED) {
+    if (pattern.test(scanBody) && !hits.includes(label)) hits.push(label);
+  }
+  if (hits.length === 0) return [];
+
+  return [
+    {
+      rule: "stressor_beat_voice",
+      severity: "error",
+      message:
+        `The avatar-stressor beat is using therapist/coach clichés instead of ` +
+        `the presenter's own voice — remove ${hits.join(", ")}. Voice the real ` +
+        `worry plainly, the way the presenter would say it to a client at the ` +
+        `kitchen table: name the fear in their own words and steady it with ` +
+        `confidence. Do NOT narrate the viewer's emotions back at them, do NOT ` +
+        `invent a hypothetical scene with a timeline, and keep it empathy-only ` +
+        `(no number, no tactic). Keep the SAME worry — only the wording changes.`,
+      snippet: hits[0],
     },
   ];
 }
@@ -4277,6 +4343,9 @@ export function validateScript(
   // PART 1 — the body must genuinely acknowledge the active Avatar Stressor's
   // worry. INERT when no activeStressor is supplied (member hasn't built it).
   violations.push(...checkStressorAcknowledgement(script, opts));
+  // VOICE of the stressor beat — bans therapist/coach clichés + invented
+  // timeline scenes. Generation only (INERT unless enforceConnectionDosage).
+  violations.push(...checkStressorBeatVoice(script, opts));
   // Empathy + connection-language dosage (connection phrases, values
   // peppering, editorial/signature moments, distribution, empowered-not-
   // aggrieved). INERT unless opts.enforceConnectionDosage (generation only).

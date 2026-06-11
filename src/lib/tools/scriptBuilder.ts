@@ -264,21 +264,21 @@ function stressorBeatBlockLines(activeStressor: {
   }
   lines.push("");
   lines.push(
-    "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice this worry as PURE FELT EMOTION — what it FEELS like to carry it — NOT a reaction to a number and NOT advice. Do not attach the beat to a statistic: it is the human feeling underneath the data, not a comment on the data. Reuse two or three distinctive words from the quoted fear above verbatim so it is unmistakably THIS avatar's fear, paired with felt language (\"the part that actually keeps you up,\" \"the fear of…,\" \"what you're really weighing,\" \"that hesitation is normal\"). Empowered, never aggrieved — name the worry, then steady it. A DATA observation (\"this is shockingly tight,\" \"think about that\") or a STRATEGY/advice line does NOT satisfy this beat — those are reactions to the market, not the avatar's fear.",
+    "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice this worry as PURE FELT EMOTION — what it FEELS like to carry it — NOT a reaction to a number and NOT advice. Do not attach the beat to a statistic: it is the human feeling underneath the data, not a comment on the data. Reuse two or three distinctive words from the quoted fear above verbatim so it is unmistakably THIS avatar's fear, paired with plain, in-voice felt language in the PRESENTER'S OWN advisor voice — the way they'd name it to a client across the kitchen table (\"the fear of…,\" \"what you're really weighing,\" \"what you keep coming back to,\" \"what you're actually afraid of\"). NEVER therapist/coach clichés: do NOT write \"you wouldn't be human,\" \"here's the part that sits heaviest / keeps you up / nobody tells you,\" \"you'd be crazy not to,\" \"it's okay to feel…,\" \"that hesitation is normal,\" or \"fair to sit with,\" do NOT narrate the viewer's emotions back at them, and do NOT invent a hypothetical scene with a timeline (\"six months after you close\"). Empowered, never aggrieved — name the worry plainly, then steady it with confidence. A DATA observation (\"this is shockingly tight,\" \"think about that\") or a STRATEGY/advice line does NOT satisfy this beat — those are reactions to the market, not the avatar's fear.",
   );
   lines.push("");
   lines.push(
-    "Adapt ONE of these felt-acknowledgement patterns into the presenter's own voice — substitute the avatar's OWN words from the quoted fear above (do NOT copy a pattern verbatim, and keep it pure feeling with no number and no tactic):",
+    "Adapt ONE of these felt-acknowledgement patterns into the presenter's own plain, confident advisor voice — substitute the avatar's OWN words from the quoted fear above (do NOT copy a pattern verbatim; keep it pure feeling with no number and no tactic; say it the way the member would say it out loud to a client, not the way a therapist would):",
   );
   lines.push("");
   lines.push(
-    "- \"Here's the part that probably sits heaviest — the fear of [the avatar's own worry, in their words] — and honestly, you wouldn't be human if that didn't weigh on you.\"",
+    "- \"Now, the real question I hear from people in your shoes is [the avatar's own worry, in their words] — the fear of [restate that worry plainly in a few words]. That's exactly the right thing to be thinking about.\"",
   );
   lines.push(
-    "- \"What you're really turning over isn't the asking price — it's [the avatar's own worry] — and that hesitation is completely fair to sit with.\"",
+    "- \"And what most people are really weighing here isn't the asking price — it's [the avatar's own worry]. The fear of [restate it plainly]. I get why that's the thing that sticks.\"",
   );
   lines.push(
-    "- \"The quiet worry underneath all of this is [the avatar's own worry] — the fear of being the one who's stuck living with the wrong call — and I want to name that, because it's real.\"",
+    "- \"Here's what you're actually afraid of: [the avatar's own worry, in their words]. Not the number on the listing — whether [restate the worry]. That's a real concern, and it deserves a straight answer.\"",
   );
   lines.push("");
   lines.push(
@@ -1138,6 +1138,18 @@ function suggestRetryFix(v: ScriptViolation, hasProfile = true): string {
       "in the draft (structure, voice, citations, visual tags) unchanged.",
     ].join(" ");
   }
+  if (v.rule === "stressor_beat_voice") {
+    // The [STRESSOR BEAT] used therapist/coach clichés instead of the
+    // presenter's own voice. Surface the offending phrases and frame the fix
+    // as a voice-only rewrite of the beat — keep the real worry.
+    return [
+      v.message,
+      "Rewrite ONLY the `[STRESSOR BEAT]` line(s) in the presenter's own plain,",
+      "confident advisor voice. Keep the SAME real worry — just say it the way",
+      "the member would say it to a client at the kitchen table. Leave the rest",
+      "of the draft (structure, citations, numbers, visual tags) unchanged.",
+    ].join(" ");
+  }
   if (
     v.rule === "connection_language_dosage" ||
     v.rule === "values_peppering_dosage" ||
@@ -1349,7 +1361,7 @@ function buildRetryUserMessage(args: {
     );
     lines.push("");
     lines.push(
-      "Re-emit exactly ONE `[STRESSOR BEAT]` in the psychology layer. If your previous draft's beat voiced a DIFFERENT worry — e.g. a generic affordability / overpaying / \"can I even compete\" line — REWRITE it to voice the stressor below, reusing two or three of its distinctive words verbatim. Keep it pure felt empathy: no number, no tactic.",
+      "Re-emit exactly ONE `[STRESSOR BEAT]` in the psychology layer. If your previous draft's beat voiced a DIFFERENT worry — e.g. a generic affordability / overpaying / \"can I even compete\" line — REWRITE it to voice the stressor below, reusing two or three of its distinctive words verbatim. Keep it pure felt empathy: no number, no tactic. Voice it in the presenter's OWN plain advisor voice — NO therapist/coach clichés (\"you wouldn't be human,\" \"here's the part that sits heaviest,\" \"it's okay to feel,\" \"that hesitation is normal,\" \"fair to sit with\") and NO invented timeline scene (\"six months after you close\").",
     );
     lines.push("");
     for (const l of stressorBeatBlockLines(activeStressor)) lines.push(l);
