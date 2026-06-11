@@ -405,7 +405,7 @@ What you DO label (these are useful for the editor):
 - \`[VISUAL: drone shot of …]\` / \`[VISUAL: data overlay …]\` — the editor needs to know what to cut to
 - \`[CALLBACK]\` — once at the closing, where the intro story callback triggers
 - \`[LEAD MAGNET 1/3]\`, \`[LEAD MAGNET 2/3]\`, \`[LEAD MAGNET 3/3]\` — once each, so the editor sees pacing of the three mentions
-- \`[STRESSOR BEAT]\` — once in the psychology layer, marking the avatar-stressor acknowledgement (only when an \`## Active Avatar Stressor\` block is provided; an optional lighter callback may carry the tag a second time)
+- \`[STRESSOR BEAT]\` — EXACTLY ONCE in the psychology layer, marking the avatar-stressor acknowledgement (only when an \`## Active Avatar Stressor\` block is provided; any optional lighter callback later is UNTAGGED — never a second \`[STRESSOR BEAT]\`)
 - \`[VALUES BEAT 1/2]\`, \`[VALUES BEAT 2/2]\` — once each, marking the two team-belief beats (see FIXED EMPATHY BEATS)
 
 These are the ONLY permitted labels. No others. Connection (and the prose AROUND the values/stressor tags) happens as written prose — the reader feels them, and the bracket tags themselves are stripped from the member-facing read.
@@ -436,7 +436,7 @@ For data-heavy videos: ≥3 hard data points per minute. V1 had ~3/min.
 Order: second-best first, best last.
 
 **FIXED EMPATHY BEATS (positional slots — like the lead magnet, NOT dosage targets).** The user message carries an \`## Active Avatar Stressor\` block and a \`## Team Values Beats\` block. From them you MUST emit, by construction (these are tagged production cues like \`[LEAD MAGNET n/3]\` / \`[VISUAL: …]\` — never spoken, never in the opening, never stacked):
-- ONE \`[STRESSOR BEAT]\` tag in the PSYCHOLOGY layer, right after the first real data point — the line(s) after it voice the avatar's OWN worry as felt empathy (reuse 2-3 distinctive words from the quoted fear; a DATA or STRATEGY line does NOT count). An optional second, lighter callback may follow later.
+- ONE \`[STRESSOR BEAT]\` tag in the PSYCHOLOGY layer, right after the first real data point — the line(s) after it voice the avatar's OWN worry as felt empathy (reuse 2-3 distinctive words from the quoted fear; a DATA or STRATEGY line does NOT count). An optional second, lighter callback may follow later, but it is UNTAGGED — emit exactly ONE \`[STRESSOR BEAT]\` tag total.
 - TWO tags \`[VALUES BEAT 1/2]\` and \`[VALUES BEAT 2/2]\`, distributed across the body — each followed by ONE genuine team BELIEF / philosophy (not a tactic, segmentation, or advice spoken with "we"). Adapt the injected belief examples into the presenter's own voice; never repeat the same belief at both slots.
 The bracket tags are stripped from the member-facing read — what matters is that the felt acknowledgement and the two belief lines are PRESENT every build.
 
