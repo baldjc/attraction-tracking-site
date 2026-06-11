@@ -103,16 +103,29 @@ function slotLabel(slot: string | null): string | null {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// ── Jarvis avatar (monogram — no image asset exists) ──────────
+// ── Jarvis avatar (blue gradient disc + light ring + clapperboard) ──
+// Mirrors the Content Manager avatar in src/components/jarvis/JarvisChat.tsx.
 
 function JarvisAvatar() {
   return (
     <span
-      className="inline-flex items-center justify-center w-11 h-11 rounded-xl shrink-0 font-display text-lg text-white"
-      style={{ background: "linear-gradient(135deg, var(--abv-azure), color-mix(in srgb, var(--abv-azure) 55%, #000))" }}
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white ring-2 ring-sky-200 ring-offset-2 ring-offset-[var(--abv-dark)]"
       aria-hidden
     >
-      J
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5"
+      >
+        <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
+        <path d="m6.2 5.3 3.1 3.9" />
+        <path d="m12.4 3.4 3.1 4" />
+        <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      </svg>
     </span>
   );
 }
