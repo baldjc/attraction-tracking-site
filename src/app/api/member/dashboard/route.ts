@@ -206,11 +206,19 @@ async function GET_impl() {
   }
 
   // Use the live YouTubeVideo table (updated by nightly sync) instead of stale audit snapshot
-  const latestVideo = await prisma.youTubeVideo.findFirst({
-    where: { userId: user.id },
-    orderBy: { publishedAt: "desc" },
-    select: { publishedAt: true },
-  });
+  const [latestVideo, topVideos] = await Promise.all([
+    prisma.youTubeVideo.findFirst({
+      where: { userId: user.id },
+      orderBy: { publishedAt: "desc" },
+      select: { publishedAt: true },
+    }),
+    prisma.youTubeVideo.findMany({
+      where: { userId: user.id },
+      orderBy: { viewCount: "desc" },
+      take: 3,
+      select: { videoId: true, title: true, thumbnailUrl: true, viewCount: true },
+    }),
+  ]);
   if (latestVideo) {
     daysSinceUpload = Math.floor((Date.now() - latestVideo.publishedAt.getTime()) / 86400000);
   }
@@ -262,5 +270,6 @@ async function GET_impl() {
     nextCoachingCall: coachingInfo,
     scoreHistory,
     jarvisStats: { ideasProposed, scriptsApproved, factsOnFile },
+    topVideos,
   });
 }

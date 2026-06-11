@@ -63,6 +63,17 @@ interface DashboardData {
     scriptsApproved: number;
     factsOnFile: number;
   };
+  topVideos: {
+    videoId: string;
+    title: string;
+    thumbnailUrl: string | null;
+    viewCount: number;
+  }[];
+}
+
+/** Deep-link to a single video's analytics inside the member's YouTube Studio. */
+function studioUrl(videoId: string) {
+  return `https://studio.youtube.com/video/${encodeURIComponent(videoId)}/analytics/tab-overview/period-default`;
 }
 
 interface FactChip {
@@ -226,7 +237,7 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
   }, [jarvisEnabled, router, memberId]);
 
   const firstName = data?.firstName ?? null;
-  const stats = data?.jarvisStats;
+  const topVideos = data?.topVideos ?? [];
 
   const conversationHref = jarvisEnabled ? "/member/jarvis" : "/member/content-tools";
   const ideaCount = briefing?.ideas?.length ?? 0;
@@ -445,23 +456,66 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
       {/* ── Bottom 2-col ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        {/* Your month with Jarvis */}
+        {/* Top performing videos */}
         <div className="rounded-2xl border border-[var(--abv-border)] bg-[var(--abv-card)] p-6">
           <h2 className="text-sm font-semibold text-[var(--abv-text-secondary)] uppercase tracking-wider mb-5">
-            Your month with Jarvis
+            Your top performing videos
           </h2>
-          {loading || !stats ? (
-            <div className="grid grid-cols-3 gap-3 animate-pulse">
+          {loading ? (
+            <div className="space-y-3 animate-pulse">
               {[0, 1, 2].map((i) => (
                 <div key={i} className="h-16 bg-gray-100 dark:bg-[#1e1e1e] rounded-xl" />
               ))}
             </div>
+          ) : topVideos.length === 0 ? (
+            <p className="text-sm text-[var(--abv-text-secondary)] leading-relaxed">
+              No videos yet. Once your channel syncs, your best performers will show up here.
+            </p>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
-              <MonthStat value={stats.ideasProposed} label="ideas proposed" />
-              <MonthStat value={stats.scriptsApproved} label="scripts approved" />
-              <MonthStat value={stats.factsOnFile} label="facts on file" />
-            </div>
+            <ul className="space-y-2">
+              {topVideos.map((v, i) => (
+                <li key={v.videoId}>
+                  <a
+                    href={studioUrl(v.videoId)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-3 rounded-xl border border-[var(--abv-border)] bg-[var(--abv-bg)] p-2 transition hover:border-[var(--abv-text-secondary)]"
+                  >
+                    <span className="font-mono tabular-nums text-sm font-semibold text-[var(--abv-text-secondary)] w-4 text-center shrink-0">
+                      {i + 1}
+                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={v.thumbnailUrl ?? `https://i.ytimg.com/vi/${encodeURIComponent(v.videoId)}/mqdefault.jpg`}
+                      alt=""
+                      className="h-12 w-20 rounded-lg object-cover bg-[var(--abv-card)] shrink-0"
+                      loading="lazy"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[var(--abv-text)] truncate">
+                        {v.title}
+                      </p>
+                      <p className="text-xs text-[var(--abv-text-secondary)] mt-0.5">
+                        {v.viewCount.toLocaleString("en-CA")} views
+                      </p>
+                    </div>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4 text-[var(--abv-text-secondary)] opacity-0 transition group-hover:opacity-100 shrink-0"
+                      aria-hidden
+                    >
+                      <path d="M7 17 17 7" />
+                      <path d="M7 7h10v10" />
+                    </svg>
+                  </a>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -489,11 +543,3 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
   );
 }
 
-function MonthStat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="rounded-xl bg-[var(--abv-bg)] border border-[var(--abv-border)] p-3 text-center">
-      <p className="font-mono tabular-nums text-2xl font-semibold text-[var(--abv-text)]">{value}</p>
-      <p className="text-[11px] text-[var(--abv-text-secondary)] mt-1 leading-tight">{label}</p>
-    </div>
-  );
-}
