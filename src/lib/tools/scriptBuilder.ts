@@ -34,6 +34,7 @@ import {
 import {
   type MarketConfigSummary,
   credentialsAnchorText,
+  marketStateThresholdsLines,
 } from "@/lib/content-engine-context";
 import {
   ROTATION_SLOT_LABELS,
@@ -345,6 +346,12 @@ function buildInitialUserMessage(args: {
   lines.push(`Shoot type: ${shootType}`);
   lines.push(`Market: ${marketConfig.marketName}`);
   lines.push("");
+
+  // Member's OWN sellers/balanced/buyers boundaries + high-end exception. The
+  // cached system prompt's READING MOI framework lists illustrative 2.5/4.0
+  // defaults; these per-member numbers are the authoritative spoken thresholds,
+  // so an Edmonton (or any non-CREB) member never hears hardcoded Calgary cuts.
+  for (const line of marketStateThresholdsLines(marketConfig)) lines.push(line);
 
   // ── PRESENTER IDENTITY — the ONLY source of who is on camera (B1) ────
   // Strict read from the resolved member. Never a hardcoded fallback: if a

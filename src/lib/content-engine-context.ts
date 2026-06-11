@@ -10,6 +10,12 @@ import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
+import {
+  resolveMarketDefaults,
+  type MoiThresholds,
+  type HighEndException,
+  type MoiHighEndExceptionFloor,
+} from "@/lib/market-config";
 
 export interface LatestUpload {
   id: string;
@@ -175,6 +181,14 @@ export interface MarketConfigSummary {
   primaryAvatar: unknown;
   subPersonas: unknown;
   moiThresholds: unknown;
+  // Member's configured market-state boundaries + high-end exception. Raw JSON
+  // from MarketConfig; coerced by `marketStateThresholdsLines` so the Script
+  // Builder speaks the member's own sellers/balanced/buyers numbers. When a
+  // field is null/malformed the fallback is the PER-MLS seed resolved from
+  // `mlsSource` (mirroring the Fact Validator), never a global Calgary default.
+  mlsSource: string | null;
+  highEndException: unknown;
+  moiHighEndExceptionFloor: unknown;
   // Ship B — member-uploaded voice guide markdown. Null when the member is on
   // Foundations tier (no upload UI), or DWY but hasn't uploaded yet.
   voiceGuide: string | null;
@@ -224,6 +238,129 @@ export function credentialsAnchorText(
   return out;
 }
 
+/** Coerce a raw MarketConfig.moiThresholds JSON into a typed pair, falling
+ *  back to the per-MLS seed default when unset/malformed. */
+function coerceMoiThresholds(
+  raw: unknown,
+  fallback: MoiThresholds,
+): MoiThresholds {
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.sellers === "number" && typeof o.buyers === "number")
+      return { sellers: o.sellers, buyers: o.buyers };
+  }
+  return fallback;
+}
+
+function coerceHighEndException(
+  raw: unknown,
+  fallback: HighEndException,
+): HighEndException {
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.enabled === "boolean")
+      return {
+        enabled: o.enabled,
+        priceThreshold:
+          typeof o.priceThreshold === "number"
+            ? o.priceThreshold
+            : fallback.priceThreshold,
+        propertyTypes: Array.isArray(o.propertyTypes)
+          ? (o.propertyTypes.filter((t) => typeof t === "string") as string[])
+          : fallback.propertyTypes,
+      };
+  }
+  return fallback;
+}
+
+function coerceHighEndFloor(
+  raw: unknown,
+  fallback: MoiHighEndExceptionFloor,
+): MoiHighEndExceptionFloor {
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.detached === "number" && typeof o.condo === "number")
+      return { detached: o.detached, condo: o.condo };
+  }
+  return fallback;
+}
+
+/** Format an MOI boundary so an integer reads with one decimal (4 → "4.0")
+ *  like the established script prose, while non-integers keep their precision
+ *  (2.75 → "2.75"). */
+function fmtMoi(n: number): string {
+  return Number.isInteger(n) ? n.toFixed(1) : String(n);
+}
+
+/** Format a high-end price floor as the compact $X.XM / $XXXK the prose uses. */
+function fmtMoneyFloor(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
+  return `$${n}`;
+}
+
+/**
+ * The member's OWN market-state boundaries, rendered for the Script Builder
+ * user message (never the cached system prompt — these are per-member dynamic
+ * content). The generic READING MOI framework in the cached prompt lists
+ * illustrative 2.5/4.0 defaults; this block is the authoritative source for the
+ * sellers/balanced/buyers numbers the script may speak, mirroring the Fact
+ * Validator's `buildMoiThresholdsBlock` so labelling and spoken thresholds
+ * agree end to end. Returns [] only if the caller passes nothing usable (the
+ * coercers always resolve to seed defaults, so in practice it always renders).
+ */
+export function marketStateThresholdsLines(
+  marketConfig: Pick<
+    MarketConfigSummary,
+    "moiThresholds" | "mlsSource" | "highEndException" | "moiHighEndExceptionFloor"
+  >,
+): string[] {
+  const seed = resolveMarketDefaults(marketConfig.mlsSource);
+  const moi = coerceMoiThresholds(marketConfig.moiThresholds, seed.moiThresholds);
+  const he = coerceHighEndException(
+    marketConfig.highEndException,
+    seed.highEndException,
+  );
+  const floor = coerceHighEndFloor(
+    marketConfig.moiHighEndExceptionFloor,
+    seed.moiHighEndExceptionFloor,
+  );
+
+  const lines: string[] = [];
+  lines.push(
+    "## YOUR MARKET'S MOI THRESHOLDS (the ONLY market-state boundary numbers you may speak)",
+  );
+  lines.push("");
+  lines.push(
+    `- Below ${fmtMoi(moi.sellers)} MOI → SELLERS market: seller has leverage, competition likely, prices firm or rising.`,
+  );
+  lines.push(
+    `- ${fmtMoi(moi.sellers)} to ${fmtMoi(moi.buyers)} MOI → BALANCED market: neither side has clear leverage, prices stable.`,
+  );
+  lines.push(
+    `- Above ${fmtMoi(moi.buyers)} MOI → BUYERS market: buyer has leverage, inventory soft, prices flat or falling.`,
+  );
+  if (he.enabled) {
+    lines.push(
+      `- High-end exception → "balanced (high-end)": at the genuine top of the market (detached ${fmtMoneyFloor(
+        floor.detached,
+      )}+, condo ${fmtMoneyFloor(
+        floor.condo,
+      )}+) a higher MOI (≈5-6) is functionally balanced, not a buyers market, because the buyer pool is structurally smaller.`,
+    );
+  }
+  lines.push("");
+  lines.push(
+    `When you state any market-state boundary out loud, use ONLY these exact numbers (sellers below ${fmtMoi(
+      moi.sellers,
+    )}, buyers above ${fmtMoi(
+      moi.buyers,
+    )}). The figures in the generic READING MOI framework are illustrative defaults — defer to the numbers above for THIS member, and never speak a different boundary.`,
+  );
+  lines.push("");
+  return lines;
+}
+
 /**
  * Member's MarketConfig flattened to the bits the Content Engine actually
  * uses. Returns null when the member hasn't configured a market yet — the
@@ -241,6 +378,9 @@ export async function loadMarketConfigSummary(
       primaryAvatar: true,
       subPersonas: true,
       moiThresholds: true,
+      mlsSource: true,
+      highEndException: true,
+      moiHighEndExceptionFloor: true,
       voiceGuide: true,
       voiceMode: true,
       voiceGuideSourceFile: true,
@@ -259,6 +399,9 @@ export async function loadMarketConfigSummary(
     primaryAvatar: cfg.primaryAvatar,
     subPersonas: cfg.subPersonas,
     moiThresholds: cfg.moiThresholds,
+    mlsSource: cfg.mlsSource,
+    highEndException: cfg.highEndException,
+    moiHighEndExceptionFloor: cfg.moiHighEndExceptionFloor,
     voiceGuide: cfg.voiceGuide,
     voiceMode: cfg.voiceMode,
     voiceGuideSourceFile: cfg.voiceGuideSourceFile,
