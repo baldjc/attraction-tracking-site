@@ -461,9 +461,32 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
 
         {/* Top performing videos */}
         <div className="rounded-2xl border border-[var(--abv-border)] bg-[var(--abv-card)] p-6">
-          <h2 className="text-sm font-semibold text-[var(--abv-text-secondary)] uppercase tracking-wider mb-5">
-            Your top performing videos
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <h2 className="text-sm font-semibold text-[var(--abv-text-secondary)] uppercase tracking-wider">
+              This month&apos;s top videos
+            </h2>
+            <a
+              href="https://studio.youtube.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--abv-azure)] hover:underline shrink-0"
+            >
+              Open YouTube Studio
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3.5 w-3.5"
+                aria-hidden
+              >
+                <path d="M7 17 17 7" />
+                <path d="M7 7h10v10" />
+              </svg>
+            </a>
+          </div>
           {loading ? (
             <div className="space-y-3 animate-pulse">
               {[0, 1, 2].map((i) => (
