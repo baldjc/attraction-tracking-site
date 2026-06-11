@@ -150,7 +150,6 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
   const [jarvisEnabled, setJarvisEnabled] = useState(false);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [briefingLoading, setBriefingLoading] = useState(true);
-  const [dismissed, setDismissed] = useState(false);
   const [openThinking, setOpenThinking] = useState<number | null>(null);
   const ideasRef = useRef<HTMLDivElement | null>(null);
 
@@ -186,28 +185,6 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
       });
     return () => { cancelled = true; };
   }, []);
-
-  // Per-month dismiss persistence. Keyed by monthYear so a fresh month's
-  // briefing reappears even after the prior month was dismissed.
-  const dismissKey = briefing?.monthYear ? `briefing:dismissed:${briefing.monthYear}` : null;
-  useEffect(() => {
-    if (!dismissKey) return;
-    try {
-      setDismissed(localStorage.getItem(dismissKey) === "1");
-    } catch {
-      setDismissed(false);
-    }
-  }, [dismissKey]);
-
-  const dismiss = useCallback(() => {
-    setDismissed(true);
-    if (dismissKey) { try { localStorage.setItem(dismissKey, "1"); } catch { /* ignore */ } }
-  }, [dismissKey]);
-
-  const restore = useCallback(() => {
-    setDismissed(false);
-    if (dismissKey) { try { localStorage.removeItem(dismissKey); } catch { /* ignore */ } }
-  }, [dismissKey]);
 
   const scrollToIdeas = useCallback(() => {
     ideasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -271,7 +248,7 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
           <div className="h-5 w-72 bg-white/10 rounded mb-6" />
           <div className="h-10 w-64 bg-white/10 rounded-full" />
         </div>
-      ) : hasBriefing && !dismissed ? (
+      ) : hasBriefing ? (
         <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-5 sm:p-8">
           <div className="flex items-start gap-4">
             <JarvisAvatar />
@@ -323,27 +300,9 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
                     Browse all content ideas →
                   </Link>
                 )}
-                <button
-                  onClick={dismiss}
-                  className="px-3 py-2.5 text-sm text-white/50 hover:text-white/80 transition-colors"
-                >
-                  Dismiss
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      ) : hasBriefing && dismissed ? (
-        <div className="rounded-xl border border-[var(--abv-border)] bg-[var(--abv-card)] px-5 py-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-[var(--abv-text-secondary)]">
-            You dismissed this month&apos;s briefing.
-          </p>
-          <button
-            onClick={restore}
-            className="text-sm font-semibold text-[var(--abv-azure)] hover:underline shrink-0"
-          >
-            Bring it back
-          </button>
         </div>
       ) : (
         // Empty state — no usable briefing yet
@@ -374,7 +333,7 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
       )}
 
       {/* ── Ideas grid ── */}
-      {hasBriefing && !dismissed && (
+      {hasBriefing && (
         <div ref={ideasRef} className="grid grid-cols-1 lg:grid-cols-3 gap-4 scroll-mt-6">
           {briefing!.ideas!.map((idea) => (
             <div
