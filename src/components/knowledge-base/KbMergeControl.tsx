@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
 
 interface GroupSummary {
   canonical: string;
   variantCount: number;
+  variants: string[];
+}
+interface CanonicalGroup {
+  display: string;
+  normKey: string;
   variants: string[];
 }
 interface FuzzyProposal {
@@ -23,6 +28,7 @@ interface MergeReport {
   reviewQueueCount: number;
   topMerges: GroupSummary[];
   reviewQueue: FuzzyProposal[];
+  groups: CanonicalGroup[];
   floorClearing: { before: number; after: number };
 }
 interface LatestRun {
@@ -32,6 +38,8 @@ interface LatestRun {
   createdAt: string;
   appliedAt: string | null;
 }
+
+type Toast = ReturnType<typeof useToast>;
 
 type State =
   | { phase: "idle" }
@@ -203,9 +211,7 @@ export default function KbMergeControl() {
   }
 
   const reviewing =
-    state.phase === "review" || state.phase === "applying"
-      ? state
-      : null;
+    state.phase === "review" || state.phase === "applying" ? state : null;
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -217,6 +223,12 @@ export default function KbMergeControl() {
         names (e.g. <em>Woodbridge Ph 5B</em>, <em>Woodbridge 1</em>). Cleaning
         up collapses those into single areas so more of them carry enough sales
         to use in scripts. Nothing changes until you review and confirm.
+      </p>
+      <p className="mt-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800/50 dark:text-gray-400">
+        Tip: deselecting a name in <strong>“Find neighbourhoods in my data”</strong>{" "}
+        removes that <em>name</em> from your vocabulary. <strong>Clean up &amp;
+        merge</strong> here is different — it <em>combines</em> shattered names
+        into one area and rolls up their sales counts.
       </p>
 
       {pending && state.phase === "idle" && (
@@ -248,7 +260,7 @@ export default function KbMergeControl() {
             onClick={openPending}
             className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a]"
           >
-            Review merges
+            Review &amp; edit merges
           </button>
         ) : (
           <button
@@ -261,7 +273,7 @@ export default function KbMergeControl() {
               ? "Scanning your areas…"
               : pending
                 ? "Recompute cleanup"
-                : "Clean up / review merges"}
+                : "Clean up / merge areas"}
           </button>
         )}
         {latest?.status === "APPLIED" && state.phase === "idle" && (
@@ -282,9 +294,10 @@ export default function KbMergeControl() {
       {reviewing && (
         <MergeReviewModal
           runId={reviewing.runId}
-          report={reviewing.report}
+          initialReport={reviewing.report}
           applying={reviewing.phase === "applying"}
-          onApply={(keys) => applyRun(reviewing.runId, reviewing.report, keys)}
+          toast={toast}
+          onApply={(report, keys) => applyRun(reviewing.runId, report, keys)}
           onDiscard={() => discardRun(reviewing.runId)}
           onClose={() => setState({ phase: "idle" })}
         />
@@ -294,19 +307,26 @@ export default function KbMergeControl() {
 }
 
 function MergeReviewModal({
-  report,
+  runId,
+  initialReport,
   applying,
+  toast,
   onApply,
   onDiscard,
   onClose,
 }: {
   runId: string;
-  report: MergeReport;
+  initialReport: MergeReport;
   applying: boolean;
-  onApply: (selectedReviewKeys: string[]) => void;
+  toast: Toast;
+  onApply: (report: MergeReport, selectedReviewKeys: string[]) => void;
   onDiscard: () => void;
   onClose: () => void;
 }) {
+  const [report, setReport] = useState<MergeReport>(initialReport);
+  const [busy, setBusy] = useState(false);
+  const locked = applying || busy;
+
   const floorDelta = report.floorClearing.after - report.floorClearing.before;
   const nothingToDo =
     report.collapsed === 0 && report.reviewQueueCount === 0;
@@ -330,151 +350,194 @@ function MergeReviewModal({
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(reviewKeys));
 
+  const callEdit = useCallback(
+    async (payload: Record<string, unknown>): Promise<boolean> => {
+      setBusy(true);
+      try {
+        const res = await fetch("/api/member/knowledge-base/merge/edit", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ mergeRunId: runId, ...payload }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data.error || "Couldn’t save that change.");
+          return false;
+        }
+        setReport(data.report as MergeReport);
+        return true;
+      } catch {
+        toast.error("Couldn’t save that change. Try again.");
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [runId, toast],
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
+      <div className="max-h-[88vh] w-full max-w-2xl overflow-auto rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Review cleanup
+            Review &amp; edit cleanup
           </h3>
           <button
             type="button"
             onClick={onClose}
-            disabled={applying}
+            disabled={locked}
             className="text-sm text-gray-500 hover:underline disabled:opacity-50 dark:text-gray-400"
           >
             Close
           </button>
         </div>
 
-        {nothingToDo ? (
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
-            Your areas are already clean — there are no fragmented names to
-            collapse and nothing to review.
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Stat label="Names before" value={report.rawCount} />
+          <Stat label="Areas after" value={report.canonicalCount} />
+          <Stat label="Collapsed" value={report.collapsed} />
+          <Stat label="Auto-merged (safe)" value={report.fuzzyAppliedCount} />
+          <Stat label="Needs review" value={report.reviewQueueCount} />
+          <Stat
+            label="Clear the floor"
+            value={
+              floorDelta > 0
+                ? `+${floorDelta}`
+                : String(report.floorClearing.after)
+            }
+            hint={`${report.floorClearing.before} → ${report.floorClearing.after}`}
+          />
+        </div>
+
+        {nothingToDo && (
+          <p className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-800/40 dark:text-gray-300">
+            Nothing was auto-detected to collapse — but you can still combine
+            areas by hand below (e.g. fold <em>Trinity Falls 50&apos;</em>,{" "}
+            <em>Del Webb Trinity Falls</em> into one <em>Trinity Falls</em>).
           </p>
-        ) : (
-          <>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <Stat label="Names before" value={report.rawCount} />
-              <Stat label="Areas after" value={report.canonicalCount} />
-              <Stat label="Collapsed" value={report.collapsed} />
-              <Stat
-                label="Auto-merged (safe)"
-                value={report.fuzzyAppliedCount}
-              />
-              <Stat label="Needs review" value={report.reviewQueueCount} />
-              <Stat
-                label="Clear the floor"
-                value={
-                  floorDelta > 0
-                    ? `+${floorDelta}`
-                    : String(report.floorClearing.after)
-                }
-                hint={`${report.floorClearing.before} → ${report.floorClearing.after}`}
-              />
+        )}
+
+        {report.topMerges.length > 0 && (
+          <div className="mt-5">
+            <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              Biggest merges
+            </h4>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              These are auto-detected. Edit the master name if you&apos;d prefer
+              a cleaner one.
+            </p>
+            <ul className="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200 text-sm dark:divide-gray-800 dark:border-gray-800">
+              {report.topMerges.slice(0, 12).map((m) => (
+                <li key={m.canonical} className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <EditableMaster
+                      display={m.canonical}
+                      variants={m.variants}
+                      disabled={locked}
+                      onRename={(newDisplay) =>
+                        callEdit({
+                          action: "rename",
+                          groupDisplay: m.canonical,
+                          newDisplay,
+                        })
+                      }
+                    />
+                    <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                      {m.variantCount} names →1
+                    </span>
+                  </div>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                    {m.variants.slice(0, 8).join(", ")}
+                    {m.variants.length > 8 ? "…" : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <ManageAreasPanel
+          report={report}
+          runId={runId}
+          disabled={locked}
+          toast={toast}
+          callEdit={callEdit}
+        />
+
+        {report.reviewQueue.length > 0 && (
+          <div className="mt-5">
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                Lower-confidence near-duplicates
+              </h4>
+              <button
+                type="button"
+                onClick={toggleAll}
+                disabled={locked}
+                className="text-xs font-medium text-[var(--abv-azure)] hover:underline disabled:opacity-50"
+              >
+                {allSelected ? "Clear all" : "Select all"}
+              </button>
             </div>
-
-            {report.topMerges.length > 0 && (
-              <div className="mt-5">
-                <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  Biggest merges
-                </h4>
-                <ul className="mt-2 divide-y divide-gray-100 rounded-md border border-gray-200 text-sm dark:divide-gray-800 dark:border-gray-800">
-                  {report.topMerges.slice(0, 12).map((m) => (
-                    <li key={m.canonical} className="px-3 py-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {m.canonical}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {m.variantCount} names →1
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
-                        {m.variants.slice(0, 8).join(", ")}
-                        {m.variants.length > 8 ? "…" : ""}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {report.reviewQueue.length > 0 && (
-              <div className="mt-5">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                    Lower-confidence near-duplicates
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={toggleAll}
-                    disabled={applying}
-                    className="text-xs font-medium text-[var(--abv-azure)] hover:underline disabled:opacity-50"
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              These fell below the safe auto-merge threshold, so they&apos;re
+              left separate by default. Tick any you&apos;d still like to merge —
+              they&apos;ll be folded in when you apply
+              {selected.size > 0 ? ` (${selected.size} selected)` : ""}.
+            </p>
+            <ul className="mt-2 max-h-64 space-y-1 overflow-auto pr-1 text-xs">
+              {report.reviewQueue.map((p) => {
+                const key = `${p.from}->${p.into}`;
+                return (
+                  <li
+                    key={key}
+                    className="rounded border border-gray-200 dark:border-gray-800"
                   >
-                    {allSelected ? "Clear all" : "Select all"}
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  These fell below the safe auto-merge threshold, so they&apos;re
-                  left separate by default. Tick any you&apos;d still like to
-                  merge — they&apos;ll be folded in when you apply
-                  {selected.size > 0 ? ` (${selected.size} selected)` : ""}.
-                </p>
-                <ul className="mt-2 max-h-64 space-y-1 overflow-auto pr-1 text-xs">
-                  {report.reviewQueue.map((p) => {
-                    const key = `${p.from}->${p.into}`;
-                    return (
-                      <li
-                        key={key}
-                        className="rounded border border-gray-200 dark:border-gray-800"
-                      >
-                        <label className="flex cursor-pointer items-start gap-2 px-2 py-1.5">
-                          <input
-                            type="checkbox"
-                            checked={selected.has(key)}
-                            onChange={() => toggle(key)}
-                            disabled={applying}
-                            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--abv-ink)] disabled:opacity-50"
-                          />
-                          <span className="flex-1">
-                            <span className="font-medium text-gray-800 dark:text-gray-200">
-                              {p.from}
-                            </span>{" "}
-                            → {p.into}{" "}
-                            <span className="text-gray-400">
-                              ({Math.round(p.confidence * 100)}%)
-                            </span>
-                            {p.reason && (
-                              <span className="block text-gray-500 dark:text-gray-400">
-                                {p.reason}
-                              </span>
-                            )}
+                    <label className="flex cursor-pointer items-start gap-2 px-2 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(key)}
+                        onChange={() => toggle(key)}
+                        disabled={locked}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--abv-ink)] disabled:opacity-50"
+                      />
+                      <span className="flex-1">
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          {p.from}
+                        </span>{" "}
+                        → {p.into}{" "}
+                        <span className="text-gray-400">
+                          ({Math.round(p.confidence * 100)}%)
+                        </span>
+                        {p.reason && (
+                          <span className="block text-gray-500 dark:text-gray-400">
+                            {p.reason}
                           </span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-          </>
+                        )}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
 
         <div className="mt-6 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onDiscard}
-            disabled={applying}
+            disabled={locked}
             className="text-sm text-gray-600 hover:underline disabled:opacity-50 dark:text-gray-400"
           >
             Discard
           </button>
-          {!nothingToDo && (
+          {(report.collapsed > 0 || selected.size > 0) && (
             <button
               type="button"
-              onClick={() => onApply([...selected])}
-              disabled={applying}
+              onClick={() => onApply(report, [...selected])}
+              disabled={locked}
               className="rounded-full bg-[var(--abv-ink)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-transform duration-150 active:scale-[0.98] hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {applying
@@ -486,6 +549,426 @@ function MergeReviewModal({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Inline-editable canonical master name for a group. */
+function EditableMaster({
+  display,
+  variants,
+  disabled,
+  onRename,
+}: {
+  display: string;
+  variants: string[];
+  disabled: boolean;
+  onRename: (newDisplay: string) => Promise<boolean>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(display);
+  const listId = useMemo(
+    () => `vars-${Math.random().toString(36).slice(2)}`,
+    [],
+  );
+
+  if (!editing) {
+    return (
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate font-medium text-gray-900 dark:text-gray-100">
+          {display}
+        </span>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            setValue(display);
+            setEditing(true);
+          }}
+          className="shrink-0 text-xs font-medium text-[var(--abv-azure)] hover:underline disabled:opacity-50"
+        >
+          Rename
+        </button>
+      </span>
+    );
+  }
+
+  const save = async () => {
+    if (value.trim() && value.trim() !== display) {
+      const ok = await onRename(value.trim());
+      if (!ok) return;
+    }
+    setEditing(false);
+  };
+
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      <input
+        list={listId}
+        value={value}
+        autoFocus
+        disabled={disabled}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void save();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-[var(--abv-azure)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+      />
+      <datalist id={listId}>
+        {variants.map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => void save()}
+        className="shrink-0 rounded bg-[var(--abv-ink)] px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+      >
+        Save
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setEditing(false)}
+        className="shrink-0 text-xs text-gray-500 hover:underline disabled:opacity-50"
+      >
+        Cancel
+      </button>
+    </span>
+  );
+}
+
+/** Search the full area list, multi-select areas, and merge or move them by hand. */
+function ManageAreasPanel({
+  report,
+  disabled,
+  toast,
+  callEdit,
+}: {
+  report: MergeReport;
+  runId: string;
+  disabled: boolean;
+  toast: Toast;
+  callEdit: (payload: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [master, setMaster] = useState("");
+  const [preview, setPreview] = useState<{
+    combined: number;
+    floorSold: number;
+    clears: boolean;
+  } | null>(null);
+  const previewSeq = useRef(0);
+
+  const groups = report.groups ?? [];
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const sorted = [...groups].sort(
+      (a, b) =>
+        b.variants.length - a.variants.length ||
+        a.display.localeCompare(b.display),
+    );
+    if (!q) return sorted;
+    return sorted.filter(
+      (g) =>
+        g.display.toLowerCase().includes(q) ||
+        g.variants.some((v) => v.toLowerCase().includes(q)),
+    );
+  }, [groups, query]);
+
+  const selectedGroups = useMemo(
+    () => groups.filter((g) => selected.has(g.display)),
+    [groups, selected],
+  );
+  const selectedVariants = useMemo(
+    () => selectedGroups.flatMap((g) => g.variants),
+    [selectedGroups],
+  );
+
+  // Live combined-sales preview for the current selection.
+  useEffect(() => {
+    if (selectedVariants.length === 0) {
+      setPreview(null);
+      return;
+    }
+    const seq = ++previewSeq.current;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/member/knowledge-base/merge/preview", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ variants: selectedVariants }),
+        });
+        const data = await res.json().catch(() => null);
+        if (seq === previewSeq.current && res.ok) setPreview(data);
+      } catch {
+        /* preview is best-effort */
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [selectedVariants]);
+
+  const toggle = (display: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(display)) next.delete(display);
+      else next.add(display);
+      // Default the master to the largest selected area's name.
+      return next;
+    });
+
+  // Keep master defaulted to the largest selected group until the member types.
+  const [masterTouched, setMasterTouched] = useState(false);
+  useEffect(() => {
+    if (masterTouched) return;
+    if (selectedGroups.length === 0) {
+      setMaster("");
+      return;
+    }
+    const biggest = [...selectedGroups].sort(
+      (a, b) => b.variants.length - a.variants.length,
+    )[0];
+    setMaster(biggest.display);
+  }, [selectedGroups, masterTouched]);
+
+  const doMerge = async () => {
+    if (selected.size < 2) {
+      toast.error("Pick at least two areas to merge.");
+      return;
+    }
+    const ok = await callEdit({
+      action: "merge",
+      displays: [...selected],
+      master: master.trim(),
+    });
+    if (ok) {
+      setSelected(new Set());
+      setMaster("");
+      setMasterTouched(false);
+      setPreview(null);
+      toast.success("Areas merged into one master.");
+    }
+  };
+
+  const otherGroupNames = (current: string) =>
+    groups.map((g) => g.display).filter((d) => d !== current);
+
+  return (
+    <div className="mt-5 rounded-md border border-gray-200 dark:border-gray-800">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+      >
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          Manage / merge areas by hand
+        </span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {groups.length} area{groups.length === 1 ? "" : "s"} • {open ? "Hide" : "Show"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="border-t border-gray-200 px-3 py-3 dark:border-gray-800">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Search your areas, tick two or more, give them a master name, and
+            merge — counts roll up and nothing is dropped. Or move a single name
+            out of a group it was wrongly folded into.
+          </p>
+
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search areas…"
+            className="mt-3 w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-[var(--abv-azure)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          />
+
+          {/* Merge bar */}
+          {selected.size > 0 && (
+            <div className="mt-3 rounded-md border border-[var(--abv-azure)]/40 bg-[var(--abv-azure)]/5 p-3">
+              <div className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                {selected.size} selected
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={master}
+                  disabled={disabled}
+                  onChange={(e) => {
+                    setMaster(e.target.value);
+                    setMasterTouched(true);
+                  }}
+                  placeholder="Master name"
+                  className="min-w-[12rem] flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-[var(--abv-azure)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={doMerge}
+                  disabled={disabled || selected.size < 2}
+                  className="rounded-full bg-[var(--abv-ink)] px-4 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Merge {selected.size} into master
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelected(new Set());
+                    setMasterTouched(false);
+                  }}
+                  disabled={disabled}
+                  className="text-xs text-gray-500 hover:underline disabled:opacity-50"
+                >
+                  Clear
+                </button>
+              </div>
+              {preview && (
+                <p
+                  className={`mt-2 text-xs ${
+                    preview.clears
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-amber-700 dark:text-amber-400"
+                  }`}
+                >
+                  Combined: <strong>{preview.combined}</strong> sales —{" "}
+                  {preview.clears
+                    ? `clears the ${preview.floorSold}-sale floor ✓`
+                    : `still below the ${preview.floorSold}-sale floor`}
+                  <span className="text-gray-400"> (latest upload, estimate)</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Area list */}
+          <ul className="mt-3 max-h-72 space-y-1 overflow-auto pr-1">
+            {filtered.length === 0 && (
+              <li className="px-1 py-2 text-xs text-gray-500 dark:text-gray-400">
+                No areas match “{query}”.
+              </li>
+            )}
+            {filtered.slice(0, 200).map((g) => (
+              <li
+                key={g.display}
+                className="rounded border border-gray-200 px-2 py-1.5 dark:border-gray-800"
+              >
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(g.display)}
+                    onChange={() => toggle(g.display)}
+                    disabled={disabled}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--abv-ink)] disabled:opacity-50"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {g.display}
+                      </span>
+                      <span className="shrink-0 text-[11px] text-gray-400">
+                        {g.variants.length} name
+                        {g.variants.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    {g.variants.length > 1 && (
+                      <MoveVariants
+                        group={g}
+                        otherNames={otherGroupNames(g.display)}
+                        disabled={disabled}
+                        callEdit={callEdit}
+                      />
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {filtered.length > 200 && (
+            <p className="mt-1 text-[11px] text-gray-400">
+              Showing first 200 — search to narrow.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Per-group expander letting the member pull a wrongly-folded name out. */
+function MoveVariants({
+  group,
+  otherNames,
+  disabled,
+  callEdit,
+}: {
+  group: CanonicalGroup;
+  otherNames: string[];
+  disabled: boolean;
+  callEdit: (payload: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-[11px] text-gray-500 hover:underline dark:text-gray-400"
+      >
+        {open ? "Hide names" : `Move a name out (${group.variants.length})`}
+      </button>
+      {open && (
+        <ul className="mt-1 space-y-1">
+          {group.variants.map((v) => (
+            <li
+              key={v}
+              className="flex flex-wrap items-center gap-2 rounded bg-gray-50 px-2 py-1 text-[11px] dark:bg-gray-800/50"
+            >
+              <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">
+                {v}
+              </span>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() =>
+                  callEdit({ action: "move", variant: v, toDisplay: v })
+                }
+                className="text-[var(--abv-azure)] hover:underline disabled:opacity-50"
+              >
+                Split out
+              </button>
+              {otherNames.length > 0 && (
+                <select
+                  disabled={disabled}
+                  defaultValue=""
+                  onChange={(e) => {
+                    const to = e.target.value;
+                    e.currentTarget.value = "";
+                    if (to)
+                      void callEdit({
+                        action: "move",
+                        variant: v,
+                        toDisplay: to,
+                      });
+                  }}
+                  className="max-w-[10rem] rounded border border-gray-300 bg-white px-1 py-0.5 text-[11px] text-gray-700 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                >
+                  <option value="">Move to…</option>
+                  {otherNames.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

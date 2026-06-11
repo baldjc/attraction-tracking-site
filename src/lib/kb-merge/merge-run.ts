@@ -396,6 +396,263 @@ export async function foldReviewSelectionsIntoRun(
   await persistFoldedReport(mergeRunId, report, proposal);
 }
 
+// ── Manual group edits (member-driven, DRY_RUN only) ─────────────────────────
+// Members can rename a group's master, merge groups together, or move/split a
+// variant out — even when "0 needs review". Every edit mutates the DRY_RUN
+// run's report.groups in place and re-persists it, so the existing applyMergeRun
+// reproduces the edited plan and inherits ALL safety guarantees (kill-switch,
+// CAS claim, roll-up re-aggregation, fact relabel, audit trail). Nothing is
+// applied until the member confirms. Edits are rejected once a run leaves
+// DRY_RUN.
+
+const cleanLower = (s: string) =>
+  (s ?? "").toString().trim().replace(/\s+/g, " ").toLowerCase();
+const cleanName = (s: string) => (s ?? "").toString().trim().replace(/\s+/g, " ");
+
+/**
+ * Load a DRY_RUN run, hand its (cloned) groups to `mutate` for in-place editing,
+ * then rebuild the derived report fields (map-driven floor estimate, counts,
+ * topMerges) and persist. `mutate` throws member-facing Errors on validation
+ * failure; nothing is written when it throws.
+ */
+async function applyGroupEdit(
+  userId: string,
+  mergeRunId: string,
+  mutate: (groups: CanonicalGroup[]) => void,
+): Promise<MergeRunReport> {
+  const run = await prisma.mergeRun.findFirst({
+    where: { id: mergeRunId, userId },
+    select: { status: true, report: true },
+  });
+  if (!run) throw new Error("Merge run not found");
+  if (run.status !== "DRY_RUN")
+    throw new Error(
+      `This cleanup is ${run.status.toLowerCase()} and can no longer be edited.`,
+    );
+
+  const report = run.report as unknown as MergeRunReport;
+  const groups: CanonicalGroup[] = report.groups.map((g) => ({
+    ...g,
+    variants: [...g.variants],
+  }));
+
+  mutate(groups);
+
+  // Drop any group emptied by a move, then rebuild the raw→display map.
+  const cleaned = groups.filter((g) => g.variants.length > 0);
+  const map = new Map<string, string>();
+  for (const g of cleaned)
+    for (const v of g.variants) map.set(cleanLower(v), g.display);
+
+  const floorClearing = await estimateFloorClearing(userId, map, report.floor);
+
+  const updated: MergeRunReport = {
+    ...report,
+    groups: cleaned,
+    canonicalCount: cleaned.length,
+    collapsed: Math.max(0, report.rawCount - cleaned.length),
+    topMerges: rebuildTopMerges(cleaned),
+    floorClearing: { ...floorClearing, estimated: true },
+  };
+
+  await prisma.mergeRun.update({
+    where: { id: mergeRunId },
+    data: {
+      report: updated as unknown as object,
+      canonicalCount: updated.canonicalCount,
+    },
+  });
+  return updated;
+}
+
+/** Rename a group's canonical master name (e.g. "Trinity Falls Planning East" → "Trinity Falls"). */
+export async function renameGroupMaster(
+  userId: string,
+  mergeRunId: string,
+  opts: { groupDisplay: string; newDisplay: string },
+): Promise<MergeRunReport> {
+  const newDisplay = cleanName(opts.newDisplay);
+  if (!newDisplay) throw new Error("Enter a name for this area.");
+  return applyGroupEdit(userId, mergeRunId, (groups) => {
+    const g = groups.find(
+      (x) => cleanLower(x.display) === cleanLower(opts.groupDisplay),
+    );
+    if (!g) throw new Error("That area is no longer in this cleanup.");
+    // Case-only rename of the same group is always allowed.
+    if (cleanLower(g.display) !== cleanLower(newDisplay)) {
+      if (
+        groups.some(
+          (x) => x !== g && cleanLower(x.display) === cleanLower(newDisplay),
+        )
+      )
+        throw new Error(
+          `"${newDisplay}" is already another area. Merge them instead, or pick a different name.`,
+        );
+      if (
+        groups.some(
+          (x) =>
+            x !== g &&
+            x.variants.some((v) => cleanLower(v) === cleanLower(newDisplay)),
+        )
+      )
+        throw new Error(
+          `"${newDisplay}" is currently folded into another area. Move it out first, or pick a different name.`,
+        );
+    }
+    g.display = newDisplay;
+    g.manual = true;
+  });
+}
+
+/** Merge two or more groups into one master (combines all their variants). */
+export async function mergeGroups(
+  userId: string,
+  mergeRunId: string,
+  opts: { displays: string[]; master: string },
+): Promise<MergeRunReport> {
+  const master = cleanName(opts.master);
+  if (!master) throw new Error("Enter a master name for the merged area.");
+  const wanted = new Set((opts.displays ?? []).map(cleanLower));
+  if (wanted.size < 2) throw new Error("Pick at least two areas to merge.");
+  return applyGroupEdit(userId, mergeRunId, (groups) => {
+    const targets = groups.filter((g) => wanted.has(cleanLower(g.display)));
+    if (targets.length < 2)
+      throw new Error(
+        "Some of those areas are no longer in this cleanup. Refresh and try again.",
+      );
+    const outside = groups.filter((g) => !targets.includes(g));
+    if (outside.some((g) => cleanLower(g.display) === cleanLower(master)))
+      throw new Error(
+        `"${master}" is already a separate area. Include it in the selection or choose a different master.`,
+      );
+    if (
+      outside.some((g) =>
+        g.variants.some((v) => cleanLower(v) === cleanLower(master)),
+      )
+    )
+      throw new Error(
+        `"${master}" is currently folded into another area. Move it out first, or pick a different master.`,
+      );
+
+    // Pick the normKey from the target matching the master, else the largest.
+    const masterTarget = targets.find(
+      (g) => cleanLower(g.display) === cleanLower(master),
+    );
+    const baseGroup =
+      masterTarget ??
+      [...targets].sort((a, b) => b.variants.length - a.variants.length)[0];
+
+    const mergedVariants: string[] = [];
+    const seen = new Set<string>();
+    for (const g of targets)
+      for (const v of g.variants) {
+        const k = cleanLower(v);
+        if (!seen.has(k)) {
+          seen.add(k);
+          mergedVariants.push(v);
+        }
+      }
+    mergedVariants.sort((a, b) => a.localeCompare(b));
+
+    const firstIdx = groups.findIndex((g) => targets.includes(g));
+    for (let i = groups.length - 1; i >= 0; i--)
+      if (targets.includes(groups[i])) groups.splice(i, 1);
+    groups.splice(Math.max(0, firstIdx), 0, {
+      display: master,
+      normKey: baseGroup.normKey,
+      variants: mergedVariants,
+      fuzzyMerged: true,
+      manual: true,
+    });
+  });
+}
+
+/**
+ * Move a single variant out of its current group and into `toDisplay` — an
+ * existing group, or a brand-new one (split-out). Pass `toDisplay === variant`
+ * to split it into its own standalone area.
+ */
+export async function moveVariant(
+  userId: string,
+  mergeRunId: string,
+  opts: { variant: string; toDisplay: string },
+): Promise<MergeRunReport> {
+  const variant = cleanName(opts.variant);
+  const toDisplay = cleanName(opts.toDisplay);
+  if (!variant) throw new Error("No area selected to move.");
+  if (!toDisplay) throw new Error("Enter where to move this area.");
+  return applyGroupEdit(userId, mergeRunId, (groups) => {
+    const from = groups.find((g) =>
+      g.variants.some((v) => cleanLower(v) === cleanLower(variant)),
+    );
+    if (!from) throw new Error("That name is no longer in this cleanup.");
+    from.variants = from.variants.filter(
+      (v) => cleanLower(v) !== cleanLower(variant),
+    );
+
+    let to = groups.find((g) => cleanLower(g.display) === cleanLower(toDisplay));
+    if (!to) {
+      to = {
+        display: toDisplay,
+        normKey: normalizeAreaName(variant) || normalizeAreaName(toDisplay),
+        variants: [],
+        fuzzyMerged: false,
+        manual: true,
+      };
+      groups.push(to);
+    } else if (to !== from) {
+      to.manual = true;
+    }
+    if (!to.variants.some((v) => cleanLower(v) === cleanLower(variant)))
+      to.variants.push(variant);
+    to.variants.sort((a, b) => a.localeCompare(b));
+  });
+}
+
+/**
+ * Estimate the combined "sold" sample a proposed master would carry from the
+ * latest validated upload, so the member can see it clears the floor BEFORE
+ * confirming. Read-only. Mirrors estimateFloorClearing's "after" representative
+ * (sum sampleSize within propertyType||metricKey, then max across buckets).
+ */
+export async function previewCombinedSamples(
+  userId: string,
+  variants: string[],
+): Promise<{ combined: number; floorSold: number; clears: boolean }> {
+  const settings = await loadMemberMetricSettings(userId);
+  const floor = sampleFloorFor(settings.sampleSizeVariant);
+  const wanted = new Set((variants ?? []).map(cleanLower));
+  if (wanted.size === 0)
+    return { combined: 0, floorSold: floor.sold, clears: false };
+
+  const latest = await prisma.marketDataUpload.findFirst({
+    where: { userId, status: "validated" },
+    orderBy: { uploadedAt: "desc" },
+    select: { id: true },
+  });
+  if (!latest) return { combined: 0, floorSold: floor.sold, clears: false };
+
+  const rows = await prisma.aggregatedMetric.findMany({
+    where: { userId, uploadId: latest.id },
+    select: {
+      neighbourhood: true,
+      propertyType: true,
+      metricKey: true,
+      sampleSize: true,
+    },
+  });
+
+  const buckets = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.neighbourhood || !wanted.has(cleanLower(r.neighbourhood))) continue;
+    const k = `${r.propertyType}||${r.metricKey}`;
+    buckets.set(k, (buckets.get(k) ?? 0) + r.sampleSize);
+  }
+  let combined = 0;
+  for (const v of buckets.values()) combined = Math.max(combined, v);
+  return { combined, floorSold: floor.sold, clears: combined >= floor.sold };
+}
+
 /**
  * Apply a DRY_RUN merge run: persist canonical areas/aliases, re-aggregate every
  * upload onto canonical names, relabel existing facts, refresh the vocab. Raw

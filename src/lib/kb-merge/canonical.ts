@@ -105,6 +105,12 @@ export interface CanonicalGroup {
   variants: string[];
   /** True if a fuzzy auto-merge contributed members beyond the deterministic key. */
   fuzzyMerged: boolean;
+  /**
+   * True if a member edited this group by hand (renamed the master, merged
+   * groups, or moved a variant in). Non-deterministic variants in a manual
+   * group are stamped source:"manual" (not "fuzzy") for an honest audit trail.
+   */
+  manual?: boolean;
 }
 
 export interface CanonicalProposal {
@@ -244,8 +250,15 @@ export async function persistCanonicalMap(
     });
 
     for (const raw of g.variants) {
-      const isFuzzy =
-        normalizeAreaName(raw) !== g.normKey; // folded by fuzzy, not determinism
+      // A variant whose own normalization equals the group key was folded by
+      // deterministic Stage-1 normalization. Otherwise it was folded by either a
+      // member's manual edit (group.manual) or the fuzzy pass.
+      const isDeterministic = normalizeAreaName(raw) === g.normKey;
+      const source = isDeterministic
+        ? "deterministic"
+        : g.manual
+          ? "manual"
+          : "fuzzy";
       await prisma.areaAlias.upsert({
         where: { userId_rawName: { userId, rawName: raw } },
         create: {
@@ -253,16 +266,31 @@ export async function persistCanonicalMap(
           rawName: raw,
           normKey: normalizeAreaName(raw),
           canonicalAreaId: area.id,
-          source: isFuzzy ? "fuzzy" : "deterministic",
-          confidence: isFuzzy
-            ? (proposal.fuzzyApplied.find(
-                (m) =>
-                  m.into.toLowerCase() === g.display.toLowerCase() ||
-                  m.from.toLowerCase() === raw.toLowerCase(),
-              )?.confidence ?? AUTO_MERGE_CONFIDENCE)
-            : null,
+          source,
+          confidence:
+            source === "fuzzy"
+              ? (proposal.fuzzyApplied.find(
+                  (m) =>
+                    m.into.toLowerCase() === g.display.toLowerCase() ||
+                    m.from.toLowerCase() === raw.toLowerCase(),
+                )?.confidence ?? AUTO_MERGE_CONFIDENCE)
+              : null,
         },
-        update: { canonicalAreaId: area.id, normKey: normalizeAreaName(raw) },
+        update: {
+          canonicalAreaId: area.id,
+          normKey: normalizeAreaName(raw),
+          // Restamp the audit trail when an existing alias is remapped (e.g. a
+          // member manually moves/merges a name into a different group).
+          source,
+          confidence:
+            source === "fuzzy"
+              ? (proposal.fuzzyApplied.find(
+                  (m) =>
+                    m.into.toLowerCase() === g.display.toLowerCase() ||
+                    m.from.toLowerCase() === raw.toLowerCase(),
+                )?.confidence ?? AUTO_MERGE_CONFIDENCE)
+              : null,
+        },
         select: { id: true },
       });
       rawToAreaId.set(raw.toLowerCase(), area.id);
