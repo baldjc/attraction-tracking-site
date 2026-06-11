@@ -16,16 +16,6 @@ function greetingWord(): string {
   return "Good evening";
 }
 
-function fmtThursday(dateStr: string) {
-  const d = new Date(dateStr + "T12:00:00");
-  const datePart = d.toLocaleDateString("en-CA", { weekday: "long", month: "long", day: "numeric" });
-  const label = `${datePart} at 1:30 PM MST`;
-  const today = new Date();
-  const diff = Math.ceil((d.getTime() - today.getTime()) / 86400000);
-  const relative = diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `in ${diff} days`;
-  return { label, relative };
-}
-
 // ── Payment Banner ────────────────────────────────────────────
 
 function PaymentBanner() {
@@ -223,13 +213,6 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
   }, [jarvisEnabled, router, memberId]);
 
   const firstName = data?.firstName ?? null;
-  const nextCoachingCall = data?.nextCoachingCall;
-  // Only surface a date GHL actually confirmed — never the synthetic
-  // next-Thursday fallback, so we don't assert a call that may not happen.
-  const coaching =
-    nextCoachingCall?.confirmed && nextCoachingCall?.date
-      ? fmtThursday(nextCoachingCall.date)
-      : null;
   const stats = data?.jarvisStats;
 
   const conversationHref = jarvisEnabled ? "/member/jarvis" : "/member/content-tools";
@@ -469,40 +452,24 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
           )}
         </div>
 
-        {/* Next live members call */}
-        <div className="rounded-2xl border border-[var(--abv-border)] bg-[var(--abv-card)] p-6">
-          <h2 className="text-sm font-semibold text-[var(--abv-text-secondary)] uppercase tracking-wider mb-4">
-            Next live members call
+        {/* Hire a Human CTA */}
+        <div className="rounded-2xl border border-[var(--abv-hire)]/30 bg-[var(--abv-hire-tint)] p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--abv-hire)] mb-3">
+            Want a hand with your content?
           </h2>
-          {loading ? (
-            <div className="space-y-2 animate-pulse">
-              <div className="h-5 w-48 bg-gray-200 dark:bg-[#2a2a2a] rounded" />
-              <div className="h-6 w-24 bg-gray-100 dark:bg-[#1e1e1e] rounded-full" />
-            </div>
-          ) : coaching ? (
-            <>
-              <p className="text-lg font-bold text-[var(--abv-text)]">{coaching.label}</p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--abv-azure-tint)] text-[var(--abv-azure)]">
-                  {coaching.relative}
-                </span>
-                {nextCoachingCall?.link && nextCoachingCall.link.startsWith("http") && (
-                  <a
-                    href={nextCoachingCall.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-6 py-2.5 rounded-full bg-[var(--abv-dark)] text-white font-semibold text-sm hover:bg-black/90 transition-colors"
-                  >
-                    Join Call →
-                  </a>
-                )}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-[var(--abv-text-secondary)]">
-              No call scheduled right now — check back soon.
-            </p>
-          )}
+          <p className="text-lg font-bold text-[var(--abv-text)] leading-snug">
+            You didn&apos;t get here to spend your evenings editing videos.
+          </p>
+          <p className="mt-2 text-sm text-[var(--abv-text-secondary)] leading-relaxed max-w-xl">
+            From editing and thumbnails to fully done-for-you content, see all the ways
+            our team can take the work off your plate.
+          </p>
+          <LinkButton
+            href="/member/hire"
+            className="mt-4 !bg-[var(--abv-hire)] !text-white hover:!opacity-90"
+          >
+            Explore Hire a Human →
+          </LinkButton>
         </div>
       </div>
     </div>
