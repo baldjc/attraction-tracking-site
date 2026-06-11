@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { canStaffAccessMember } from "@/lib/staff-access";
 import { PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES, hideDeletedBingeTargets } from "@/lib/content-plan-utils";
 import { createVideoFolder, classifyDriveError } from "@/lib/google-drive";
+import { isPlannerKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 async function checkAdmin() {
   const session = await auth();
@@ -74,6 +75,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!(await canStaffAccessMember((session.user as any).id, id))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Launch-gate kill-switch — resolved against the TARGET member (id), so an
+  // admin/migration creating plans for a halted member is blocked too. This is
+  // the admin-driven plan-creation path the member-data migration would use.
+  if (await isPlannerKillSwitchActiveForUser(id)) {
+    return NextResponse.json(
+      {
+        error: "Content Planner creation is paused for this member (kill-switch active).",
+        code: "PLANNER_PAUSED",
+      },
+      { status: 423 },
+    );
+  }
+
   const body = await req.json();
   const { title, status, theme, shootDate, publishDate, editDueDate, priority, notes, script, thumbnailWords, footageLink } = body;
 

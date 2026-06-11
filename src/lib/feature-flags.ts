@@ -189,3 +189,51 @@ export async function isDurableQueueEnabledForUser(
   const flags = await getFeatureFlags(userId ? { userId } : undefined);
   return flags.durable_job_queue === true;
 }
+
+/**
+ * Launch-gate KILL-SWITCH for the Content Planner + the member-data migration.
+ *
+ * Stored as an OBJECT-form flag in the `feature_visibility` AppSetting under
+ * this key. When it resolves TRUE for a user, all Content-Planner *writes*
+ * (new-plan creation, which is also how a migration moves a member's work in)
+ * are refused — instantly halting a bad rollout without touching any data:
+ *
+ *   - `{ "enabled": true }`                          → halted for EVERY member (global)
+ *   - `{ "enabled": false, "allowedUserIds": [id] }` → halted for THOSE members (per-member)
+ *   - absent / `{ "enabled": false, "allowedUserIds": [] }` → planner runs (default)
+ *
+ * Deliberately NOT in DEFAULT_FLAGS so the admin feature-visibility PUT can set
+ * it in object form the first time (the PUT's shape-preservation contract locks
+ * any key that already exists as a boolean default). It is resolved by reading
+ * the raw AppSetting with NO staff bypass (only `userId`), exactly like the
+ * durable-queue resolver, so an admin acting for a member can't accidentally
+ * invert the halt. Non-destructive (existing plans stay readable) and
+ * fail-OPEN: a flag-read error never halts the planner — an incident response
+ * flips this switch deliberately.
+ */
+export const PLANNER_KILL_SWITCH_KEY = "planner_kill_switch";
+
+export async function isPlannerKillSwitchActiveForUser(
+  userId: string | null | undefined,
+): Promise<boolean> {
+  try {
+    const setting = await prisma.appSetting.findUnique({
+      where: { key: FEATURE_SETTING_KEY },
+    });
+    if (!setting) return false;
+    const parsed = JSON.parse(setting.value) as Record<string, FlagValue>;
+    const v = parsed[PLANNER_KILL_SWITCH_KEY];
+    if (v === undefined) return false;
+    return resolveFlag(v, userId ?? undefined);
+  } catch (err) {
+    // Fail-OPEN, but loudly: a break-glass control that silently mis-reads is
+    // worse than one that logs. We still prefer availability (a flaky config
+    // read must not self-DOS the planner) — an incident response flips the
+    // switch deliberately, so a read error means "keep running, alert ops".
+    console.error(
+      "[planner_kill_switch] flag read failed — defaulting to NOT halted:",
+      (err as Error)?.message ?? err,
+    );
+    return false;
+  }
+}

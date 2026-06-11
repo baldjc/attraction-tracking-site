@@ -3,7 +3,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { getStatusOptions, isValidStatus, PRODUCTION_TIERS, PRE_PRODUCTION_STATUSES, hideDeletedBingeTargets } from "@/lib/content-plan-utils";
 import { createVideoFolder, ensureVideoFolderForPlan, classifyDriveError } from "@/lib/google-drive";
-import { getFeatureFlags } from "@/lib/feature-flags";
+import { getFeatureFlags, isPlannerKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 export async function GET(req: NextRequest) {
   const user = await resolveUserFromSession();
@@ -73,6 +73,21 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Launch-gate kill-switch — halts new-plan creation (and therefore the
+  // member-data migration, which moves work in by creating plans) per-member or
+  // globally without a DB restore. Non-destructive: existing plans stay
+  // readable via GET; only writes are blocked. See PLANNER_KILL_SWITCH_KEY.
+  if (await isPlannerKillSwitchActiveForUser(user.id)) {
+    return NextResponse.json(
+      {
+        error:
+          "The Content Planner is temporarily paused while we roll out an update. Your existing plans and scripts are safe — please check back shortly.",
+        code: "PLANNER_PAUSED",
+      },
+      { status: 423 },
+    );
+  }
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },

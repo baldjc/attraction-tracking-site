@@ -15,7 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import { resolveUserFromSession } from "@/lib/session-utils";
-import { getFeatureFlags } from "@/lib/feature-flags";
+import { getFeatureFlags, isPlannerKillSwitchActiveForUser } from "@/lib/feature-flags";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import { loadLeadVideoSeed } from "@/lib/content-engine-context";
 import {
@@ -51,6 +51,19 @@ export async function POST(req: NextRequest) {
   }
   const userId = resolved.id;
   const userRole = resolved.role;
+
+  // Launch-gate kill-switch — halts plan creation (this route mints a plan from
+  // a Story Lead) per-member or globally without a DB restore. Non-destructive.
+  if (await isPlannerKillSwitchActiveForUser(userId)) {
+    return NextResponse.json(
+      {
+        error:
+          "The Content Planner is temporarily paused while we roll out an update. Your existing plans and scripts are safe — please check back shortly.",
+        code: "PLANNER_PAUSED",
+      },
+      { status: 423 },
+    );
+  }
 
   const flags = await getFeatureFlags({ userId, userRole });
   if (!flags.tool_content_engine_v2) {
