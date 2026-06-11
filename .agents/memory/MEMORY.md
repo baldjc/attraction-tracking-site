@@ -78,3 +78,4 @@
 - [Voice-mode display coherence](voice-mode-display-coherence.md) — Jarvis voice chip + selector must use the Script Builder's same >=500 guide threshold, or members see a "custom" voice that never applies.
 - [Avatar Stressor vs Theme vocab](avatar-stressor-vs-theme-vocab.md) — member-facing: 8 stress questions = "Avatar Stressor", 5-slot rotation = "Theme"; but the `theme`/`content_theme` COLUMN stores a Stressor name (identifiers unchanged).
 - [Avatar-Stressor ack body scope](script-stressor-ack-body-scope.md) — the stressor_acknowledgement gate must paragraph-strip `### Intro Option` blocks + skip the opening hook word-window, else intro/hook-only acks pass; generation-only, degrades on save.
+- [Connection/empathy dosage gate](connection-dosage-gate.md) — generation-only empathy dosage floors (4/2/6, 0 aggrieved); clustering must measure word-windows + coverage (<=2 regions), NOT writer `---` rules, or well-spread no-rule prose false-positives.

@@ -108,7 +108,16 @@ export type ScriptViolationRule =
    *  genuinely acknowledges that stressor's worry (psychology layer) — felt
    *  language co-located with the avatar's own stress vocabulary. INERT when
    *  no `activeStressor` is supplied (e.g. the member hasn't built it). */
-  | "stressor_acknowledgement";
+  | "stressor_acknowledgement"
+  /** Empathy + connection-language dosage gate (generation only — INERT unless
+   *  opts.enforceConnectionDosage). The body must carry the voice guide's
+   *  prescribed dosage of connection phrases / values peppering / editorial
+   *  moments, distributed and empowered-not-aggrieved. */
+  | "connection_language_dosage"
+  | "values_peppering_dosage"
+  | "editorial_signature_dosage"
+  | "connection_clustering"
+  | "aggrieved_editorial";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -3518,6 +3527,19 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * existing behaviour, which always passes `profileText`).
    */
   hasNeighbourhoodProfile?: boolean;
+  /**
+   * Connection-language dosage gate. When `true`, the body must carry the
+   * empathy/connection dosage the voice guide prescribes — checked, not just
+   * prompted: ≥4 connection phrases, ≥2 values-peppering beats, ≥6
+   * editorial/signature moments, distributed (not clustered), and ZERO
+   * aggrieved first-person editorial reactions. Drives the same re-prompt +
+   * degrade loop as `stressor_acknowledgement`.
+   *
+   * INERT when unset/false — only the GENERATION path (buildScript) sets it,
+   * so a direct save or a hand-edited script is never hard-failed for a
+   * connection-dosage miss the member chose. SCOPE: generation + self-check.
+   */
+  enforceConnectionDosage?: boolean;
 }
 
 /* ───────────────────────────────────────────────────────────────────────── */
@@ -3656,6 +3678,348 @@ function checkStressorAcknowledgement(
   ];
 }
 
+/* ───────────────────────────────────────────────────────────────────────── */
+/*  Connection-language dosage — empathy + connection beats as CHECKED output  */
+/*  (not just prompt suggestions). Mirrors the stressor_acknowledgement body-   */
+/*  scoping: the dosage must live in the BODY (psychology / interpretive        */
+/*  layer), distributed across the script, never clustered, empowered not       */
+/*  aggrieved. INERT unless opts.enforceConnectionDosage — generation only.     */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/** Floors per the voice guide's prescribed dosage (the spec band's minimum). */
+const CONNECTION_PHRASE_FLOOR = 4; // band 4-5
+const VALUES_PEPPERING_FLOOR = 2; // band 2-3
+const EDITORIAL_SIGNATURE_FLOOR = 6; // band 6-8
+/** "If 4+ connection/values beats land in one section, redistribute or cut." */
+const DOSAGE_CLUSTER_MAX_PER_SECTION = 4;
+/**
+ * Clustering is measured over fixed ~word-window regions, NOT writer-emitted
+ * `---` rules — the script writer emits those inconsistently, so a perfectly
+ * well-spread body that happens to carry no horizontal rules would otherwise
+ * collapse into one giant "section" and false-positive the clustering check.
+ */
+const DOSAGE_CLUSTER_WINDOW_WORDS = 250;
+/**
+ * Beats are "clustered" only when they're confined to this few regions. A body
+ * that touches more regions than this is distributed by definition — even if one
+ * region is naturally denser (e.g. a strategy recap) — so it must NOT fire.
+ */
+const DOSAGE_CLUSTER_MAX_BEAT_REGIONS = 2;
+
+/**
+ * Connection phrases — viewer-DIRECTED recognition + viewer-voicing (the script
+ * talks TO or AS the viewer). Broad on purpose: the data-heavy exception means
+ * a script connects through "you might be thinking…" voicing as much as through
+ * explicit empathy library phrases, so both count. Drawn from the CONNECTION
+ * LANGUAGE phrase library + the voicing-the-viewer's-questions pattern.
+ */
+export const CONNECTION_PHRASE_PATTERNS: readonly RegExp[] = [
+  /it makes sense (?:that )?you(?:'?d| would| might| can)?\b/i,
+  /i sense that you\b/i,
+  /it seems like you\b/i,
+  /you(?:'?re| are) not alone\b/i,
+  /i want you to (?:hear|understand|know|see)\b/i,
+  /here'?s what i (?:need|want) you to (?:understand|know|hear|see)\b/i,
+  /you are exactly where you\b/i,
+  /i'?ve got you\b/i,
+  /most families in your position\b/i,
+  /you might be (?:thinking|wondering|asking|surprised)\b/i,
+  /you(?:'?re| are) (?:probably|likely) (?:thinking|wondering|asking)\b/i,
+  /you may be (?:thinking|wondering|asking|surprised)\b/i,
+  /(?:a |the )?(?:buyer|family|seller|viewer)s? (?:might|may|could) (?:wonder|ask|be (?:thinking|wondering|asking))\b/i,
+  /you'?re probably (?:asking|wondering|thinking)\b/i,
+  /if you'?(?:ve|re)\b/i, // "if you've been…", "if you're the type…", "if you're relocating…"
+  /(?:here'?s )?what (?:this|that|\d[\d.,]*\s+months?) (?:actually )?means? (?:for (?:a |you)|on the ground)\b/i,
+  /what (?:this|that) means for you\b/i,
+  /i know (?:exactly )?(?:how|what) (?:you|this) (?:feel|feels|are)\b/i,
+];
+
+/**
+ * Values peppering — TEAM / business-philosophy framing (the script speaks as
+ * "we / our team / the families we work with"). Distinct from connection (which
+ * is viewer-directed) so the two buckets don't collapse. In data-heavy ABV
+ * scripts this surfaces as team-experience + philosophy beats, not only the
+ * textbook "we believe every family deserves…" line.
+ */
+export const VALUES_PEPPERING_PATTERNS: readonly RegExp[] = [
+  /we believe\b/i,
+  /every (?:family|buyer|seller|person) deserves\b/i,
+  /our (?:team'?s )?(?:whole )?(?:approach|job|focus|promise|philosophy) (?:is|to)\b/i,
+  /(?:built|building) around making sure\b/i,
+  /(?:the )?families we work with\b/i,
+  /we work with\b/i,
+  /we'?ve worked with (?:families|buyers|sellers|clients|people|hundreds)\b/i,
+  /(?:the )?families who (?:win|succeed|land|lose|miss)\b/i,
+  /we'?ve (?:watched|seen) this play out\b/i,
+  /we (?:see|seen) this (?:with|in|all the time)\b/i,
+  /we (?:have|'?ve) found\b/i,
+  /what (?:we'?ve|i'?ve) learned (?:after|in|over|helping)\b/i,
+  /(?:when )?we (?:have|get) families\b/i,
+  /we'?d (?:point|recommend|tell|flag|steer|send|guide)\b/i,
+  /i'?ve sat (?:across|down) (?:from|with)\b/i,
+];
+
+/**
+ * Editorial / signature moments — the data-heavy interpretive voice: empowered
+ * reactions to what the MARKET is doing + Jared's signature delivery beats
+ * (think about that / hold that thought / did you catch that / shockingly /
+ * stupid low / repetition-for-emphasis / fourth-wall asides / mid-video hooks).
+ * These describe the DATA, never the presenter's feelings.
+ */
+export const EDITORIAL_SIGNATURE_PATTERNS: readonly RegExp[] = [
+  /\bstupid (?:low|tight|high|cheap|expensive)\b/i,
+  /\bthink about that\b/i,
+  /\bhold that thought\b/i,
+  /\bdid you catch that\b/i,
+  /\bshockingly\b/i,
+  /\b(?:really,? ){2,}/i, // "really, really high"
+  /\b(?:really|very|extremely|incredibly|absurdly|insanely) (?:low|tight|high|fast|quick|cheap|expensive|wild|crazy)\b/i,
+  /\bno joke\b/i,
+  /\bthat'?s it\b/i,
+  /\bwait until you see\b/i,
+  /\bhere'?s where it gets (?:interesting|complex|wild|good)\b/i,
+  /\bnow flip your assumption\b/i,
+  /\bthe math (?:has )?(?:fallen|falls) apart\b/i,
+  /\bi'?(?:ll|m going to) be (?:direct|straight|honest|blunt)\b/i,
+  /\b(?:hold on|wait a (?:second|minute|sec))\b/i,
+  /\blet me back up\b/i,
+  /\bpause on (?:that|this)\b/i,
+  /\bi know what you'?re thinking\b/i,
+  /\boh wow\b/i,
+  /\bif you (?:think|found|liked|like) (?:that|this)\b/i, // mid-video retention hook
+];
+
+/**
+ * Aggrieved editorial — first-person EMOTIONAL-STATE reactions. Banned: the
+ * reaction must name WHAT THE MARKET IS DOING, never HOW IT MAKES THE PRESENTER
+ * FEEL. Empowered, not aggrieved.
+ */
+export const AGGRIEVED_PATTERNS: readonly RegExp[] = [
+  /\bi'?m (?:a little |really |so |pretty |kind of |getting )?(?:annoyed|frustrated|angry|furious|irritated|mad|fed up|sick of|tired of|upset|bothered)\b/i,
+  /\bit (?:drives|is driving|'?s driving) me (?:crazy|nuts|insane|mad|up the wall)\b/i,
+  /\bit (?:makes|'?s making) me (?:angry|mad|furious|sick|crazy)\b/i,
+  /\b(?:it'?s|this is|that'?s) (?:infuriating|maddening|exhausting|frustrating)\b/i,
+  /\bi (?:honestly )?hate (?:that|how|when|it|this)\b/i,
+  /\bi'?m so (?:done|over) (?:with )?(?:it|this)\b/i,
+];
+
+/**
+ * Body text for dosage scanning. Mirrors `checkStressorAcknowledgement`'s
+ * scoping so connection/values/editorial beats are counted only where they
+ * must live (the BODY), never in the title, hook, intro options, citations, or
+ * production tags. Line structure is PRESERVED (so the `---` section split for
+ * the cluster check works) and the opening hook window is dropped line-wise.
+ */
+export function dosageScanBody(script: string): { scanBody: string; sections: string[] } {
+  let body = script;
+  const footnote = extractSourcesFootnote(script);
+  if (footnote) {
+    const idx = body.indexOf(footnote);
+    if (idx > 0) body = body.slice(0, idx);
+  }
+
+  // Drop `### Intro Option N — …` alternate-opener blocks (paragraph-bounded).
+  {
+    const lines = body.split("\n");
+    const kept: string[] = [];
+    let suppressing = false;
+    for (const line of lines) {
+      if (/^\s{0,3}#{1,6}\s/.test(line)) {
+        suppressing = /^\s{0,3}#{1,6}\s+intro\s+option\b/i.test(line);
+        continue;
+      }
+      if (suppressing) {
+        if (line.trim() === "") suppressing = false;
+        continue;
+      }
+      kept.push(line);
+    }
+    body = kept.join("\n");
+  }
+
+  // Strip [tags] and bold-only packaging lines.
+  body = body
+    .replace(/\[[^\]]*\]/g, " ")
+    .split("\n")
+    .filter((line) => !/^\s*\*\*[^*]+\*\*\s*$/.test(line))
+    .join("\n");
+
+  // Skip the opening hook (≤12% of runtime, floored 40 / capped 150 words),
+  // line-wise so the remaining body keeps its `---` section breaks.
+  const totalWords = body.split(/\s+/).filter(Boolean).length;
+  const skip = Math.min(150, Math.max(40, Math.floor(totalWords * 0.12)));
+  let consumed = 0;
+  const keptLines: string[] = [];
+  for (const line of body.split("\n")) {
+    if (consumed < skip) {
+      consumed += line.split(/\s+/).filter(Boolean).length;
+      continue;
+    }
+    keptLines.push(line);
+  }
+  const scanBody = keptLines.join("\n");
+
+  // Clustering regions = fixed ~word-window slices of the body, NOT writer-
+  // emitted `---` rules. The writer emits horizontal rules inconsistently, so a
+  // well-distributed body that happens to carry no rules would collapse into one
+  // giant section and false-positive the clustering check. Word-windows measure
+  // real spatial distribution regardless of the writer's formatting choices.
+  const sections = chunkByWords(scanBody, DOSAGE_CLUSTER_WINDOW_WORDS);
+
+  return { scanBody, sections: sections.length ? sections : [scanBody] };
+}
+
+/** Split text into ~`perChunk`-word slices (whitespace-tokenised). */
+function chunkByWords(text: string, perChunk: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= perChunk) return text.trim() ? [text] : [];
+  const chunks: string[] = [];
+  for (let i = 0; i < words.length; i += perChunk) {
+    chunks.push(words.slice(i, i + perChunk).join(" "));
+  }
+  return chunks;
+}
+
+/** Total occurrences of any pattern in `text` (a floor metric — more is fine). */
+export function countPatternHits(text: string, patterns: readonly RegExp[]): number {
+  let n = 0;
+  for (const re of patterns) {
+    const g = new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g");
+    const matches = text.match(g);
+    if (matches) n += matches.length;
+  }
+  return n;
+}
+
+/**
+ * Empathy + connection-language dosage gate. Counts connection phrases, values
+ * peppering, and editorial/signature moments in the BODY, enforces the voice-
+ * guide floors, flags clustering (4+ connection/values beats in one section),
+ * and bans aggrieved first-person editorial reactions. INERT unless
+ * `opts.enforceConnectionDosage`. ERROR severity → drives the same re-prompt +
+ * degrade loop as the other generation gates.
+ */
+export function checkConnectionDosage(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  if (!opts.enforceConnectionDosage) return [];
+  const { scanBody, sections } = dosageScanBody(script);
+  if (!scanBody.trim()) return [];
+
+  const violations: ScriptViolation[] = [];
+
+  const connectionHits = countPatternHits(scanBody, CONNECTION_PHRASE_PATTERNS);
+  if (connectionHits < CONNECTION_PHRASE_FLOOR) {
+    violations.push({
+      rule: "connection_language_dosage",
+      severity: "error",
+      message:
+        `The body carries only ${connectionHits} connection phrase(s) — the voice ` +
+        `guide needs ${CONNECTION_PHRASE_FLOOR}-5, distributed across the script. Weave in more ` +
+        `viewer-directed recognition / viewer-voicing beats ("it makes sense ` +
+        `that you'd think…", "you might be thinking…", "here's what that means ` +
+        `for you", "if you've been…"). Write them as spoken dialogue in the ` +
+        `psychology layer — never as quota-filler ("for people like you" ` +
+        `repeated) and never in the hook or intro options.`,
+      snippet: `${connectionHits}/${CONNECTION_PHRASE_FLOOR} connection phrases`,
+    });
+  }
+
+  const valuesHits = countPatternHits(scanBody, VALUES_PEPPERING_PATTERNS);
+  if (valuesHits < VALUES_PEPPERING_FLOOR) {
+    violations.push({
+      rule: "values_peppering_dosage",
+      severity: "error",
+      message:
+        `The body carries only ${valuesHits} values-peppering beat(s) — the voice ` +
+        `guide needs ${VALUES_PEPPERING_FLOOR}-3 at natural points. Add team / business-philosophy ` +
+        `beats spoken as "we / our team / the families we work with" (e.g. "we ` +
+        `believe every family deserves to feel confident", "the families we ` +
+        `work with who win are the ones who prepare"). VIEWER + TEAM + BUSINESS ` +
+        `values only — never the creator's hobbies or personal autobiography.`,
+      snippet: `${valuesHits}/${VALUES_PEPPERING_FLOOR} values beats`,
+    });
+  }
+
+  const editorialHits = countPatternHits(scanBody, EDITORIAL_SIGNATURE_PATTERNS);
+  if (editorialHits < EDITORIAL_SIGNATURE_FLOOR) {
+    violations.push({
+      rule: "editorial_signature_dosage",
+      severity: "error",
+      message:
+        `The body carries only ${editorialHits} editorial / signature moment(s) — ` +
+        `the voice guide needs ${EDITORIAL_SIGNATURE_FLOOR}-8, at least one per major data beat ` +
+        `(~every 150-250 words). Add empowered reactions to WHAT THE DATA IS ` +
+        `DOING ("shockingly", "stupid tight", "think about that", "hold that ` +
+        `thought", "did you catch that?", a repetition-for-emphasis at the data ` +
+        `peak, one fourth-wall aside). Describe the market, never your own ` +
+        `feelings.`,
+      snippet: `${editorialHits}/${EDITORIAL_SIGNATURE_FLOOR} editorial moments`,
+    });
+  }
+
+  // Clustering — connection + values beats must be DISTRIBUTED across the body,
+  // not dumped in one place while the rest runs flat. Measured over fixed word-
+  // window regions (see dosageScanBody). The test is RELATIVE and coverage-aware:
+  // beats are "clustered" only when ALL of (a) one region holds an absolute
+  // minimum (DOSAGE_CLUSTER_MAX_PER_SECTION+), (b) that region holds MORE THAN
+  // HALF of all connection/values beats, AND (c) the beats touch no more than
+  // DOSAGE_CLUSTER_MAX_BEAT_REGIONS regions total — so a well-spread body with one
+  // naturally denser region (e.g. a strategy recap) never false-positives.
+  if (sections.length > 1) {
+    const perSection = sections.map(
+      (s) =>
+        countPatternHits(s, CONNECTION_PHRASE_PATTERNS) +
+        countPatternHits(s, VALUES_PEPPERING_PATTERNS),
+    );
+    const totalCV = perSection.reduce((a, b) => a + b, 0);
+    const maxInSection = Math.max(...perSection);
+    const regionsWithBeats = perSection.filter((n) => n > 0).length;
+    if (
+      totalCV >= CONNECTION_PHRASE_FLOOR + VALUES_PEPPERING_FLOOR &&
+      maxInSection >= DOSAGE_CLUSTER_MAX_PER_SECTION &&
+      maxInSection > totalCV * 0.5 &&
+      regionsWithBeats <= DOSAGE_CLUSTER_MAX_BEAT_REGIONS
+    ) {
+      violations.push({
+        rule: "connection_clustering",
+        severity: "error",
+        message:
+          `${maxInSection} of ${totalCV} connection / values beats are clustered ` +
+          `in a single section while the rest of the script runs flat. ` +
+          `Redistribute them across the full body so the empathy reads as ` +
+          `natural and woven throughout, not stacked in one place.`,
+        snippet: sections[perSection.indexOf(maxInSection)]
+          .replace(/\s+/g, " ")
+          .slice(0, 120),
+      });
+    }
+  }
+
+  // Empowered, not aggrieved — first-person emotional-state reactions are banned.
+  for (const line of scanBody.split("\n")) {
+    for (const re of AGGRIEVED_PATTERNS) {
+      const m = re.exec(line);
+      if (m) {
+        violations.push({
+          rule: "aggrieved_editorial",
+          severity: "error",
+          message:
+            `Editorial reactions must be empowered, not aggrieved — name WHAT ` +
+            `THE MARKET IS DOING, not how it makes you feel. Rewrite this ` +
+            `first-person emotional reaction as a reaction to the data (e.g. ` +
+            `"stupid tight" instead of "I'm a little annoyed").`,
+          snippet: snippetAround(line, m),
+        });
+        break;
+      }
+    }
+  }
+
+  return violations;
+}
+
 /**
  * Run all five rules and return a structured result. Used by the v2
  * streaming route's re-prompt loop:
@@ -3764,6 +4128,10 @@ export function validateScript(
   // PART 1 — the body must genuinely acknowledge the active Avatar Stressor's
   // worry. INERT when no activeStressor is supplied (member hasn't built it).
   violations.push(...checkStressorAcknowledgement(script, opts));
+  // Empathy + connection-language dosage (connection phrases, values
+  // peppering, editorial/signature moments, distribution, empowered-not-
+  // aggrieved). INERT unless opts.enforceConnectionDosage (generation only).
+  violations.push(...checkConnectionDosage(script, opts));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

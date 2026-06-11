@@ -819,6 +819,9 @@ function buildInitialUserMessage(args: {
     "5. **Hyper-local floor:** at least 1 anchored detail (neighbourhood / $ / % / MOI / year-month) per ~120 words of body dialogue.",
   );
   lines.push("6. **Canadian spelling throughout** (neighbourhood, colour, centre, analyse).");
+  lines.push(
+    "7. **Empathy + connection-language dosage (BODY, distributed):** the body must carry — woven across the WHOLE script, NEVER stacked in one section — at least **4 connection phrases** (viewer-directed recognition / voicing the viewer's questions: \"it makes sense that you'd think…\", \"you might be thinking…\", \"here's what that means for you\", \"if you've been…\"), at least **2 values-peppering beats** (team / business philosophy: \"we believe…\", \"the families we work with who win…\"), and at least **6 editorial / signature moments** (empowered reactions to WHAT THE DATA IS DOING: \"shockingly\", \"stupid tight\", \"think about that\", \"hold that thought\", \"did you catch that?\", a repetition-for-emphasis, one fourth-wall aside). Editorial reactions describe the MARKET, never your own feelings — first-person aggrieved lines (\"I'm annoyed/frustrated\", \"it drives me crazy\") are a hard failure. This is NOT a quota to pad: weave it into the existing data + psychology layers.",
+  );
   lines.push("");
 
   lines.push("## OUTPUT");
@@ -1027,6 +1030,24 @@ function suggestRetryFix(v: ScriptViolation, hasProfile = true): string {
       "Add this as ONE genuine beat in the BODY's psychology layer only —",
       "not the title, thumbnail, hook, or two-beat intro. Keep everything else",
       "in the draft (structure, voice, citations, visual tags) unchanged.",
+    ].join(" ");
+  }
+  if (
+    v.rule === "connection_language_dosage" ||
+    v.rule === "values_peppering_dosage" ||
+    v.rule === "editorial_signature_dosage" ||
+    v.rule === "connection_clustering" ||
+    v.rule === "aggrieved_editorial"
+  ) {
+    // Empathy + connection-language dosage. The message already states the
+    // exact count vs. floor and what to add; surface it verbatim and frame
+    // the fix as targeted weaving, NOT a rewrite or quota-filler dump.
+    return [
+      v.message,
+      "Weave the missing beats naturally into the BODY's existing data and",
+      "psychology layers across the WHOLE script — never as a stacked block,",
+      "boilerplate, or quota-filler. Keep structure, citations, numbers, and",
+      "visual tags unchanged.",
     ].join(" ");
   }
   return v.message;
@@ -1806,6 +1827,9 @@ export async function buildScript(
       // PART 1 — enforce the Active Avatar Stressor acknowledgement at
       // generation. INERT when null (member hasn't built the stressor).
       activeStressor: activeStressor ?? null,
+      // Empathy + connection-language dosage — enforced at GENERATION only so
+      // a direct save or hand-edited script is never hard-failed for it.
+      enforceConnectionDosage: true,
       // Market updates pass the lean (1,600) floor explicitly so a data-rich
       // 1,600+ word draft is never flagged degraded just because a profile loaded.
       hasNeighbourhoodProfile: useLeanFloor ? false : undefined,

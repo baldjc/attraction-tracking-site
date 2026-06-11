@@ -663,15 +663,15 @@ Do NOT pepper with creator's hobbies, family stories, or personal interests. Tha
 
 In data-heavy scripts, the creator's interpretive voice and editorial reactions (*"I don't know, but it's out there"*, *"stupid low"*, *"stupid tight"*, *"shockingly"*, *"oh wow, 21 months of inventory"*, *"the math has fallen apart"*, *"think about that"*, *"hold that thought"*, *"did you catch that?"*) ARE connection language. Don't force template empathy phrases on top — the conversational tone IS the connection.
 
-**Editorial reactions must be empowered, not aggrieved.** *"Stupid low"* works because it names the data condition. *"I'm a little annoyed"* does not work because it names the presenter's emotional state. The line is whether the reaction describes WHAT THE MARKET IS DOING (good) or HOW IT MAKES YOU FEEL (banned).
+**Editorial reactions must be empowered, not aggrieved (CHECKED).** *"Stupid low"* works because it names the data condition. *"I'm a little annoyed"* does not work because it names the presenter's emotional state. The line is whether the reaction describes WHAT THE MARKET IS DOING (good) or HOW IT MAKES YOU FEEL (banned). A server-side check (\`aggrieved_editorial\`) HARD-FAILS the draft on first-person emotional-state lines ("I'm annoyed/frustrated", "it drives me crazy", "I hate how…") and re-prompts you.
 
-**Frequency — this is where the model fails most often.** Deploy AT LEAST one editorial reaction or signature phrase per major data beat (every ~150-250 spoken words). The model's typical failure: one editorial reaction in the entire script, then flat. A 1500-word script should have at least 6-8 distinct editorial-reaction or signature-phrase moments.
+**Frequency — this is where the model fails most often (CHECKED dosage).** Deploy AT LEAST one editorial reaction or signature phrase per major data beat (every ~150-250 spoken words). The model's typical failure: one editorial reaction in the entire script, then flat. A server-side check enforces the BODY dosage and re-prompts on a shortfall: at least **6** editorial / signature moments (\`editorial_signature_dosage\`, target 6-8), at least **4** connection phrases (\`connection_language_dosage\`, target 4-5), and at least **2** values-peppering beats (\`values_peppering_dosage\`, target 2-3). These count beats in the BODY only (the hook, intro options, citations, and visual tags are excluded), so land them in the spoken body, distributed.
 
 **Connection phrases written as DIALOGUE, not notes:**
 CORRECT (in script): *"It makes sense that you'd think you need to live downtown for walkability..."*
 INCORRECT (just a note): \`[connection phrase here]\`
 
-**Distribute, don't cluster.** Connection phrases + values peppering, spread across the full script. If 4+ land in one section, redistribute or cut.
+**Distribute, don't cluster (CHECKED).** Connection phrases + values peppering, spread across the full script. A server-side check (\`connection_clustering\`) re-prompts you if a single section hoards more than half of all connection/values beats while the rest runs flat — weave them throughout, never stacked in one place.
 
 **Anti-patterns from forensic analysis (V6, V8, V10):**
 DO NOT do as quota-filler:
@@ -1059,7 +1059,11 @@ Deliver:
    - Lead magnet DEEP pitch (LM 2/3, at ~40-45%) follows the 4-part structure (topic-anchored opener → tool → topic-specific benefit → link drop) and reads as topic-relevant, NOT generic boilerplate: yes/no
    - Closing is a counter-intuitive FORWARD/BINGE hook — NOT a backward recap and NOT a closing sales pitch, no push-CTA; it points to the BINGE TARGET title if one is configured (omitted entirely when BINGE TARGET is "none configured", replaced by a single forward-looking line), with LM 3/3 as a half-sentence riding it: yes/no
    - Section openers are short and conversational, not marketing-y headlines: yes/no
-   - At least 6-8 distinct editorial-reaction or signature-phrase moments across the script: yes/no (count actual)
+   - At least 6-8 distinct editorial-reaction or signature-phrase moments across the script: yes/no (count actual) **— SERVER-ENFORCED floor 6 (\`editorial_signature_dosage\`); below 6 re-prompts**
+   - At least 4-5 connection phrases (viewer-directed recognition / voicing the viewer's questions) in the BODY: yes/no (count actual) **— SERVER-ENFORCED floor 4 (\`connection_language_dosage\`)**
+   - At least 2-3 values-peppering beats (we / our team / families we work with) in the BODY: yes/no (count actual) **— SERVER-ENFORCED floor 2 (\`values_peppering_dosage\`)**
+   - Connection + values beats distributed, not clustered in one section: yes/no **— SERVER-ENFORCED (\`connection_clustering\`)**
+   - ZERO aggrieved first-person editorial reactions ("I'm annoyed", "it drives me crazy"): yes/no **— SERVER-ENFORCED (\`aggrieved_editorial\`)**
    - Voicing-the-viewer's-questions pattern deployed 2-4 times: yes/no
    - Fragment-emphasis pattern used at the strongest data peak (once): yes/no
    - **Mid-video hooks present between each section transition — count must be ≥4 in a 5-section script, rotated (no pattern repeated twice): yes/no** (count actual + list which patterns were used)
