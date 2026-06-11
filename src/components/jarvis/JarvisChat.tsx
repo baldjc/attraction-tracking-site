@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import {
   ClockIcon,
   SparklesIcon,
+  VideoCameraIcon,
   ShieldCheckIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -794,12 +795,13 @@ export default function JarvisChat({
       <header className="border-b border-abv-border bg-abv-card px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <JarvisAvatar online />
+            <JarvisAvatar />
             <div className="min-w-0">
-              <h1 className="font-display text-base font-bold leading-none text-abv-text">
+              <h1 className="flex items-center gap-2 font-display text-xl font-bold leading-none text-abv-text">
                 Jarvis
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" aria-label="online" />
               </h1>
-              <p className="mt-1 text-xs text-abv-text-secondary">your Content Manager</p>
+              <p className="mt-1.5 text-sm text-abv-text-secondary">your Content Manager</p>
             </div>
           </div>
           <div className="relative flex shrink-0 items-center gap-2">
@@ -1407,26 +1409,15 @@ function toolLabel(name: string): string {
   return name;
 }
 
-/** Jarvis identity avatar — gradient disc + optional online dot. */
-function JarvisAvatar({
-  online = false,
-  size = "md",
-}: {
-  online?: boolean;
-  size?: "sm" | "md";
-}) {
-  const dim = size === "sm" ? "h-7 w-7" : "h-9 w-9";
-  const icon = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+/** Jarvis identity avatar — blue gradient disc with a light ring + camera icon. */
+function JarvisAvatar({ size = "md" }: { size?: "sm" | "md" }) {
+  const dim = size === "sm" ? "h-8 w-8" : "h-11 w-11";
+  const icon = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   return (
-    <span className="relative inline-flex shrink-0">
-      <span
-        className={`${dim} inline-flex items-center justify-center rounded-full bg-abv-dark text-white`}
-      >
-        <SparklesIcon className={icon} aria-hidden />
-      </span>
-      {online && (
-        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-abv-bg bg-green-500" />
-      )}
+    <span
+      className={`${dim} inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white ring-2 ring-sky-200 ring-offset-2 ring-offset-abv-card`}
+    >
+      <VideoCameraIcon className={icon} aria-hidden />
     </span>
   );
 }
