@@ -65,9 +65,21 @@ export default function HireAHumanPage() {
 
         {/* Header */}
         <div>
-          <PageHeader emoji="🤝" title="Hire a Human" />
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-[5px] rounded-full text-[11px] font-bold uppercase tracking-[0.12em]"
+            style={{ background: "var(--abv-azure-tint)", color: "var(--abv-azure)" }}
+          >
+            <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: "var(--abv-azure)" }} />
+            Done for you
+          </span>
+          <h1
+            className="font-display font-black tracking-[-0.03em] leading-[1.05] mt-3.5 mb-2 text-[var(--abv-text)] dark:text-white"
+            style={{ fontSize: "44px", maxWidth: "600px" }}
+          >
+            Hire a <span style={{ color: "var(--abv-azure)" }}>Human</span>.
+          </h1>
 
-          <p className="text-2xl font-bold text-[var(--abv-text)] dark:text-white leading-snug max-w-2xl mb-6">
+          <p className="text-2xl font-bold text-[var(--abv-text)] dark:text-white leading-snug max-w-2xl mb-6 mt-4">
             You didn&apos;t get to where you are only to spend your weekends and evenings editing videos.
           </p>
 

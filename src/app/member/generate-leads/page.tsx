@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import PageHeader from "@/components/PageHeader";
 import Link from "next/link";
 import CampaignsPage from "@/app/member/campaigns/page";
 import AnalyticsPage from "@/app/member/analytics/page";
@@ -162,11 +161,24 @@ function GenerateLeadsPageInner() {
 
   return (
     <div>
-      <PageHeader
-        emoji="🚀"
-        title="Generate Leads"
-        description="Turn every video into a lead machine."
-      />
+      <div className="mb-8">
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-[5px] rounded-full text-[11px] font-bold uppercase tracking-[0.12em]"
+          style={{ background: "var(--abv-azure-tint)", color: "var(--abv-azure)" }}
+        >
+          <span className="inline-block w-[5px] h-[5px] rounded-full" style={{ background: "var(--abv-azure)" }} />
+          Lead generation
+        </span>
+        <h1
+          className="font-display font-black tracking-[-0.03em] leading-[1.05] mt-3.5 mb-2 text-[var(--abv-text)] dark:text-white"
+          style={{ fontSize: "44px", maxWidth: "600px" }}
+        >
+          Generate <span style={{ color: "var(--abv-azure)" }}>Leads</span>.
+        </h1>
+        <p className="text-[15px] text-[var(--abv-text-muted)] m-0 max-w-[540px] leading-[1.55]">
+          Turn every video into a lead machine.
+        </p>
+      </div>
 
       {/* Hero card — 4 states */}
       {showHeroCard && !hasCampaigns && (
