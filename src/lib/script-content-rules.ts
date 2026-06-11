@@ -117,7 +117,15 @@ export type ScriptViolationRule =
   | "values_peppering_dosage"
   | "editorial_signature_dosage"
   | "connection_clustering"
-  | "aggrieved_editorial";
+  | "aggrieved_editorial"
+  /** A lead-magnet campaign is configured with a name, but the body never
+   *  speaks that exact name — it pitches a generic "the guide" or an invented
+   *  variant. Generation only (INERT unless opts.enforceConnectionDosage). */
+  | "lead_magnet_naming"
+  /** The body labels the market state with a HEDGED compound label
+   *  ("balanced-leaning-sellers") instead of one clean state. A value below the
+   *  member's threshold reads cleanly. Generation only. */
+  | "hedged_market_state";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -3553,21 +3561,55 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
  *  worry). A beat only counts when one of these co-occurs with the avatar's
  *  own stress vocabulary in the same sentence. */
 const STRESSOR_ACK_MARKERS: RegExp[] = [
+  // Sleep / mental-load felt-fear framings.
   /keep(?:s|ing)?\s+you\s+up/i,
   /up\s+at\s+night/i,
   /los(?:e|ing)\s+(?:any\s+)?sleep/i,
-  /the\s+fear/i, /fear\s+of/i, /afraid/i, /scared/i,
-  /worr(?:y|ies|ied|ying)/i, /anxious/i, /anxiety/i, /nervous/i,
-  /second[\s-]?guess/i, /stuck\s+with/i, /haunt/i,
-  /the\s+part\s+that\s+(?:actually|really)/i,
-  /the\s+(?:real\s+)?question/i, /what\s+actually/i,
-  /what\s+you(?:'re|\s+are)\s+(?:really\s+)?(?:weighing|afraid|worried|wrestling)/i,
-  /wonder(?:ing)?\s+(?:whether|if)/i, /nagging/i,
+  /the\s+part\s+that\s+(?:actually|really)\s+keeps?\s+you/i,
+  // Explicit fear/dread NOUNS (not the bare verb "worry", which fires on data
+  // lines like "the density pressure you might worry about").
+  /the\s+fear\s+of\b/i,
+  /\bafraid\s+(?:of|to|that)\b/i,
+  /\bscared\s+(?:of|to|that)\b/i,
+  /\bterrified\b/i,
+  /\bthat\s+(?:fear|worry|dread|anxiety|hesitation)\b/i,
+  /\bthe\s+(?:fear|worry|dread|anxiety|hesitation)\s+(?:of|that|is|isn'?t|here|you)/i,
+  // Viewer-as-subject emotional ADJECTIVES (require the avatar to *be* the
+  // worried one — "you're worried", "feeling nervous" — not "worry about X").
+  /you(?:'re| are|'ll| will|\s+might|\s+may|\s+can|\s+end up)?\s*(?:feel(?:ing)?\s+)?(?:worried|nervous|anxious|afraid|scared|uneasy|on\s+edge)\b/i,
+  /feel(?:ing)?\s+(?:worried|nervous|anxious|afraid|scared|uneasy|stuck|paralyzed|paralysed|overwhelmed)\b/i,
+  // Decision-regret / being-trapped framings.
+  /second[\s-]?guess/i,
+  /\bstuck\s+with\s+(?:that|the|this|it|a)\b/i,
+  /\bbeing\s+stuck\b/i,
+  /keeps?\s+(?:you|people|families)\s+stuck/i,
+  /\bhaunt/i,
+  // Naming what the viewer is wrestling with.
+  /what\s+you(?:'re| are)\s+(?:really\s+)?(?:weighing|afraid\s+of|worried\s+about|scared\s+of|wrestling\s+with)\b/i,
+  /\bwrestling\s+with\b/i,
   /in\s+the\s+back\s+of\s+your\s+(?:mind|head)/i,
-  /the\s+thing\s+that/i, /quietly/i, /hesitat/i, /doubt/i,
-  /paralyz/i, /overwhelm/i, /the\s+(?:weight|pressure)\s+of/i,
-  /sit\s+with/i, /uncertain/i, /unsettl/i, /that(?:'s| is)\s+fair/i,
-  /keeps?\s+(?:you|people)\s+stuck/i, /the\s+worry\s+is/i,
+  /the\s+(?:weight|pressure)\s+of\b/i,
+  /\bparalyz/i,
+  /\boverwhelm(?:ed|ing)?\b/i,
+  /\bnagging\b/i,
+  // Steadying / permission-to-feel framings.
+  /that\s+hesitation\s+is\s+(?:normal|fair|understandable|okay)/i,
+  /(?:that|this|it)(?:'s| is)\s+(?:a\s+lot\s+to|fair\s+to|okay\s+to)\s+(?:carry|sit\s+with|weigh|feel)/i,
+];
+
+/**
+ * A felt marker can still land inside a DATA-reaction or TACTICAL/strategy/advice
+ * sentence (e.g. "the families who win prepare before they walk in"). Those are
+ * NOT genuine emotional acknowledgements of the avatar's worry, so a candidate
+ * sentence matching any of these is rejected even if a marker + anchor co-occur.
+ */
+const STRESSOR_ACK_REJECT: RegExp[] = [
+  /\bthe\s+families\s+who\s+(?:win|succeed|land|lose|miss)\b/i,
+  /\b(?:don'?t|do\s+not|never)\s+(?:realize|realise|understand|know)\b/i,
+  /\bwhat\s+(?:most|the)\s+(?:families|people|buyers|sellers)\b/i,
+  /\bprepared?\s+before\b/i,
+  /\bsleep\s+on\s+(?:a|an|the|this|that)\s+(?:decision|deal|listing|offer|home|house)\b/i,
+  /\bthe\s+ones?\s+who\s+(?:win|prepare|succeed)\b/i,
 ];
 
 const STRESSOR_ANCHOR_STOPWORDS = new Set([
@@ -3655,6 +3697,9 @@ function checkStressorAcknowledgement(
   const sentences = scanBody.split(/(?<=[.!?])\s+/);
   for (const sentence of sentences) {
     if (!STRESSOR_ACK_MARKERS.some((re) => re.test(sentence))) continue;
+    // A felt marker inside a tactical/strategy/advice line ("the families who
+    // win prepare before they walk in") is not a genuine emotional ack.
+    if (STRESSOR_ACK_REJECT.some((re) => re.test(sentence))) continue;
     const lower = sentence.toLowerCase();
     if (anchors.some((a) => lower.includes(a))) return []; // genuine beat found
   }
@@ -3735,28 +3780,30 @@ export const CONNECTION_PHRASE_PATTERNS: readonly RegExp[] = [
 ];
 
 /**
- * Values peppering — TEAM / business-philosophy framing (the script speaks as
- * "we / our team / the families we work with"). Distinct from connection (which
- * is viewer-directed) so the two buckets don't collapse. In data-heavy ABV
- * scripts this surfaces as team-experience + philosophy beats, not only the
- * textbook "we believe every family deserves…" line.
+ * Values peppering — GENUINE team values / business philosophy / commitment to
+ * how clients are treated (belief + "deserves" + promise/standard framings).
+ * Deliberately TIGHT: market-strategy, audience-segmentation, advice, and data-
+ * observation lines spoken with "we" ("the families we work with", "the families
+ * who win", "we'd point you toward", "we have found", "when we have families")
+ * are NOT values — they are tactics — and must NOT count, or the floor passes on
+ * a script with zero genuine values beats. Distinct from connection (viewer-
+ * directed) so the two buckets don't collapse.
  */
 export const VALUES_PEPPERING_PATTERNS: readonly RegExp[] = [
-  /we believe\b/i,
-  /every (?:family|buyer|seller|person) deserves\b/i,
-  /our (?:team'?s )?(?:whole )?(?:approach|job|focus|promise|philosophy) (?:is|to)\b/i,
-  /(?:built|building) around making sure\b/i,
-  /(?:the )?families we work with\b/i,
-  /we work with\b/i,
-  /we'?ve worked with (?:families|buyers|sellers|clients|people|hundreds)\b/i,
-  /(?:the )?families who (?:win|succeed|land|lose|miss)\b/i,
-  /we'?ve (?:watched|seen) this play out\b/i,
-  /we (?:see|seen) this (?:with|in|all the time)\b/i,
-  /we (?:have|'?ve) found\b/i,
-  /what (?:we'?ve|i'?ve) learned (?:after|in|over|helping)\b/i,
-  /(?:when )?we (?:have|get) families\b/i,
-  /we'?d (?:point|recommend|tell|flag|steer|send|guide)\b/i,
-  /i'?ve sat (?:across|down) (?:from|with)\b/i,
+  /\bwe believe\b/i,
+  /\bwe(?:'re| are) (?:firm |big |strong |true )?believers?\b/i,
+  /\bwe(?:'re| are) (?:committed|dedicated) to\b/i,
+  /\b(?:every|each)\s+(?:family|buyer|seller|person|client|homeowner|household)\s+deserves\b/i,
+  /\byou deserve\b/i,
+  /\bour (?:team'?s |whole )?(?:approach|promise|philosophy|commitment|mission|standard|belief|whole point) (?:is|are|here is)\b/i,
+  /\bour (?:whole )?(?:approach|philosophy|commitment|promise) (?:is )?(?:built|centered|centred|grounded|rooted) (?:around|on|in)\b/i,
+  /\b(?:everything|all) we do (?:is |comes (?:back|down) to |starts (?:with|from) |is about )\b/i,
+  /\bwe want (?:you|every (?:family|buyer|seller)|each family|people) to (?:feel|walk away|understand|know|never)\b/i,
+  /\bwe(?:'ll| will)? never (?:let|push|rush|pressure)\b/i,
+  /\b(?:that'?s|this is) (?:the|our) (?:promise|commitment|standard|whole point|belief)\b/i,
+  /\b(?:no family|nobody|no one|no buyer|no seller) should (?:ever )?(?:have to|feel|walk into)\b/i,
+  /\bwe(?:'re| are) here to (?:make sure|help you|protect|guide)\b/i,
+  /\bwhat we stand for\b/i,
 ];
 
 /**
@@ -3880,6 +3927,23 @@ function chunkByWords(text: string, perChunk: number): string[] {
   return chunks;
 }
 
+/**
+ * Count DISTINCT SENTENCES that carry at least one pattern. Used for values
+ * peppering, where a single sentence ("we believe every family deserves…")
+ * trips two patterns but is ONE beat — raw hit-counting would inflate it past
+ * the floor on a single line.
+ */
+export function countSentencesWithPattern(
+  text: string,
+  patterns: readonly RegExp[],
+): number {
+  let n = 0;
+  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    if (patterns.some((re) => re.test(sentence))) n += 1;
+  }
+  return n;
+}
+
 /** Total occurrences of any pattern in `text` (a floor metric — more is fine). */
 export function countPatternHits(text: string, patterns: readonly RegExp[]): number {
   let n = 0;
@@ -3926,19 +3990,22 @@ export function checkConnectionDosage(
     });
   }
 
-  const valuesHits = countPatternHits(scanBody, VALUES_PEPPERING_PATTERNS);
+  const valuesHits = countSentencesWithPattern(scanBody, VALUES_PEPPERING_PATTERNS);
   if (valuesHits < VALUES_PEPPERING_FLOOR) {
     violations.push({
       rule: "values_peppering_dosage",
       severity: "error",
       message:
-        `The body carries only ${valuesHits} values-peppering beat(s) — the voice ` +
-        `guide needs ${VALUES_PEPPERING_FLOOR}-3 at natural points. Add team / business-philosophy ` +
-        `beats spoken as "we / our team / the families we work with" (e.g. "we ` +
-        `believe every family deserves to feel confident", "the families we ` +
-        `work with who win are the ones who prepare"). VIEWER + TEAM + BUSINESS ` +
-        `values only — never the creator's hobbies or personal autobiography.`,
-      snippet: `${valuesHits}/${VALUES_PEPPERING_FLOOR} values beats`,
+        `The body carries only ${valuesHits} GENUINE values-peppering beat(s) — the ` +
+        `voice guide needs ${VALUES_PEPPERING_FLOOR}-3 at natural points. A values beat is a ` +
+        `belief / philosophy / commitment about how you treat clients — "we ` +
+        `believe every family deserves to feel confident", "our whole approach ` +
+        `is built around making sure you understand what you're paying for", "you ` +
+        `deserve to walk in knowing…". Market strategy, audience segmentation, ` +
+        `advice, or data-observations spoken with "we" ("the families we work ` +
+        `with", "the families who win", "we'd point you toward", "we have found") ` +
+        `do NOT count — they are tactics, not values. Add real belief statements.`,
+      snippet: `${valuesHits}/${VALUES_PEPPERING_FLOOR} genuine values beats`,
     });
   }
 
@@ -3968,10 +4035,13 @@ export function checkConnectionDosage(
   // DOSAGE_CLUSTER_MAX_BEAT_REGIONS regions total — so a well-spread body with one
   // naturally denser region (e.g. a strategy recap) never false-positives.
   if (sections.length > 1) {
+    // Values are counted per-SENTENCE here (matching the floor's semantics, so
+    // one strong values sentence that trips multiple patterns is one beat and
+    // doesn't overstate clustering); connection stays raw-hit.
     const perSection = sections.map(
       (s) =>
         countPatternHits(s, CONNECTION_PHRASE_PATTERNS) +
-        countPatternHits(s, VALUES_PEPPERING_PATTERNS),
+        countSentencesWithPattern(s, VALUES_PEPPERING_PATTERNS),
     );
     const totalCV = perSection.reduce((a, b) => a + b, 0);
     const maxInSection = Math.max(...perSection);
@@ -4017,6 +4087,85 @@ export function checkConnectionDosage(
     }
   }
 
+  return violations;
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — lead_magnet_naming (ERROR severity, generation only).           */
+/*  When a lead-magnet campaign is configured WITH a name, the body must    */
+/*  speak that EXACT name at least once — not a generic "the guide" pitch   */
+/*  nor a renamed variant ("Moving Up Guide" → "The Edmonton Move Up        */
+/*  Guide"). Distinct from `lead_magnet_match` (which bans pitching a       */
+/*  DIFFERENT artifact type); this gate ensures the assigned name is        */
+/*  actually present. INERT unless opts.enforceConnectionDosage.            */
+/* ────────────────────────────────────────────────────────────────────── */
+function checkLeadMagnetNaming(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  if (!opts.enforceConnectionDosage) return [];
+  if (opts.leadMagnetConfigured !== true) return [];
+  const name = (opts.leadMagnetName ?? "").trim();
+  if (!name) return [];
+  const { scanBody } = dosageScanBody(script);
+  if (!scanBody.trim()) return [];
+  // Normalise both sides to lowercase, collapse all non-alphanumerics to single
+  // spaces, so punctuation / spacing / "&"-vs-"and" variance doesn't cause a
+  // false miss when the writer spoke the name correctly.
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+  const target = norm(name);
+  if (!target) return [];
+  if (norm(scanBody).includes(target)) return [];
+  return [
+    {
+      rule: "lead_magnet_naming",
+      severity: "error",
+      message:
+        `The assigned lead magnet is "${name}", but the body never speaks that ` +
+        `exact name. Say the magnet's EXACT configured name at least once when ` +
+        `you pitch it — do not shorten it, expand it, or invent a variant ` +
+        `(e.g. don't turn "${name}" into "The Edmonton ${name}").`,
+      snippet: `lead magnet "${name}" not named in body`,
+    },
+  ];
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Rule — hedged_market_state (ERROR severity, generation only).          */
+/*  Bans HEDGED compound market-state labels ("balanced-leaning-sellers",  */
+/*  "seller's market tilting toward balanced"). The member-threshold        */
+/*  labelling already resolves to ONE clean state; the script must speak    */
+/*  that one state, not a wishy-washy compound. INERT unless                */
+/*  opts.enforceConnectionDosage.                                           */
+/* ────────────────────────────────────────────────────────────────────── */
+const HEDGED_MARKET_STATE_RE =
+  /\b(balanced|seller'?s?|buyer'?s?)(?:\s+market)?[\s-]+(?:but\s+)?(leaning|tilting|tilted|edging|trending|skewing|sliding|drifting|shifting|veering)[\s-]+(?:toward(?:s)?\s+|into\s+|to\s+)?(balanced|seller'?s?|buyer'?s?)\b/i;
+
+function checkHedgedMarketState(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  if (!opts.enforceConnectionDosage) return [];
+  const { scanBody } = dosageScanBody(script);
+  if (!scanBody.trim()) return [];
+  const violations: ScriptViolation[] = [];
+  for (const line of scanBody.split("\n")) {
+    const m = HEDGED_MARKET_STATE_RE.exec(line);
+    if (m) {
+      violations.push({
+        rule: "hedged_market_state",
+        severity: "error",
+        message:
+          `Don't hedge the market state with a compound label like ` +
+          `"${m[0].trim()}". The data resolves to ONE clean state relative to ` +
+          `the member's thresholds — call it a balanced market, a seller's ` +
+          `market, or a buyer's market, and let the numbers carry the nuance.`,
+        snippet: snippetAround(line, m),
+      });
+      break;
+    }
+  }
   return violations;
 }
 
@@ -4132,6 +4281,11 @@ export function validateScript(
   // peppering, editorial/signature moments, distribution, empowered-not-
   // aggrieved). INERT unless opts.enforceConnectionDosage (generation only).
   violations.push(...checkConnectionDosage(script, opts));
+
+  // Lead-magnet exact-name + hedged-market-state guards. Both generation-only
+  // (INERT unless opts.enforceConnectionDosage).
+  violations.push(...checkLeadMagnetNaming(script, opts));
+  violations.push(...checkHedgedMarketState(script, opts));
 
   const ok = !violations.some((v) => v.severity === "error");
   return { ok, violations, metrics: hyperLocal.metrics };

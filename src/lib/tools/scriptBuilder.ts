@@ -827,7 +827,7 @@ function buildInitialUserMessage(args: {
   );
   lines.push("6. **Canadian spelling throughout** (neighbourhood, colour, centre, analyse).");
   lines.push(
-    "7. **Empathy + connection-language dosage (BODY, distributed):** the body must carry — woven across the WHOLE script, NEVER stacked in one section — at least **4 connection phrases** (viewer-directed recognition / voicing the viewer's questions: \"it makes sense that you'd think…\", \"you might be thinking…\", \"here's what that means for you\", \"if you've been…\"), at least **2 values-peppering beats** (team / business philosophy: \"we believe…\", \"the families we work with who win…\"), and at least **6 editorial / signature moments** (empowered reactions to WHAT THE DATA IS DOING: \"shockingly\", \"stupid tight\", \"think about that\", \"hold that thought\", \"did you catch that?\", a repetition-for-emphasis, one fourth-wall aside). Editorial reactions describe the MARKET, never your own feelings — first-person aggrieved lines (\"I'm annoyed/frustrated\", \"it drives me crazy\") are a hard failure. This is NOT a quota to pad: weave it into the existing data + psychology layers.",
+    "7. **Empathy + connection-language dosage (BODY, distributed):** the body must carry — woven across the WHOLE script, NEVER stacked in one section — at least **4 connection phrases** (viewer-directed recognition / voicing the viewer's questions: \"it makes sense that you'd think…\", \"you might be thinking…\", \"here's what that means for you\", \"if you've been…\"), at least **2 GENUINE values-peppering beats** (a BELIEF / philosophy / commitment about how you treat clients: \"we believe every family deserves to feel confident\", \"our whole approach is built around making sure you understand what you're paying for\", \"you deserve to walk in knowing the real numbers\". Market strategy, audience segmentation, or advice spoken with \"we\" — \"the families we work with\", \"the families who win\", \"we'd point you toward\" — do NOT count; those are tactics, not values), and at least **6 editorial / signature moments** (empowered reactions to WHAT THE DATA IS DOING: \"shockingly\", \"stupid tight\", \"think about that\", \"hold that thought\", \"did you catch that?\", a repetition-for-emphasis, one fourth-wall aside). Editorial reactions describe the MARKET, never your own feelings — first-person aggrieved lines (\"I'm annoyed/frustrated\", \"it drives me crazy\") are a hard failure. This is NOT a quota to pad: weave it into the existing data + psychology layers.",
   );
   lines.push("");
 
@@ -1055,6 +1055,25 @@ function suggestRetryFix(v: ScriptViolation, hasProfile = true): string {
       "psychology layers across the WHOLE script — never as a stacked block,",
       "boilerplate, or quota-filler. Keep structure, citations, numbers, and",
       "visual tags unchanged.",
+    ].join(" ");
+  }
+  if (v.rule === "lead_magnet_naming") {
+    // The configured lead-magnet name is missing or was renamed in the body.
+    return [
+      v.message,
+      "Make a targeted edit to the existing lead-magnet pitch in the BODY so it",
+      "speaks the EXACT configured name verbatim. Do not add a second pitch and",
+      "do not change anything else — structure, citations, numbers, and visual",
+      "tags stay unchanged.",
+    ].join(" ");
+  }
+  if (v.rule === "hedged_market_state") {
+    // A compound, hedged market-state label slipped into the body.
+    return [
+      v.message,
+      "Rewrite ONLY that phrase to name one clean market state, and let the",
+      "real numbers carry the nuance. Keep everything else in the draft",
+      "unchanged.",
     ].join(" ");
   }
   return v.message;
