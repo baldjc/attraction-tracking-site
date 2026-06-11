@@ -552,6 +552,18 @@ export default function JarvisChat({
                           id: realId,
                           text: String(data.text ?? assistantBuf),
                           proposal,
+                          // F4: the live draft buffer (draftBuf) is the RAW stream
+                          // and still carries internal slot markers ([STRESSOR BEAT],
+                          // [LEAD MAGNET n/3], [VALUES BEAT n/2], [VISUAL: …], [CALLBACK]).
+                          // Once the build resolves, swap the rendered draft to the
+                          // FINAL server-cleaned proposal.script (markers stripped,
+                          // stats softened) so the member never reads the scaffolding.
+                          ...(proposal?.script
+                            ? {
+                                draft: proposal.script,
+                                draftStatus: "done" as const,
+                              }
+                            : {}),
                           toolCalls: liveToolsToRecords(),
                         }
                       : m,

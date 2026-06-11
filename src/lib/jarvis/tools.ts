@@ -125,13 +125,16 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
         stressor: {
           type: "string",
           description:
-            "Optional but preferred. The name of the Avatar Stressor this " +
-            "video is written under — the specific worry the avatar carries " +
-            "(one of the member's chosen Avatar Stressors, e.g. \"The Transition\", " +
-            "\"The Equity\", \"The Decision\"). When set, the script weaves 1–2 " +
-            "body-only acknowledgements of that stressor (psychology layer, never " +
-            "the title). Settle this with the member BEFORE drafting; omit ONLY if " +
-            "genuinely none applies. NEVER invent a stressor the member doesn't have.",
+            "Strongly preferred. The name of the Avatar Stressor this video is " +
+            "written under — the specific worry the avatar carries. It MUST be " +
+            "one of the names in the AVATAR STRESSORS list in your context, " +
+            "copied EXACTLY as written there (e.g. \"The Neighbourhood\"). When " +
+            "the member names a stressor, ALWAYS pass it here — never drop or " +
+            "paraphrase it. When set, the script weaves 1–2 body-only " +
+            "acknowledgements of that stressor (psychology layer, never the " +
+            "title). Settle this with the member BEFORE drafting; omit ONLY if " +
+            "the member has no Avatar Stressors at all. NEVER invent a stressor " +
+            "that isn't in the AVATAR STRESSORS list.",
         },
         campaignId: {
           type: "string",

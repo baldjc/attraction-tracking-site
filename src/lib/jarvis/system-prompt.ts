@@ -68,7 +68,7 @@ READING get_facts RESULTS (be honest about which of these you got)
 
 DRAFTING
 - A good script needs an angle, a rotation slot (market_update, neighbourhood_fact, contrarian_take, do_not, should_you), a one-line title promise, and at least one linked fact id.
-- AVATAR STRESSOR (psychology layer): every script is written under ONE Avatar Stressor — the specific worry the avatar is carrying as they watch (e.g. The Transition = "what if we sell and have nowhere to land", The Equity = "will our equity actually carry us into the next home", The Decision = "should we even be doing this right now"). If the idea card already carries a stressor, use it. If it's ambiguous or none is set, ASK before drafting: "Which stressor should this speak to — how's the avatar feeling watching this?" Then confirm the member's pick; if they defer, pick the single best fit for this angle and say which one you chose. Pass the chosen Avatar Stressor name as build_script's \`stressor\`. The script weaves 1–2 acknowledgements of it into the BODY only — never the title or thumbnail. Only the member's own Avatar Stressors are valid; never invent one.
+- AVATAR STRESSOR (psychology layer): every script is written under ONE Avatar Stressor — the specific worry the avatar is carrying as they watch. The member's OWN stressors are listed in the AVATAR STRESSORS block of your context (each with the avatar's worry in their own voice); that list is the ONLY valid set. If the idea card already carries a stressor, use it. If it's ambiguous or none is set, ASK before drafting: "Which stressor should this speak to — how's the avatar feeling watching this?", offering the names from the AVATAR STRESSORS list. When the member names one (e.g. "use The Neighbourhood stressor"), match it to that list and pass its name EXACTLY as written there as build_script's \`stressor\` — do NOT drop it, paraphrase it, or leave it blank. If they defer, pick the single best fit from the list for this angle and say which one you chose. The script weaves 1–2 acknowledgements of it into the BODY only — never the title or thumbnail. Only stressors in the AVATAR STRESSORS list are valid; never invent one.
 - PROPOSE THE REFERENCES BEFORE YOU DRAFT. A script is only as good as the real assets it points to, so BEFORE calling build_script, settle two things with the member using the lists in their context:
   1. Lead magnet — from AVAILABLE LEAD MAGNETS, pick the single best-fit campaign for this video's angle and say which one you'll use and why, in one short line (e.g. "I'll point this at your 'Relocation Guide' lead magnet — it fits a market-update for movers."). Pass its id as build_script's campaignId.
   2. Watch-this-next — from RECENT VIDEOS, follow the SMART BINGE DEFAULT below: prefer the most-recent READY video of the SAME type (rotation slot) as this script and say so; if none matches, offer a short pick-list of recent ready videos instead of forcing a mismatch. Pass the chosen id as build_script's bingeVideoId. Never tease an idea-stage video and never invent one.
@@ -169,6 +169,11 @@ export function buildJarvisDynamicContext(args: {
    *  (style, property class, city). Lets Jarvis route the member's wording —
    *  e.g. "single family" — to the dimension that genuinely holds it. */
   availableDimensionValues?: { label: string; values: string[]; truncated: boolean }[];
+  /** The member's saved Avatar Stressors (named content themes carrying a
+   *  coreStress). Surfaced so Jarvis passes the member's EXACT stressor name to
+   *  build_script instead of cautiously omitting it (the rule forbids inventing
+   *  one, so without this list the [STRESSOR BEAT] silently never fires). */
+  avatarStressors?: { name: string; coreStress: string; hasFearLines: boolean }[];
 }): string {
   const {
     memberFullName,
@@ -180,6 +185,7 @@ export function buildJarvisDynamicContext(args: {
     availableCutDimensions,
     availableNumericFilters,
     availableDimensionValues,
+    avatarStressors,
   } = args;
   const lines: string[] = ["MEMBER & MARKET CONTEXT"];
   lines.push(`- Member: ${memberFullName ?? "(name not set)"}`);
@@ -215,6 +221,26 @@ export function buildJarvisDynamicContext(args: {
         `- Distinct values per dimension (the ACTUAL values present in THIS member's upload — route the member's wording to whichever dimension genuinely holds it, e.g. if "Single Family" appears under style then "single family"/"property type" requests use dimension="style"/filterStyle, NOT propertyClass): ${parts.join("; ")}.`,
       );
     }
+  }
+
+  // ── Avatar Stressors the member actually owns (psychology layer) ───────────
+  // Surfaced so the model passes the member's EXACT stressor name to
+  // build_script. Without this the rule "never invent a stressor the member
+  // doesn't have" makes the model omit it, and the [STRESSOR BEAT] never fires.
+  lines.push("");
+  if (avatarStressors && avatarStressors.length > 0) {
+    lines.push(
+      "AVATAR STRESSORS (the member's OWN saved stressors — these are the ONLY valid values for build_script's `stressor`. When the member names one, pass its name EXACTLY as written here; never invent one not in this list):",
+    );
+    for (const s of avatarStressors) {
+      lines.push(
+        `- "${s.name}" — the avatar's worry: "${s.coreStress}"${s.hasFearLines ? "" : " (no detailed fear questions saved)"}`,
+      );
+    }
+  } else {
+    lines.push(
+      "AVATAR STRESSORS: none saved. The member has no Avatar Stressors set up — draft without a stressor (omit build_script's `stressor`); do NOT invent one.",
+    );
   }
 
   // ── Pre-draft asset menus (see DRAFTING: propose before you draft) ──────────

@@ -14,6 +14,8 @@ import {
   groundAssistantText,
 } from "@/lib/jarvis/tools";
 import { resolveAvailableCutDimensions } from "@/lib/tools/computeCut";
+import prisma from "@/lib/prisma";
+import { listAvatarStressors, matchNamedStressor } from "@/lib/content-engine-prompts";
 import {
   JARVIS_SYSTEM_PREFIX,
   buildJarvisDynamicContext,
@@ -124,6 +126,25 @@ export async function runJarvisTurn(args: {
     truncated: d.truncated,
   }));
 
+  // The member's OWN Avatar Stressors — surfaced to the model so it passes the
+  // exact stressor name to build_script (the "never invent one" rule otherwise
+  // makes it omit the field and the [STRESSOR BEAT] silently never fires).
+  // Never throws; an empty list just renders the "none saved" line.
+  let avatarStressors: { name: string; coreStress: string; hasFearLines: boolean }[] = [];
+  try {
+    const stressorUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { contentThemes: true },
+    });
+    avatarStressors = listAvatarStressors(stressorUser?.contentThemes);
+  } catch {
+    avatarStressors = [];
+  }
+  // The current member message — used as a deterministic fallback to honour an
+  // explicitly-named stressor when the model omits build_script's `stressor`.
+  const latestUserText =
+    [...history].reverse().find((t) => t.role === "user")?.text ?? null;
+
   // System holds ONLY the static behavioural prefix so it stays prompt-cacheable
   // across every member and turn. Per-member dynamic context (name, market, fact
   // ledger) is injected on the USER side below — never in the cached system block.
@@ -159,6 +180,7 @@ export async function runJarvisTurn(args: {
           availableCutDimensions,
           availableNumericFilters,
           availableDimensionValues,
+          avatarStressors,
         }),
       },
       { role: "assistant", content: "Understood — I'll use only these facts and my tools." },
@@ -199,6 +221,8 @@ export async function runJarvisTurn(args: {
         tu,
         emit,
         signal,
+        latestUserText,
+        avatarStressors,
         onFact: (f) => {
           if (!seenFactIds.has(f.id)) {
             seenFactIds.add(f.id);
@@ -265,12 +289,14 @@ async function runTool(ctx: {
   tu: Anthropic.ToolUseBlock;
   emit: JarvisEmit;
   signal?: AbortSignal;
+  latestUserText?: string | null;
+  avatarStressors?: { name: string; coreStress: string; hasFearLines: boolean }[];
   onFact: (f: LedgerFact) => void;
   onProposal: (p: ProposalState) => void;
   allowText: (t: string) => void;
   toolCalls: ToolCallRecord[];
 }): Promise<Anthropic.ToolResultBlockParam> {
-  const { userId, threadId, targetContentPlanId, tu, emit, signal, onFact, onProposal, allowText, toolCalls } = ctx;
+  const { userId, threadId, targetContentPlanId, tu, emit, signal, latestUserText, avatarStressors, onFact, onProposal, allowText, toolCalls } = ctx;
   const input = (tu.input ?? {}) as Record<string, unknown>;
 
   const record = (status: "ok" | "error", summary: string) => {
@@ -433,6 +459,15 @@ async function runTool(ctx: {
     if (tu.name === "build_script") {
       emit("tool", { name: "build_script", status: "running", summary: "Drafting your script…" });
       emit("script_start", {});
+      // Resolve the empathy-beat stressor. Prefer the model's explicit choice;
+      // otherwise honour an unambiguous stressor the member named in their
+      // message (the model is unreliable at passing this optional param).
+      const modelStressor =
+        typeof input.stressor === "string" && input.stressor.trim()
+          ? input.stressor.trim()
+          : null;
+      const resolvedStressor =
+        modelStressor ?? matchNamedStressor(latestUserText, avatarStressors ?? []);
       const built = await runBuildScript({
         userId,
         ideaCard: {
@@ -445,6 +480,7 @@ async function runTool(ctx: {
           clarityPremise: typeof input.clarityPremise === "string" ? input.clarityPremise : undefined,
           campaignId: typeof input.campaignId === "string" ? input.campaignId : undefined,
           bingeVideoId: typeof input.bingeVideoId === "string" ? input.bingeVideoId : undefined,
+          stressor: resolvedStressor ?? undefined,
         },
         researchSourceIds: Array.isArray(input.researchSourceIds)
           ? (input.researchSourceIds as unknown[]).filter((x): x is string => typeof x === "string")

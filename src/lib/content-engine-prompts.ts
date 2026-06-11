@@ -130,10 +130,36 @@ This rule applies automatically whenever the content theme involves sell-side or
 
 function extractActiveTheme(contentThemes: unknown, theme: string): { coreStress?: string; content_engine_prompt?: string; enforceBuySideTitles?: boolean } | null {
   if (!Array.isArray(contentThemes)) return null;
+  const want = typeof theme === "string" ? theme.trim() : "";
+  if (!want) return null;
+  type ThemeObj = { coreStress?: string; content_engine_prompt?: string; enforceBuySideTitles?: boolean };
+  // Exact name match first.
   for (const t of contentThemes) {
-    if (typeof t === "string") continue;
-    if (t && typeof t === "object" && (t as Record<string, unknown>).name === theme) {
-      return t as { coreStress?: string; content_engine_prompt?: string; enforceBuySideTitles?: boolean };
+    if (t && typeof t === "object" && (t as Record<string, unknown>).name === want) {
+      return t as ThemeObj;
+    }
+  }
+  // Tolerant fallback — the LLM may pass the stressor name with a different
+  // casing, a leading "The ", or a trailing " stressor" (e.g. "Neighbourhood",
+  // "the neighbourhood stressor" for the saved theme "The Neighbourhood"). A
+  // failed match here returns null → NO stressor block is injected → the
+  // [STRESSOR BEAT] silently drifts to a generic default, so normalize both
+  // sides before giving up.
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/^the\s+/, "")
+      .replace(/\s+stressor$/, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  const wantN = norm(want);
+  if (!wantN) return null;
+  for (const t of contentThemes) {
+    if (t && typeof t === "object") {
+      const n = (t as Record<string, unknown>).name;
+      if (typeof n === "string" && norm(n) === wantN) {
+        return t as ThemeObj;
+      }
     }
   }
   return null;
@@ -199,6 +225,77 @@ export function getActiveThemeStress(
   if (!coreStress) return null;
   const fearLines = extractThemeFearLines(active.content_engine_prompt);
   return { name: theme, coreStress, fearLines };
+}
+
+/**
+ * List the member's saved Avatar Stressors (the named content themes that carry
+ * a coreStress) so Jarvis can be SHOWN the exact set the member owns. The
+ * orchestrator never knew which stressors exist, so when a member said "use The
+ * Neighbourhood stressor" the model — bound by "never invent a stressor the
+ * member doesn't have" — cautiously omitted build_script's `stressor`, the
+ * [STRESSOR BEAT] injection silently no-op'd, and the beat drifted to a generic
+ * default. Surfacing this list lets the model pass the member's exact stressor
+ * name with confidence. `hasFearLines` flags themes whose content_engine_prompt
+ * carries the avatar's own worry questions (the richest material for the beat).
+ */
+export function listAvatarStressors(
+  contentThemes: unknown,
+): { name: string; coreStress: string; hasFearLines: boolean }[] {
+  if (!Array.isArray(contentThemes)) return [];
+  const out: { name: string; coreStress: string; hasFearLines: boolean }[] = [];
+  const seen = new Set<string>();
+  for (const t of contentThemes) {
+    if (!t || typeof t !== "object") continue;
+    const rec = t as Record<string, unknown>;
+    const name = typeof rec.name === "string" ? rec.name.trim() : "";
+    const coreStress =
+      typeof rec.coreStress === "string" ? rec.coreStress.trim() : "";
+    if (!name || !coreStress) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      name,
+      coreStress,
+      hasFearLines: extractThemeFearLines(rec.content_engine_prompt).length > 0,
+    });
+  }
+  return out;
+}
+
+/**
+ * Deterministic fallback: when build_script is called WITHOUT a stressor, see if
+ * the member explicitly named one of their OWN stressors in their message. Only
+ * fires on an unambiguous, qualified mention — the FULL saved name (e.g. "the
+ * neighbourhood") must appear, and EXACTLY one stressor must match — so generic
+ * words like "neighbourhood" in a market-update request never auto-select a
+ * stressor. Returns the canonical saved name (verbatim) or null.
+ *
+ * **Why:** the orchestrator LLM is unreliable at passing the optional `stressor`
+ * tool param on "just build it now" turns, which silently no-op'd the
+ * [STRESSOR BEAT]. This honours an explicit member request regardless of the
+ * model's behaviour; it NEVER overrides a stressor the model did pass.
+ */
+export function matchNamedStressor(
+  text: string | null | undefined,
+  stressors: { name: string }[],
+): string | null {
+  if (!text || !text.trim() || !stressors.length) return null;
+  const hay = text.toLowerCase();
+  // Drop a hit when the name is immediately preceded by a negation cue
+  // ("don't use The Decision", "without The Neighbourhood") so the fallback
+  // never injects a stressor the member explicitly ruled out.
+  const NEGATION = /\b(?:not|no|never|without|avoid|skip|except|don'?t|doesn'?t|dont)\b[^.?!]{0,20}$/;
+  const hits: string[] = [];
+  for (const s of stressors) {
+    const name = s.name.trim().toLowerCase();
+    if (name.length < 3) continue;
+    const idx = hay.indexOf(name);
+    if (idx < 0) continue;
+    if (NEGATION.test(hay.slice(0, idx))) continue;
+    hits.push(s.name);
+  }
+  return hits.length === 1 ? hits[0] : null;
 }
 
 export function buildBatchSystemPrompt(opts: {

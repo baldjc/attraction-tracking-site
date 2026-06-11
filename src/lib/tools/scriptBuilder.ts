@@ -233,6 +233,86 @@ export function buildPropertyTypeLock(
  * the server-side validation gate enforces — Claude that knows what's
  * being checked produces fewer re-prompt rounds.
  */
+/**
+ * The `## Active Avatar Stressor` injection block — the felt-beat requirement +
+ * the SELECTED stressor's own fear text. Shared by the initial AND every retry
+ * user message: each generation attempt is a stateless single-shot (no message
+ * history), so without re-injecting this on retries the model loses the selected
+ * stressor and the `[STRESSOR BEAT]` drifts to a generic affordability default
+ * (the systemPrompt's "that's me" exemplar). Keep initial + retry in lockstep.
+ */
+function stressorBeatBlockLines(activeStressor: {
+  name: string;
+  coreStress: string;
+  fearLines?: string[];
+}): string[] {
+  const lines: string[] = [];
+  lines.push("## Active Avatar Stressor — REQUIRED FIXED BEAT (`[STRESSOR BEAT]`)");
+  lines.push("");
+  lines.push(
+    `This idea is being scripted under the **${activeStressor.name}** Avatar Stressor — the specific worry this avatar carries, in their own voice:`,
+  );
+  lines.push(`> "${activeStressor.coreStress}"`);
+  if (activeStressor.fearLines && activeStressor.fearLines.length) {
+    lines.push("");
+    lines.push(
+      "The same worry, expanded in the avatar's OWN words — raw material for the felt beat (voice it as one human fear; do NOT read it back as a list):",
+    );
+    for (const fear of activeStressor.fearLines) {
+      lines.push(`> "${fear}"`);
+    }
+  }
+  lines.push("");
+  lines.push(
+    "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice this worry as PURE FELT EMOTION — what it FEELS like to carry it — NOT a reaction to a number and NOT advice. Do not attach the beat to a statistic: it is the human feeling underneath the data, not a comment on the data. Reuse two or three distinctive words from the quoted fear above verbatim so it is unmistakably THIS avatar's fear, paired with felt language (\"the part that actually keeps you up,\" \"the fear of…,\" \"what you're really weighing,\" \"that hesitation is normal\"). Empowered, never aggrieved — name the worry, then steady it. A DATA observation (\"this is shockingly tight,\" \"think about that\") or a STRATEGY/advice line does NOT satisfy this beat — those are reactions to the market, not the avatar's fear.",
+  );
+  lines.push("");
+  lines.push(
+    "Adapt ONE of these felt-acknowledgement patterns into the presenter's own voice — substitute the avatar's OWN words from the quoted fear above (do NOT copy a pattern verbatim, and keep it pure feeling with no number and no tactic):",
+  );
+  lines.push("");
+  lines.push(
+    "- \"Here's the part that probably sits heaviest — the fear of [the avatar's own worry, in their words] — and honestly, you wouldn't be human if that didn't weigh on you.\"",
+  );
+  lines.push(
+    "- \"What you're really turning over isn't the asking price — it's [the avatar's own worry] — and that hesitation is completely fair to sit with.\"",
+  );
+  lines.push(
+    "- \"The quiet worry underneath all of this is [the avatar's own worry] — the fear of being the one who's stuck living with the wrong call — and I want to name that, because it's real.\"",
+  );
+  lines.push("");
+  lines.push(
+    "The tagged beat is mandatory and server-checked; you MAY add one lighter callback later (UNTAGGED — emit exactly ONE `[STRESSOR BEAT]` tag total), but never stack the two back-to-back.",
+  );
+  lines.push("");
+  return lines;
+}
+
+/**
+ * Strip internal structural slot markers from the member-facing draft. The
+ * `[STRESSOR BEAT]`, `[VALUES BEAT n/2]`, `[LEAD MAGNET n/3]`, `[VISUAL: …]`
+ * and `[CALLBACK]` tags are positional scaffolding for generation + the
+ * server-side detectors (which strip them before scanning) — the member never
+ * sees the bracket labels. The CONTENT that follows each tag stays; only the
+ * bracket token is removed. Applied to the returned script (proposal + save)
+ * AFTER validation has run on the still-tagged text.
+ */
+function stripInternalMarkers(script: string): string {
+  return script
+    .replace(/\[STRESSOR BEAT\]/gi, "")
+    .replace(/\[VALUES BEAT[^\]]*\]/gi, "")
+    .replace(/\[LEAD MAGNET[^\]]*\]/gi, "")
+    .replace(/\[VISUAL:[^\]]*\]/gi, "")
+    .replace(/\[CALLBACK\]/gi, "")
+    // A marker that sat on its own line leaves a blank line behind — trim
+    // trailing whitespace, then collapse any 3+ newline run to a paragraph gap.
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    // An inline marker removal can leave a double space mid-sentence.
+    .replace(/ {2,}/g, " ")
+    .trim();
+}
+
 function buildInitialUserMessage(args: {
   plan: PlanContext;
   facts: CitedFact[];
@@ -421,44 +501,7 @@ function buildInitialUserMessage(args: {
   lines.push("");
 
   if (activeStressor) {
-    lines.push("## Active Avatar Stressor — REQUIRED FIXED BEAT (`[STRESSOR BEAT]`)");
-    lines.push("");
-    lines.push(
-      `This idea is being scripted under the **${activeStressor.name}** Avatar Stressor — the specific worry this avatar carries, in their own voice:`,
-    );
-    lines.push(`> "${activeStressor.coreStress}"`);
-    if (activeStressor.fearLines && activeStressor.fearLines.length) {
-      lines.push("");
-      lines.push(
-        "The same worry, expanded in the avatar's OWN words — raw material for the felt beat (voice it as one human fear; do NOT read it back as a list):",
-      );
-      for (const fear of activeStressor.fearLines) {
-        lines.push(`> "${fear}"`);
-      }
-    }
-    lines.push("");
-    lines.push(
-      "FIXED BEAT — this is a POSITIONAL SLOT like `[LEAD MAGNET 1/3]`, NOT a dosage target. Emit the tag `[STRESSOR BEAT]` ONCE in the PSYCHOLOGY layer, on its own line (NEVER in the title, thumbnail, hook, or the two-beat intro). On the line(s) right after the tag, voice this worry as PURE FELT EMOTION — what it FEELS like to carry it — NOT a reaction to a number and NOT advice. Do not attach the beat to a statistic: it is the human feeling underneath the data, not a comment on the data. Reuse two or three distinctive words from the quoted fear above verbatim so it is unmistakably THIS avatar's fear, paired with felt language (\"the part that actually keeps you up,\" \"the fear of…,\" \"what you're really weighing,\" \"that hesitation is normal\"). Empowered, never aggrieved — name the worry, then steady it. A DATA observation (\"this is shockingly tight,\" \"think about that\") or a STRATEGY/advice line does NOT satisfy this beat — those are reactions to the market, not the avatar's fear.",
-    );
-    lines.push("");
-    lines.push(
-      "Adapt ONE of these felt-acknowledgement patterns into the presenter's own voice — substitute the avatar's OWN words from the quoted fear above (do NOT copy a pattern verbatim, and keep it pure feeling with no number and no tactic):",
-    );
-    lines.push("");
-    lines.push(
-      "- \"Here's the part that probably sits heaviest — the fear of [the avatar's own worry, in their words] — and honestly, you wouldn't be human if that didn't weigh on you.\"",
-    );
-    lines.push(
-      "- \"What you're really turning over isn't the asking price — it's [the avatar's own worry] — and that hesitation is completely fair to sit with.\"",
-    );
-    lines.push(
-      "- \"The quiet worry underneath all of this is [the avatar's own worry] — the fear of being the one who's stuck living with the wrong call — and I want to name that, because it's real.\"",
-    );
-    lines.push("");
-    lines.push(
-      "The tagged beat is mandatory and server-checked; you MAY add one lighter callback later (UNTAGGED — emit exactly ONE `[STRESSOR BEAT]` tag total), but never stack the two back-to-back.",
-    );
-    lines.push("");
+    for (const l of stressorBeatBlockLines(activeStressor)) lines.push(l);
   }
 
   // ── Team Values Beats (REQUIRED FIXED SLOTS) ─────────────────────────
@@ -1159,6 +1202,13 @@ function buildRetryUserMessage(args: {
    * back into inventing colour. A lean grounded draft is legitimately shorter.
    */
   hasProfile?: boolean;
+  /**
+   * The SELECTED Avatar Stressor (or null). Re-injected on EVERY retry: each
+   * attempt is a stateless single-shot with NO message history, so without this
+   * the `[STRESSOR BEAT]` loses the selected stressor and drifts to the
+   * systemPrompt's generic affordability exemplar. F2 fix.
+   */
+  activeStressor?: { name: string; coreStress: string; fearLines?: string[] } | null;
 }): string {
   const {
     plan,
@@ -1166,6 +1216,7 @@ function buildRetryUserMessage(args: {
     violations,
     previousDialogueWordCount,
     hasProfile = true,
+    activeStressor = null,
   } = args;
   const lines: string[] = [];
 
@@ -1292,6 +1343,17 @@ function buildRetryUserMessage(args: {
     "Re-generate the script with these specific fixes applied. Do not rewrite sections that weren't flagged. Re-emit the FULL script (the streaming pipeline needs the whole thing), but the only substantive edits should be on the lines above.",
   );
   lines.push("");
+  if (activeStressor) {
+    lines.push(
+      "## STRESSOR BEAT — must voice the SELECTED stressor below (re-check on this regeneration)",
+    );
+    lines.push("");
+    lines.push(
+      "Re-emit exactly ONE `[STRESSOR BEAT]` in the psychology layer. If your previous draft's beat voiced a DIFFERENT worry — e.g. a generic affordability / overpaying / \"can I even compete\" line — REWRITE it to voice the stressor below, reusing two or three of its distinctive words verbatim. Keep it pure felt empathy: no number, no tactic.",
+    );
+    lines.push("");
+    for (const l of stressorBeatBlockLines(activeStressor)) lines.push(l);
+  }
   lines.push("## Title promise to preserve");
   lines.push("");
   lines.push(`> ${plan.titlePromise}`);
@@ -1688,7 +1750,7 @@ export async function buildScript(
       return {
         ok: true,
         degraded: true,
-        script: bestDraft,
+        script: stripInternalMarkers(bestDraft),
         attempt,
         warnings: [],
         flagged: bestErrors,
@@ -1763,6 +1825,7 @@ export async function buildScript(
             previousDialogueWordCount:
               lastDraftMetrics?.dialogueWordCount ?? null,
             hasProfile: !useLeanFloor,
+            activeStressor: activeStressor ?? null,
           });
 
     // Mid-stream phase hints, fired on timers like the route did.
@@ -1948,7 +2011,7 @@ export async function buildScript(
   if (finalScript !== null && finalValidation !== null && !isAborted()) {
     return {
       ok: true,
-      script: finalScript,
+      script: stripInternalMarkers(finalScript),
       attempt: finalAttempt,
       warnings: finalValidation.violations.filter(
         (v) => v.severity === "warning",
