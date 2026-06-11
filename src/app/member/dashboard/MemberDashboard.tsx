@@ -315,7 +315,10 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
                 {totalLeads > 0 && (
                   <Link
                     href={browseHref}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-white/80 font-semibold text-sm hover:text-white hover:bg-white/10 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-[var(--abv-ink)] font-semibold text-sm transition-colors"
+                    style={{ background: "var(--abv-azure)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#5BCEFF")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "var(--abv-azure)")}
                   >
                     Browse all content ideas →
                   </Link>
