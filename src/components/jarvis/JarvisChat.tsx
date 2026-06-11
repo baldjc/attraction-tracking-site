@@ -800,7 +800,7 @@ export default function JarvisChat({
                 Jarvis
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" aria-label="online" />
               </h1>
-              <p className="mt-1.5 text-sm text-abv-text-secondary">your Content Manager</p>
+              <p className="mt-0.5 text-sm text-abv-text-secondary">your Content Manager</p>
             </div>
           </div>
           <div className="relative flex shrink-0 items-center gap-2">
