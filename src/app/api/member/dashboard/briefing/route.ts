@@ -35,8 +35,9 @@ export const runtime = "nodejs";
  *  "Browse all N leads" link to the wizard's Story Lead browser. */
 const BRIEFING_IDEA_COUNT = 3;
 
-/** Where "Browse all N leads" points — the wizard's Story Lead browser. */
-const BROWSE_HREF = "/member/content-planner/wizard?step=2a";
+/** Where "Browse all N leads" points — the Jarvis browse-ideas chooser (the
+ *  standalone Content Engine wizard has been retired). */
+const BROWSE_HREF = "/member/jarvis?thread=new&browse=1";
 
 interface FactChip {
   stat: string;

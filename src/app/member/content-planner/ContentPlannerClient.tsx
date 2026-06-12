@@ -254,7 +254,7 @@ export default function ContentPlannerClient({
           )}
           {!isAdminView && aiWizardEnabled && (
             <Link
-              href="/member/content-planner/wizard?step=1"
+              href="/member/jarvis?thread=new&browse=1"
               className="inline-flex items-center gap-1.5 px-[18px] py-[11px] rounded-full text-[13px] font-bold text-[var(--abv-ink)] transition-colors"
               style={{ background: "var(--abv-azure)" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#5BCEFF")}

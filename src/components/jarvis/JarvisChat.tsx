@@ -245,6 +245,7 @@ export default function JarvisChat({
   customVoiceLabel = "Your custom voice",
   voiceDefaultSummary = "Jarvis writes in the built-in default voice register.",
   voiceManageHref = "/member/market-data/setup",
+  openBrowseOnMount = false,
 }: {
   memberId: string;
   threadId: string | null;
@@ -270,6 +271,15 @@ export default function JarvisChat({
   voiceDefaultSummary?: string;
   /** Where the member uploads / manages their voice guide. */
   voiceManageHref?: string;
+  /**
+   * Open the "Browse all content ideas" chooser on mount. Set when the member
+   * arrives via a browse-ideas front door (the dashboard / planner buttons, the
+   * briefing "Browse all leads" link, or the retired-wizard redirect — all of
+   * which route here as `?thread=new&browse=1`). The chooser opens once on a
+   * genuinely empty thread; the `browse` param is then stripped so a reload
+   * doesn't re-open it.
+   */
+  openBrowseOnMount?: boolean;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -698,6 +708,21 @@ export default function JarvisChat({
       void send(seed.prompt);
     }
   }, [memberId, initialMessages.length, send, startRefineFromPlan]);
+
+  // Browse-ideas front door via URL param (`?thread=new&browse=1`). Server-side
+  // entries (the retired-wizard redirect, the briefing "Browse all leads" link)
+  // can't write a sessionStorage seed, so they signal browse mode through the
+  // URL instead. Open the chooser once on a genuinely empty thread, then strip
+  // the param so a reload doesn't re-open it. Ref-guarded against double-invoke.
+  const browseParamRef = useRef(false);
+  useEffect(() => {
+    if (browseParamRef.current) return;
+    browseParamRef.current = true;
+    if (!openBrowseOnMount) return;
+    if (threadId || initialMessages.length > 0) return; // only on an empty thread
+    setShowBrowsePanel(true);
+    router.replace("/member/jarvis?thread=new");
+  }, [openBrowseOnMount, threadId, initialMessages.length, router]);
 
   // Session-gated resume. On a BARE page load (resumeEligible — never the
   // explicit `?thread=new` fresh start), reopen the thread this browser session

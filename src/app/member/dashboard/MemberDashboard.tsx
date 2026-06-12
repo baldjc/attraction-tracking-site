@@ -290,7 +290,7 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
                 </Link>
                 {totalLeads > 0 && (
                   <Link
-                    href="/member/content-planner/wizard?step=1"
+                    href="/member/jarvis?thread=new&browse=1"
                     className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-[var(--abv-ink)] font-semibold text-sm transition-colors"
                     style={{ background: "var(--abv-azure)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#5BCEFF")}

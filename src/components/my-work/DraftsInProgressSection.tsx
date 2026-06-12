@@ -204,8 +204,11 @@ function buildResumeHref(d: Draft): string {
   if (d.rotationSlot) params.set("rotationSlot", d.rotationSlot);
   if (d.validatedIdea) params.set("validatedIdea", d.validatedIdea);
   if (d.pickedKey) params.set("picked", d.pickedKey);
-  // Wave 4 beta (Finding 12) — pass the draft id so WizardDraftShell
-  // adopts THIS draft for autosaves instead of creating a new one.
-  params.set("draftId", d.id);
-  return `/member/content-planner/wizard?${params.toString()}`;
+  // The standalone Content Engine wizard has been retired in favour of the
+  // Jarvis browse-ideas flow, so a draft can no longer be resumed in the old
+  // step UI. Point "Resume" at the Jarvis browse chooser instead of a dead
+  // wizard deep-link. (The draft's saved fields are intentionally not forwarded
+  // — there is no step UI left to rehydrate them into.)
+  void params;
+  return "/member/jarvis?thread=new&browse=1";
 }

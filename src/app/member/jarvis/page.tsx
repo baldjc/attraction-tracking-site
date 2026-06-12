@@ -79,7 +79,7 @@ function deriveAvatarBullets(raw: string): string[] {
 export default async function JarvisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ thread?: string }>;
+  searchParams: Promise<{ thread?: string; browse?: string }>;
 }) {
   const user = await resolveUserFromSession();
   if (!user) redirect("/login");
@@ -87,7 +87,11 @@ export default async function JarvisPage({
   const flags = await getFeatureFlags({ userId: user.id, userRole: user.role });
   if (!flags.tool_jarvis) redirect("/member/dashboard");
 
-  const { thread: requestedThreadId } = await searchParams;
+  const { thread: requestedThreadId, browse } = await searchParams;
+  // `?browse=1` arrives from the content-ideas front doors (dashboard / planner
+  // buttons, briefing link, retired-wizard redirect) and opens the three-path
+  // chooser on mount instead of a blank chat.
+  const openBrowse = browse === "1";
 
   const [memberRecord, threads, latestUpload, avatarData, marketConfig] =
     await Promise.all([
@@ -248,6 +252,7 @@ export default async function JarvisPage({
       customVoiceLabel={truncateText(voiceSourceLabel, 60)}
       voiceDefaultSummary={DEFAULT_VOICE_SUMMARY}
       voiceManageHref="/member/market-data/setup"
+      openBrowseOnMount={openBrowse}
     />
   );
 }
