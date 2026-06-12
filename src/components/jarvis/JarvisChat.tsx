@@ -191,12 +191,6 @@ interface ResearchChip {
   status: "read" | "failed";
 }
 
-const SUGGESTIONS = [
-  "What's happening in my market right now?",
-  "Draft a market-update video from my latest numbers",
-  "Give me a contrarian-take video idea",
-];
-
 /** Compact quick-reply chips shown above the composer. */
 const QUICK_REPLIES = [
   "What's happening in my market?",
@@ -311,6 +305,17 @@ export default function JarvisChat({
   // the composer so the member can start a browse path mid-conversation without
   // guessing what to type. Auto-opened by a browse-ideas seed hand-off.
   const [showBrowsePanel, setShowBrowsePanel] = useState(false);
+  // Brief highlight on the empty-state browse cards when the member arrives via a
+  // browse-ideas front door (`?browse=1` / seed hand-off). The cards are already
+  // the primary content of the welcome screen, so we emphasize them instead of
+  // injecting a duplicate chooser panel.
+  const [browseHighlight, setBrowseHighlight] = useState(false);
+  const browseHighlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emphasizeBrowseCards = useCallback(() => {
+    setBrowseHighlight(true);
+    if (browseHighlightTimer.current) clearTimeout(browseHighlightTimer.current);
+    browseHighlightTimer.current = setTimeout(() => setBrowseHighlight(false), 2200);
+  }, []);
   const [liveTools, setLiveTools] = useState<ToolRow[]>([]);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   // Research Reader — attached EXTERNAL sources for this thread, shown as
@@ -699,15 +704,16 @@ export default function JarvisChat({
     if (!seed) return;
     if (initialMessages.length > 0) return; // never inject into an existing convo
     if (seed.browse) {
-      // Browse hand-off: open the content-ideas chooser instead of auto-sending,
-      // so the member starts from the three clickable paths (no blank box).
-      setShowBrowsePanel(true);
+      // Browse hand-off on an empty thread: the welcome screen already leads with
+      // the three browse-path cards, so don't inject the duplicate chooser panel —
+      // just briefly emphasize those cards.
+      emphasizeBrowseCards();
     } else if (seed.refinePlanId) {
       void startRefineFromPlan(seed.refinePlanId, seed.prompt);
     } else {
       void send(seed.prompt);
     }
-  }, [memberId, initialMessages.length, send, startRefineFromPlan]);
+  }, [memberId, initialMessages.length, send, startRefineFromPlan, emphasizeBrowseCards]);
 
   // Browse-ideas front door via URL param (`?thread=new&browse=1`). Server-side
   // entries (the retired-wizard redirect, the briefing "Browse all leads" link)
@@ -720,9 +726,11 @@ export default function JarvisChat({
     browseParamRef.current = true;
     if (!openBrowseOnMount) return;
     if (threadId || initialMessages.length > 0) return; // only on an empty thread
-    setShowBrowsePanel(true);
+    // Land on the single welcome screen (which already leads with the browse
+    // cards) and emphasize them — never inject a second chooser panel.
+    emphasizeBrowseCards();
     router.replace("/member/jarvis?thread=new");
-  }, [openBrowseOnMount, threadId, initialMessages.length, router]);
+  }, [openBrowseOnMount, threadId, initialMessages.length, router, emphasizeBrowseCards]);
 
   // Session-gated resume. On a BARE page load (resumeEligible — never the
   // explicit `?thread=new` fresh start), reopen the thread this browser session
@@ -833,6 +841,9 @@ export default function JarvisChat({
     setResearchChips([]);
     setLiveTools([]);
     setInput("");
+    // Close the mid-conversation browse chooser so a fresh empty thread shows
+    // only the primary browse cards (no duplicate panel).
+    setShowBrowsePanel(false);
     setShowResearchPanel(false);
     setResearchText("");
     setHistoryOpen(false);
@@ -1049,26 +1060,14 @@ export default function JarvisChat({
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
           {messages.length === 0 && (
             <div className="rounded-2xl border border-abv-border bg-abv-card p-6">
-              <p className="text-base font-medium text-abv-text">{greeting} 👋</p>
-              <p className="mt-1 text-sm text-abv-text-secondary">
-                Ask about your market or have me draft a script. Try:
+              <p className="text-base font-medium text-abv-text">
+                {greeting} 👋 — browse your content ideas below, or just ask.
               </p>
-              <div className="mt-4 flex flex-col gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => send(s)}
-                    disabled={busy}
-                    className="rounded-xl border border-abv-border px-4 py-2.5 text-left text-sm text-abv-text transition hover:border-abv-border-strong disabled:opacity-50"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-5 text-sm font-medium text-abv-text">
-                …or browse all content ideas:
-              </p>
-              <div className="mt-3 flex flex-col gap-2">
+              <div
+                className={`mt-4 -m-2 flex flex-col gap-2 rounded-xl p-2 transition${
+                  browseHighlight ? " ring-2 ring-[#6ba3c7]" : ""
+                }`}
+              >
                 {BROWSE_IDEA_OPTIONS.map((opt) => (
                   <button
                     key={opt.label}
@@ -1190,7 +1189,7 @@ export default function JarvisChat({
             </div>
           </div>
         )}
-        {showBrowsePanel && (
+        {showBrowsePanel && messages.length > 0 && (
           <div className="mx-auto mb-2 max-w-3xl rounded-xl border border-abv-border bg-abv-card p-3">
             <p className="mb-2 text-xs font-semibold text-abv-text-secondary">
               Browse all content ideas
@@ -1215,18 +1214,20 @@ export default function JarvisChat({
           </div>
         )}
         <div className="mx-auto mb-2 flex max-w-3xl flex-wrap gap-1.5">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => setShowBrowsePanel((v) => !v)}
-            className={`rounded-full border px-3 py-1.5 text-xs transition disabled:opacity-50 ${
-              showBrowsePanel
-                ? "border-abv-border-strong bg-abv-bg-warm text-abv-text"
-                : "border-abv-border bg-abv-card text-abv-text hover:border-abv-border-strong"
-            }`}
-          >
-            Browse all content ideas
-          </button>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setShowBrowsePanel((v) => !v)}
+              className={`rounded-full border px-3 py-1.5 text-xs transition disabled:opacity-50 ${
+                showBrowsePanel
+                  ? "border-abv-border-strong bg-abv-bg-warm text-abv-text"
+                  : "border-abv-border bg-abv-card text-abv-text hover:border-abv-border-strong"
+              }`}
+            >
+              Browse all content ideas
+            </button>
+          )}
           {QUICK_REPLIES.map((q) => (
             <button
               key={q}
