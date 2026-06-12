@@ -28,6 +28,12 @@ and avoids touching the proven reconciliation/persistence engine.
 - The join key between discovered names (`MarketFact.neighbourhood`) and the CSV
   stat map is trim+lowercase on BOTH sides. Pre-merge they match; post-merge
   canonical names may miss → intentional graceful degradation.
-- When you add a backend stat field (e.g. `sampleAddress`), surface it in EVERY
-  decision surface (discovered list `describeStat`, merge-panel variant rows),
-  not just the payload — an unsurfaced field is a silent miss against the spec.
+- When you add a backend stat field (e.g. a sample address), surface it in EVERY
+  decision surface (the discovered/vocab list AND the merge-panel variant rows),
+  not just the payload — an unsurfaced field is a silent miss against the spec
+  (this caused a review FAIL once).
+- Inline "Merge into…" on the list routes through a deterministic-only dry-run
+  (`applyFuzzy:false`, so NO unreviewed fuzzy guesses) then the existing guarded
+  apply — never a second apply path. Client apply-result handling must treat
+  network/bodyless timeouts + queued/already-applied as "still finishing", not a
+  failure, exactly like the full merge control.

@@ -85,6 +85,28 @@ function KnowledgeBaseInner({
     status: "idle",
   });
   const [showCodeHelp, setShowCodeHelp] = useState(false);
+  // The discovered name currently being folded into another area (inline merge).
+  const [mergingName, setMergingName] = useState<string | null>(null);
+
+  // Candidate "merge into" targets for the inline merge select: existing vocab
+  // areas plus any other discovered name, deduped (case-insensitive) and sorted.
+  const mergeTargets = useMemo(() => {
+    const discoveredNames =
+      discovered.status === "ready" ? discovered.discovered : [];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const n of [...neighbourhoods, ...discoveredNames]) {
+      const name = n.trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(name);
+    }
+    return out.sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [neighbourhoods, discovered]);
 
   // Per-raw-name decision data (homes / sold / city), keyed by lowercased name.
   // Loaded as a progressive enhancement alongside the discovered list — names
@@ -190,6 +212,105 @@ function KnowledgeBaseInner({
       router.refresh();
     } catch (e) {
       setDiscovered({ status: "error", message: (e as Error).message });
+    }
+  }
+
+  // Fold one discovered name into another area straight from the list. Routes
+  // through the guarded merge path: a deterministic-only dry-run that folds the
+  // pair, then the existing /merge/apply (kill-switch + durable queue intact).
+  async function handleInlineMerge(source: string, target: string) {
+    if (!target || source.trim().toLowerCase() === target.trim().toLowerCase())
+      return;
+    setMergingName(source);
+
+    // Refresh the discovered list + stats and clear the in-progress marker. Used
+    // both on success and on the "still finishing in background" paths.
+    const refreshAfter = async () => {
+      await onLoadDiscovered();
+      void loadAreaStats();
+      router.refresh();
+    };
+
+    // Step 1 — prepare a deterministic-only run that folds this pair. A failure
+    // here is genuinely actionable (nothing has been applied yet).
+    let mergeRunId: string;
+    try {
+      const prep = await fetch("/api/member/knowledge-base/merge/inline", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ source, target }),
+      });
+      const prepData = await prep.json().catch(() => null);
+      if (!prep.ok || !prepData?.mergeRunId) {
+        toast.error(prepData?.error || "Could not start the merge.");
+        setMergingName(null);
+        return;
+      }
+      mergeRunId = prepData.mergeRunId as string;
+    } catch {
+      toast.error("Could not start the merge. Please try again.");
+      setMergingName(null);
+      return;
+    }
+
+    // Step 2 — confirm via the existing guarded apply route. Mirrors
+    // KbMergeControl.applyRun() so a long re-aggregation or a durable-queue
+    // hand-off reads as "still finishing", never a false failure.
+    try {
+      let applyRes: Response;
+      try {
+        applyRes = await fetch("/api/member/knowledge-base/merge/apply", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ mergeRunId }),
+        });
+      } catch {
+        // Browser stopped waiting; the server keeps applying (idempotent +
+        // resumable). Reflect "still working", not a failure.
+        toast.info(
+          `Folding “${source}” into “${target}” — this is still finishing in the background. Refresh in a few minutes.`,
+        );
+        await refreshAfter();
+        return;
+      }
+
+      const data = (await applyRes.json().catch(() => null)) as {
+        error?: string;
+        queued?: boolean;
+      } | null;
+
+      if (applyRes.ok) {
+        if (data?.queued) {
+          toast.info(
+            `“${source}” is folding into “${target}” in the background. Refresh in a few minutes to see the result.`,
+          );
+        } else {
+          toast.success(`“${source}” now rolls up into “${target}”.`);
+        }
+        await refreshAfter();
+        return;
+      }
+
+      const msg = data?.error ?? "";
+
+      // Already applied / mid-flight / bodyless timeout — all "in progress or
+      // done", not actionable failures.
+      if (
+        !data ||
+        /APPLIED, cannot apply/i.test(msg) ||
+        /already being applied/i.test(msg)
+      ) {
+        toast.info(
+          `Folding “${source}” into “${target}” — this is still finishing in the background. Refresh in a few minutes.`,
+        );
+        await refreshAfter();
+        return;
+      }
+
+      // A real, actionable error.
+      toast.error(msg || "Could not apply the merge.");
+    } finally {
+      setMergingName(null);
     }
   }
 
@@ -405,9 +526,10 @@ function KnowledgeBaseInner({
               <p className="mt-1.5">
                 Two names that are really the same place (e.g.{" "}
                 <em>Austin Waters Phase 1</em> + <em>Austin Waters Phase 2</em> →{" "}
-                <em>Austin Waters</em>)? Don&apos;t deselect one — use{" "}
-                <strong>Clean up / merge areas</strong> below so their sales roll
-                up into a single area.
+                <em>Austin Waters</em>)? Don&apos;t deselect one — pick{" "}
+                <strong>Merge into…</strong> next to a name to roll its sales up
+                into another area right here. (For a guided sweep of many names at
+                once, use <strong>Clean up / merge areas</strong> below.)
               </p>
             </div>
 
@@ -486,9 +608,43 @@ function KnowledgeBaseInner({
                         )}
                       </label>
                       {isExisting && (
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                        <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-400">
                           already in vocab
                         </span>
+                      )}
+                      {mergingName === name ? (
+                        <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-400">
+                          Merging…
+                        </span>
+                      ) : (
+                        <select
+                          aria-label={`Merge ${name} into another area`}
+                          disabled={
+                            discovered.status === "saving" ||
+                            mergingName !== null
+                          }
+                          value=""
+                          onChange={(e) => {
+                            const to = e.target.value;
+                            e.currentTarget.value = "";
+                            if (to) void handleInlineMerge(name, to);
+                          }}
+                          className="max-w-[9rem] shrink-0 rounded border border-gray-300 bg-white px-1 py-0.5 text-[11px] text-gray-600 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                          title="Combine this name's homes into another area"
+                        >
+                          <option value="">Merge into…</option>
+                          {mergeTargets
+                            .filter(
+                              (t) =>
+                                t.trim().toLowerCase() !==
+                                name.trim().toLowerCase(),
+                            )
+                            .map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                        </select>
                       )}
                     </li>
                   );

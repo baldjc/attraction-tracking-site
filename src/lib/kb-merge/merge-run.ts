@@ -21,6 +21,7 @@ import { normalizeAreaName, isNonAreaKey } from "@/lib/kb-merge/normalize";
 import type { FuzzyMergeProposal } from "@/lib/kb-merge/fuzzy";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { sampleFloorFor, type SampleFloor } from "@/lib/member-metric-settings";
+import { isMarketReaggKillSwitchActiveForUser } from "@/lib/feature-flags";
 
 // ── Report shape (persisted in MergeRun.report JSON) ─────────────────────────
 
