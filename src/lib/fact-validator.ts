@@ -1688,83 +1688,97 @@ async function persistResults(
       ? allFactRows
       : allFactRows.filter((r) => !isExcluded(excludedKeys, r.neighbourhood));
 
-  // Idempotent replace. Because the bulk inserts below run OUTSIDE a transaction
-  // (see why immediately after), a persist that dies mid-way can leave facts/
-  // leads on the row while the upload stays "failed". Retries (member retry +
-  // admin re-validate, incl. the $0 reuse path) re-enter here — and MarketFact/
-  // MarketStoryLead carry no upload-scoped uniqueness — so without this clear a
-  // retry would APPEND a second copy and validate the upload with doubled
-  // counts. Deleting first makes every run a clean replace regardless of caller
-  // or how the prior attempt failed. (Admin re-validate also deletes up front;
-  // a second delete here is harmless.)
-  await prisma.marketFact.deleteMany({ where: { uploadId } });
-  await prisma.marketStoryLead.deleteMany({ where: { uploadId } });
+  // BUILD-THEN-SWAP (atomic replace). A re-validation must NEVER leave a member
+  // with fewer facts than they started with. The May-2025 incident was a
+  // delete-then-rebuild where the rebuild died (a held connection dropped) AFTER
+  // the delete had already removed the live facts — emptying the month. So the
+  // destructive delete of the live facts/leads and the insert of the freshly-
+  // built set now run together in ONE interactive transaction. On ANY failure or
+  // interruption (including a dropped connection) the transaction rolls back and
+  // the prior facts/leads remain fully intact — the upload simply stays in its
+  // pre-existing state and a retry rebuilds cleanly against live data. The
+  // re-validate routes no longer delete up front for the same reason; this swap
+  // is the single point at which live facts are replaced.
+  //
+  // Why this is safe inside a transaction now (it was the P2028 trap before):
+  // the old failure was hundreds of SERIAL per-row create() calls (8-34s)
+  // blowing Prisma's default 5s interactive budget. Both inserts here are single
+  // statements (createMany) and the story-lead loop is tiny (3-8 rows), so the
+  // whole swap completes in ~1-3s. We still raise the timeout generously to give
+  // very wide markets headroom.
+  //
+  // Idempotent replace: MarketFact/MarketStoryLead carry no upload-scoped
+  // uniqueness, so deleting first INSIDE the tx guarantees a clean replace for
+  // every caller (member retry, admin re-validate, the $0 reuse path) regardless
+  // of how a prior attempt failed.
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.marketFact.deleteMany({ where: { uploadId } });
+      await tx.marketStoryLead.deleteMany({ where: { uploadId } });
 
-  // Bulk inserts run OUTSIDE any interactive transaction. For large markets
-  // (Phil's metros routinely yield 300-400+ facts) wrapping these in a single
-  // interactive transaction blew past Prisma's default 5s timeout and threw
-  // P2028 ("expired transaction") AFTER the ~$2 of AI work had already been
-  // spent — so every retry re-burned the cost and failed at the same wall.
-  // These bulk writes don't need to be atomic with the status flip: if a fact
-  // insert fails mid-batch the upload stays pre-"validated" and a re-validate
-  // simply re-writes them (cheap, and — when rawValidatorOutput is reused —
-  // with no new AI cost). createMany is a single statement, so it is not
-  // subject to the interactive-transaction budget.
-  if (factRows.length > 0) {
-    await prisma.marketFact.createMany({ data: factRows });
-  }
-  if (leads.length > 0) {
-    // Story Lead → Video carry-over: persist the source MarketFact PKs on each
-    // lead at generation time so "Use as Video" can hand over real fact ids
-    // instead of re-deriving them from the display dataThreads strings later.
-    // createMany doesn't return ids, so requery the just-inserted facts and run
-    // the SAME pure resolver the route uses. Best-effort: a parse miss just
-    // leaves the lead textual (it still routes through the runtime resolver).
-    const insertedFacts = await prisma.marketFact.findMany({
-      where: { uploadId },
-      select: {
-        id: true,
-        neighbourhood: true,
-        metricFamily: true,
-        metricValue: true,
-        dateContext: true,
-        createdAt: true,
-      },
-    });
-    const resolverFacts: ResolverFact[] = insertedFacts.map((f) => ({
-      id: f.id,
-      neighbourhood: f.neighbourhood,
-      metricFamily: String(f.metricFamily),
-      value: f.metricValue,
-      date: f.dateContext ?? f.createdAt,
-    }));
-    const knownHoods = [
-      ...new Set(
-        insertedFacts
-          .map((f) => f.neighbourhood)
-          .filter((h): h is string => !!h && h.trim().length > 0),
-      ),
-    ];
+      if (factRows.length > 0) {
+        await tx.marketFact.createMany({ data: factRows });
+      }
+      if (leads.length > 0) {
+        // Story Lead → Video carry-over: persist the source MarketFact PKs on
+        // each lead at generation time so "Use as Video" can hand over real fact
+        // ids instead of re-deriving them from the display dataThreads strings
+        // later. createMany doesn't return ids, so requery the just-inserted
+        // facts (through `tx`, so it sees exactly the new set and never the
+        // deleted rows) and run the SAME pure resolver the route uses.
+        // Best-effort: a parse miss just leaves the lead textual (it still routes
+        // through the runtime resolver).
+        const insertedFacts = await tx.marketFact.findMany({
+          where: { uploadId },
+          select: {
+            id: true,
+            neighbourhood: true,
+            metricFamily: true,
+            metricValue: true,
+            dateContext: true,
+            createdAt: true,
+          },
+        });
+        const resolverFacts: ResolverFact[] = insertedFacts.map((f) => ({
+          id: f.id,
+          neighbourhood: f.neighbourhood,
+          metricFamily: String(f.metricFamily),
+          value: f.metricValue,
+          date: f.dateContext ?? f.createdAt,
+        }));
+        const knownHoods = [
+          ...new Set(
+            insertedFacts
+              .map((f) => f.neighbourhood)
+              .filter((h): h is string => !!h && h.trim().length > 0),
+          ),
+        ];
 
-    // createMany doesn't take Json fields cleanly on all providers — do
-    // individual creates for the small N (3-8 leads per validation).
-    for (const lead of leads) {
-      const threads = parseDataThreadStrings(lead.dataThreads, knownHoods);
-      const matchedIds: string[] = [];
-      const seen = new Set<string>();
-      for (const thread of threads) {
-        const m = matchThreadToFacts(thread, resolverFacts);
-        if (m && !seen.has(m.factId)) {
-          seen.add(m.factId);
-          matchedIds.push(m.factId);
+        // createMany doesn't take Json fields cleanly on all providers — do
+        // individual creates for the small N (3-8 leads per validation).
+        for (const lead of leads) {
+          const threads = parseDataThreadStrings(lead.dataThreads, knownHoods);
+          const matchedIds: string[] = [];
+          const seen = new Set<string>();
+          for (const thread of threads) {
+            const m = matchThreadToFacts(thread, resolverFacts);
+            if (m && !seen.has(m.factId)) {
+              seen.add(m.factId);
+              matchedIds.push(m.factId);
+            }
+          }
+          const data = mapLeadToPrisma(lead, uploadId, userId);
+          data.anchorFactId = matchedIds[0] ?? null;
+          data.supportingFactIds = matchedIds.slice(1);
+          await tx.marketStoryLead.create({ data });
         }
       }
-      const data = mapLeadToPrisma(lead, uploadId, userId);
-      data.anchorFactId = matchedIds[0] ?? null;
-      data.supportingFactIds = matchedIds.slice(1);
-      await prisma.marketStoryLead.create({ data });
-    }
-  }
+    },
+    // Generous budget: the swap is a couple of single-statement bulk writes plus
+    // a tiny lead loop (~1-3s in practice), but very wide markets and a busy pool
+    // get headroom so we never reintroduce a P2028 mid-swap.
+    { timeout: 120_000, maxWait: 20_000 },
+  );
 
   // Only the small, fast, must-be-atomic pair stays in a transaction: flip the
   // upload to "validated" and record AI usage together so we never mark an

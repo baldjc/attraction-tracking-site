@@ -154,20 +154,24 @@ export async function POST(
     // engine), so clear it and pay for a fresh AI pass.
     const clearRawOutput = upload.status === "validated";
 
-    await prisma.$transaction(async (tx) => {
-      await tx.marketFact.deleteMany({ where: { uploadId: id } });
-      await tx.aggregatedMetric.deleteMany({ where: { uploadId: id } });
-      await tx.marketStoryLead.deleteMany({ where: { uploadId: id } });
-      await tx.marketDataUpload.update({
-        where: { id },
-        data: {
-          status: "validating",
-          validatedAt: null,
-          validationError: null,
-          validationCostUsd: null,
-          ...(clearRawOutput ? { rawValidatorOutput: null } : {}),
-        },
-      });
+    // BUILD-THEN-SWAP: do NOT delete the existing facts/aggregates/leads here.
+    // The old delete-up-front-then-dispatch pattern is exactly what emptied a
+    // month when the rebuild later died — the facts were gone before the new set
+    // existed. We now leave the live data in place; runValidation rebuilds the
+    // new set and swaps it in atomically (persistResults / persistAggregatedMetrics
+    // each delete+insert in a single transaction). If the re-validation fails or
+    // is interrupted, the member keeps every fact they had. We only reset the
+    // upload's own status fields (and clear rawValidatorOutput for a deliberate
+    // full re-run of an already-validated upload).
+    await prisma.marketDataUpload.update({
+      where: { id },
+      data: {
+        status: "validating",
+        validatedAt: null,
+        validationError: null,
+        validationCostUsd: null,
+        ...(clearRawOutput ? { rawValidatorOutput: null } : {}),
+      },
     });
 
     // Cost attributes to the upload owner: validateUploadAsync passes

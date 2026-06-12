@@ -226,39 +226,48 @@ export async function persistAggregatedMetrics(
     allRows.push(...rowsFromGroup(group, monthYear));
   }
 
-  // Atomic replace. If the create fails mid-way, the prior delete still
-  // commits — but that's acceptable for this table (it's a deterministic
-  // projection, can always be rebuilt from the CSV via the backfill).
-  await prisma.aggregatedMetric.deleteMany({
-    where: { userId, uploadId },
-  });
-
+  // Build-then-swap safety: if this re-aggregation produced NOTHING (empty or
+  // unreadable CSV), leave the member's existing aggregates untouched rather than
+  // wiping their live projection. The facts path mirrors this — runValidation
+  // bails to "failed" without touching live facts when it yields nothing.
   if (allRows.length === 0) return 0;
 
+  // Atomic build-then-swap: delete the live rows and insert the freshly-computed
+  // set in ONE interactive transaction so an interrupted re-aggregation can never
+  // empty the table. (AggregatedMetric is a deterministic projection — always
+  // rebuildable from the CSV — but the swap must still be all-or-nothing to
+  // honour the no-data-loss guarantee: on any failure the tx rolls back and the
+  // prior aggregates remain intact.)
   const CHUNK = 500;
   let written = 0;
-  for (let i = 0; i < allRows.length; i += CHUNK) {
-    const slice = allRows.slice(i, i + CHUNK).map((r) => ({
-      userId,
-      uploadId,
-      neighbourhood: r.neighbourhood,
-      propertyType: r.propertyType,
-      priceTier: r.priceTier,
-      metricFamily: r.metricFamily,
-      metricKey: r.metricKey,
-      metricValue: r.metricValue,
-      sampleSize: r.sampleSize,
-      monthYear: r.monthYear,
-      yoyDelta: r.yoyDelta,
-      rolling90dValue: r.rolling90dValue,
-      compositionShiftFlag: r.compositionShiftFlag,
-    }));
-    const res = await prisma.aggregatedMetric.createMany({
-      data: slice,
-      skipDuplicates: true,
-    });
-    written += res.count;
-  }
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.aggregatedMetric.deleteMany({ where: { userId, uploadId } });
+      for (let i = 0; i < allRows.length; i += CHUNK) {
+        const slice = allRows.slice(i, i + CHUNK).map((r) => ({
+          userId,
+          uploadId,
+          neighbourhood: r.neighbourhood,
+          propertyType: r.propertyType,
+          priceTier: r.priceTier,
+          metricFamily: r.metricFamily,
+          metricKey: r.metricKey,
+          metricValue: r.metricValue,
+          sampleSize: r.sampleSize,
+          monthYear: r.monthYear,
+          yoyDelta: r.yoyDelta,
+          rolling90dValue: r.rolling90dValue,
+          compositionShiftFlag: r.compositionShiftFlag,
+        }));
+        const res = await tx.aggregatedMetric.createMany({
+          data: slice,
+          skipDuplicates: true,
+        });
+        written += res.count;
+      }
+    },
+    { timeout: 120_000, maxWait: 20_000 },
+  );
   return written;
 }
 

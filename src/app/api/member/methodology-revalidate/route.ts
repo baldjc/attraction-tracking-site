@@ -199,23 +199,24 @@ export async function POST() {
     if (claim.count === 0) continue;
 
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.marketFact.deleteMany({ where: { uploadId: u.id } });
-        await tx.aggregatedMetric.deleteMany({ where: { uploadId: u.id } });
-        await tx.marketStoryLead.deleteMany({ where: { uploadId: u.id } });
-        await tx.marketDataUpload.update({
-          where: { id: u.id },
-          data: {
-            status: "validating",
-            validatedAt: null,
-            validationError: null,
-            validationCostUsd: null,
-            // Methodology change => deliberate fresh AI pass. Clearing the
-            // stored output prevents runValidation's persistence-only reuse
-            // path from re-emitting the old-methodology prose for free.
-            rawValidatorOutput: null,
-          },
-        });
+      // BUILD-THEN-SWAP: do NOT delete the member's existing facts/aggregates/
+      // leads here. The old delete-up-front-then-dispatch pattern is what emptied
+      // a month when the rebuild later died. We leave the live data intact;
+      // runValidation rebuilds and swaps the new set in atomically (persistResults
+      // / persistAggregatedMetrics each delete+insert in a single transaction), so
+      // a failed or interrupted re-validation keeps every existing fact. We only
+      // reset the upload's own status fields and clear rawValidatorOutput (a
+      // methodology change is a deliberate fresh AI pass, so the persistence-only
+      // reuse path must not re-emit the old-methodology prose for free).
+      await prisma.marketDataUpload.update({
+        where: { id: u.id },
+        data: {
+          status: "validating",
+          validatedAt: null,
+          validationError: null,
+          validationCostUsd: null,
+          rawValidatorOutput: null,
+        },
       });
     } catch (err) {
       // Restore the claim so the upload isn't stranded in 'validating'.
