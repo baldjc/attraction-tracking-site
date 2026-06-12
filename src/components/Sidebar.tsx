@@ -442,6 +442,23 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
             const isLocked = !!(link as any).locked;
 
+            // The Content Manager item shows the "Jarvis" wordmark logo in place
+            // of the plain "Jarvis" text so the brand stands out in the nav.
+            const labelNode =
+              link.href === "/member/jarvis" ? (
+                <span className="leading-tight flex-1 flex items-center gap-1.5 min-w-0">
+                  <span className="truncate">Content Manager</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/jarvis-logo.svg"
+                    alt="Jarvis"
+                    className="h-[17px] w-auto shrink-0"
+                  />
+                </span>
+              ) : (
+                <span className="leading-tight flex-1">{link.label}</span>
+              );
+
             return (
               <div key={link.href}>
                 {sectionHeader}
@@ -459,7 +476,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                     <Icon className="w-5 h-5 shrink-0" />
                     {!collapsed && (
                       <>
-                        <span className="leading-tight flex-1">{link.label}</span>
+                        {labelNode}
                         <LockClosedIcon className="w-3.5 h-3.5 text-white/30 shrink-0" />
                       </>
                     )}
@@ -482,7 +499,7 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                     <Icon className="w-5 h-5 shrink-0" />
                     {!collapsed && (
                       <>
-                        <span className="leading-tight flex-1">{link.label}</span>
+                        {labelNode}
                         {/* Sprint 9: feature dot — only when item has featureColour and no badge */}
                         {featureColour && badgeCount === 0 && (
                           <span
