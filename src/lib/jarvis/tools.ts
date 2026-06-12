@@ -452,6 +452,100 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       required: ["mergeRunId"],
     },
   },
+  {
+    name: "browse_story_leads",
+    description:
+      "Surface the member's own ranked MARKET STORY LEADS from their latest " +
+      "validated upload — the strongest, most video-worthy patterns the " +
+      "platform already mined from their data (each pre-anchored on their real " +
+      "facts). Returns selectable cards; tapping one hands that lead back to you " +
+      "to turn into a script. Use when the member wants to BROWSE ideas, asks " +
+      "'what should I make a video about', or picks the 'browse my market " +
+      "stories' option. Do NOT build a script from this call — let the member " +
+      "pick a card first.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "list_themes",
+    description:
+      "Offer the 5 content THEMES (rotation slots: market update, neighbourhood " +
+      "fact, contrarian take, do-not, should-you) as a chooser so the member can " +
+      "explore ideas by theme. Returns selectable theme cards; tapping one asks " +
+      "you to generate idea cards for that theme (generate_theme_ideas). Use when " +
+      "the member wants to explore by theme/category but hasn't named one yet. " +
+      "No facts are read and nothing is generated until they pick a theme.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "generate_theme_ideas",
+    description:
+      "Generate a set of validated, BUILDABLE video idea cards for ONE theme " +
+      "(rotation slot), each anchored on the member's real facts. Ideas are " +
+      "GROUPED / COMPARISON by default (multi-neighbourhood, list, or " +
+      "market-wide) — never a single-neighbourhood deep dive unless the member " +
+      "explicitly asks for one. Returns selectable cards; tapping one hands that " +
+      "idea back to you to build. Use after the member chooses a theme. Do NOT " +
+      "build a script from this call — let them pick a card.",
+    input_schema: {
+      type: "object",
+      properties: {
+        rotationSlot: {
+          type: "string",
+          enum: ROTATION_SLOTS as unknown as string[],
+          description:
+            "The theme to generate ideas for: market_update, " +
+            "neighbourhood_fact, contrarian_take, do_not, or should_you.",
+        },
+        count: {
+          type: "number",
+          description: "Optional. How many idea cards to generate (1–10, default 5).",
+        },
+        propertyTypeFocus: {
+          type: "string",
+          description:
+            "Optional. Restrict ideas to one property type the member named " +
+            "(e.g. 'Condo', 'Single Family'); omit for any.",
+        },
+        allowSingleNeighbourhood: {
+          type: "boolean",
+          description:
+            "Optional, default false. Leave false to keep ideas grouped / " +
+            "comparison (the Browse default). Set true ONLY when the member " +
+            "explicitly asks for a single-neighbourhood deep dive — then " +
+            "single-hood idea titles are allowed.",
+        },
+      },
+      required: ["rotationSlot"],
+    },
+  },
+  {
+    name: "validate_idea",
+    description:
+      "Check a video idea the MEMBER typed against their own validated facts and " +
+      "return an honest verdict — does their data SUPPORT it, PARTIALLY support " +
+      "it (with a sharper framing), or CONTRADICT it. Returns one selectable " +
+      "card; when the verdict supports/partially-supports the idea it is " +
+      "buildable (tapping hands it back to you), otherwise it offers to reshape " +
+      "the idea. Use when the member proposes their own idea and wants to know " +
+      "if it holds up. NEVER invent supporting numbers — rely on this tool's " +
+      "verdict.",
+    input_schema: {
+      type: "object",
+      properties: {
+        idea: {
+          type: "string",
+          description: "The member's video idea, in their own words.",
+        },
+        propertyTypeFocus: {
+          type: "string",
+          description:
+            "Optional. The property type the idea is about (e.g. 'Condo'); " +
+            "omit for any.",
+        },
+      },
+      required: ["idea"],
+    },
+  },
 ];
 
 // ── get_facts executor ──────────────────────────────────────────────────────

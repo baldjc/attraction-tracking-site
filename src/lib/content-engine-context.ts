@@ -117,6 +117,41 @@ export async function loadHeadlineSafeFacts(
 }
 
 /**
+ * Round-robin facts across metric families so a hard cap doesn't starve
+ * families that sort late in the canonical enum order (SP_LP, FAILURE_RATE).
+ * Each family keeps its incoming order (the caller sorts by neighbourhood).
+ *
+ * Shared by the Idea Validation route AND the Jarvis browse/validate tools so
+ * the 50-fact selection stays byte-identical across both surfaces.
+ */
+export function balanceFactsByFamily<T extends { metricFamily: string }>(
+  facts: T[],
+  cap: number,
+): T[] {
+  if (facts.length <= cap) return facts;
+  const byFamily = new Map<string, T[]>();
+  for (const f of facts) {
+    const arr = byFamily.get(f.metricFamily);
+    if (arr) arr.push(f);
+    else byFamily.set(f.metricFamily, [f]);
+  }
+  const groups = [...byFamily.values()];
+  const picked: T[] = [];
+  for (let i = 0; picked.length < cap; i++) {
+    let progressed = false;
+    for (const g of groups) {
+      if (i < g.length) {
+        picked.push(g[i]);
+        progressed = true;
+        if (picked.length >= cap) break;
+      }
+    }
+    if (!progressed) break;
+  }
+  return picked;
+}
+
+/**
  * Texture-only facts for an upload — rows the validator graded
  * `supporting_texture_only` (real, member-owned numbers, but NOT durable enough
  * to headline a video: thin samples, off-market sub-buckets, etc). Same compact

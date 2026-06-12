@@ -55,6 +55,13 @@ export interface GenerationLoopArgs {
   validatedIdea?: string;
   monthYear: string;
   propertyTypeFocus: PropertyTypeFocus;
+  /**
+   * Grouped/comparison-by-default toggle (Task #60 — Browse front door). When
+   * `false`, single-neighbourhood idea titles are rejected by the validator
+   * (even with a data anchor) and the prompt is steered toward multi-hood /
+   * list comparisons. Defaults to `true` so the wizard path is byte-identical.
+   */
+  allowSingleNeighbourhood?: boolean;
 }
 
 export type GenerationLoopResult =
@@ -109,6 +116,7 @@ export async function runIdeaGenerationLoop(
             validatedIdea: args.validatedIdea,
             monthYear: args.monthYear,
             propertyTypeFocus: args.propertyTypeFocus,
+            allowSingleNeighbourhood: args.allowSingleNeighbourhood ?? true,
           })
         : buildRetryUserMessage({
             previousIdeas: lastRawIdeas,
@@ -191,6 +199,7 @@ export async function runIdeaGenerationLoop(
         args.storyLeadFactIds,
         args.storyLeadHoodFactIds,
         args.rotationSlot ?? null,
+        args.allowSingleNeighbourhood ?? true,
       );
       if (result.ok) {
         validIdeas.push(rawIdeas[i] as IdeaCard);
@@ -248,6 +257,8 @@ export function buildInitialUserMessage(args: {
   validatedIdea?: string;
   monthYear: string;
   propertyTypeFocus: PropertyTypeFocus;
+  /** Task #60 — when false, steer toward grouped/comparison titles only. */
+  allowSingleNeighbourhood?: boolean;
 }): string {
   const lines: string[] = [];
   lines.push(`Market: ${args.config.marketName}`);
@@ -358,6 +369,24 @@ export function buildInitialUserMessage(args: {
     "FORBIDDEN: a title that names exactly ONE neighbourhood with NO data anchor and NO second hood. The validator rejects these even if they technically have a \"named anchor\" — single-hood scope locks the video to too narrow an audience for the rotation slots.",
   );
   lines.push("");
+
+  // Task #60 — Browse front door defaults to grouped / comparison ideas. When
+  // single-neighbourhood ideas aren't allowed, tighten pattern 3 OUT: a title
+  // may name at most one neighbourhood ONLY as part of a 2+ hood comparison or
+  // a list-count. The validator backstops this server-side.
+  if (args.allowSingleNeighbourhood === false) {
+    lines.push("## GROUPED / COMPARISON BY DEFAULT — HARD OVERRIDE (Task #60)");
+    lines.push(
+      "This batch is for the member's \"browse by theme\" front door, which defaults to GROUPED, comparison-style ideas. Pattern 3 above (single neighbourhood + data anchor) is FORBIDDEN here. Every title MUST be either:",
+    );
+    lines.push("  - a **multi-hood comparison** naming 2+ neighbourhoods (e.g. \"Bridgeland vs Beltline: 2.13 MOI Gap\"), OR");
+    lines.push("  - a **multi-hood list** using a list-count of 3/5/7/10 neighbourhoods (e.g. \"These 5 Calgary Neighbourhoods Hit 0.5 MOI\"), OR");
+    lines.push("  - a **city-wide** title (the market/city name + a $/%/MOI/year-month anchor, naming NO single neighbourhood).");
+    lines.push(
+      "Do NOT lock any title to one specific neighbourhood. The validator rejects single-neighbourhood titles for this batch and you will be re-prompted.",
+    );
+    lines.push("");
+  }
 
   lines.push("## TITLE RULES — INVIOLABLE");
   lines.push("");

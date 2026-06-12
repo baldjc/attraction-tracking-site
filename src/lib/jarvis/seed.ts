@@ -27,13 +27,21 @@ interface JarvisSeed {
    * refined script saves back to this ContentPlan instead of creating a new one.
    */
   refinePlanId?: string;
+  /**
+   * When true, this seed opens Jarvis in "browse all content ideas" mode: the
+   * chat shows the three-path chooser (story leads / themes / validate an idea)
+   * instead of auto-sending a prompt. Member-scoped + one-shot like every seed.
+   */
+  browse?: boolean;
 }
 
 /** What a consumed seed yields: the prompt plus, for a refine hand-off, the
- *  planner video id the refined script must save back to. */
+ *  planner video id the refined script must save back to; or, for a browse
+ *  hand-off, a flag telling the chat to open the content-ideas chooser. */
 export interface ConsumedJarvisSeed {
   prompt: string;
   refinePlanId?: string;
+  browse?: boolean;
 }
 
 /** Stash a one-shot prompt for `memberId`, overwriting any prior pending seed.
@@ -60,6 +68,26 @@ export function writeJarvisRefineSeed(memberId: string, planId: string, prompt: 
 }
 
 /**
+ * Stash a one-shot BROWSE seed: opens Jarvis in "browse all content ideas" mode
+ * (the three-path chooser) on a fresh thread. Member-scoped + one-shot like
+ * every seed. The `prompt` is a harmless fallback only used if the chat can't
+ * open the chooser; the `browse` flag is what the chat actually keys on.
+ */
+export function writeJarvisBrowseSeed(memberId: string): void {
+  if (!memberId) return;
+  try {
+    const seed: JarvisSeed = {
+      memberId,
+      prompt: "I'd like to browse content ideas.",
+      browse: true,
+    };
+    sessionStorage.setItem(JARVIS_SEED_KEY, JSON.stringify(seed));
+  } catch {
+    /* storage unavailable — hand-off simply won't seed */
+  }
+}
+
+/**
  * Read AND remove the pending seed (one-shot). Returns the prompt (and any
  * `refinePlanId`) only when the seed belongs to `currentMemberId`; a foreign or
  * malformed seed is still cleared (so it can't linger) but returns null.
@@ -83,6 +111,7 @@ export function consumeJarvisSeed(currentMemberId: string): ConsumedJarvisSeed |
         typeof parsed.refinePlanId === "string" && parsed.refinePlanId
           ? parsed.refinePlanId
           : undefined,
+      browse: parsed.browse === true ? true : undefined,
     };
   } catch {
     return null; // legacy / corrupt payload → cleared above

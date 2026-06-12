@@ -18,7 +18,7 @@ import {
   MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { useToast } from "@/components/ToastProvider";
-import type { ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
+import type { ProposalState, ToolCallRecord, IdeasState } from "@/lib/jarvis/types";
 import { buildMlsVerifyLine } from "@/lib/mls-verify-reminder";
 import { clearJarvisSeed, consumeJarvisSeed } from "@/lib/jarvis/seed";
 import ContextPanel from "@/components/jarvis/ContextPanel";
@@ -97,6 +97,7 @@ export interface InitialMessage {
   text: string;
   toolCalls?: ToolCallRecord[];
   proposal?: ProposalState;
+  ideas?: IdeasState;
 }
 
 /** A past conversation, shown in the history switcher. */
@@ -170,6 +171,8 @@ interface ChatMessage {
   text: string;
   toolCalls?: ToolCallRecord[];
   proposal?: (ProposalState & { messageId?: string }) | null;
+  /** Selectable idea cards (browse story leads / themes / validation). */
+  ideas?: IdeasState | null;
   /** Live draft script streaming under this assistant turn. */
   draft?: string;
   draftStatus?: "streaming" | "done" | "error";
@@ -199,6 +202,32 @@ const QUICK_REPLIES = [
   "What's happening in my market?",
   "Draft a market update",
   "Give me a contrarian take",
+];
+
+/**
+ * The "Browse all content ideas" front door — three conversational paths that
+ * each send a natural-language trigger the system prompt routes to the matching
+ * idea tool (browse_story_leads / list_themes / validate_idea). Rendered as
+ * clickable options (empty-state opener + a toggle panel above the composer) so
+ * the member never faces a blank box wondering what to type.
+ */
+const BROWSE_IDEA_OPTIONS: { label: string; hint: string; prompt: string }[] = [
+  {
+    label: "Browse story leads",
+    hint: "The strongest video angles in your market right now",
+    prompt: "Browse my market's story leads — what's worth a video right now?",
+  },
+  {
+    label: "Explore by theme",
+    hint: "Pick a content theme and get grounded ideas",
+    prompt: "Let's explore content ideas by theme — show me the themes I can choose from.",
+  },
+  {
+    label: "Validate my own idea",
+    hint: "Check one of your ideas against your real numbers",
+    prompt:
+      "I have my own video idea I'd like you to validate against my market data. Ask me what it is.",
+  },
 ];
 
 export default function JarvisChat({
@@ -263,10 +292,15 @@ export default function JarvisChat({
       text: m.text,
       toolCalls: m.toolCalls,
       proposal: m.proposal ? { ...m.proposal, messageId: m.id } : null,
+      ideas: m.ideas ?? null,
     })),
   );
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // "Browse all content ideas" — when toggled, a 3-option chooser shows above
+  // the composer so the member can start a browse path mid-conversation without
+  // guessing what to type. Auto-opened by a browse-ideas seed hand-off.
+  const [showBrowsePanel, setShowBrowsePanel] = useState(false);
   const [liveTools, setLiveTools] = useState<ToolRow[]>([]);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   // Research Reader — attached EXTERNAL sources for this thread, shown as
@@ -541,8 +575,14 @@ export default function JarvisChat({
               case "script_error":
                 patchAssistant({ draftStatus: "error" });
                 break;
+              case "ideas": {
+                const ideas = (data.ideas as IdeasState | null) ?? null;
+                patchAssistant({ ideas });
+                break;
+              }
               case "assistant_final": {
                 const proposal = (data.proposal as (ProposalState & { messageId?: string }) | null) ?? null;
+                const ideas = (data.ideas as IdeasState | null) ?? null;
                 const realId = typeof data.messageId === "string" ? data.messageId : assistantId;
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -552,6 +592,7 @@ export default function JarvisChat({
                           id: realId,
                           text: String(data.text ?? assistantBuf),
                           proposal,
+                          ideas,
                           // F4: the live draft buffer (draftBuf) is the RAW stream
                           // and still carries internal slot markers ([STRESSOR BEAT],
                           // [LEAD MAGNET n/3], [VALUES BEAT n/2], [VISUAL: …], [CALLBACK]).
@@ -647,7 +688,11 @@ export default function JarvisChat({
     const seed = consumeJarvisSeed(memberId);
     if (!seed) return;
     if (initialMessages.length > 0) return; // never inject into an existing convo
-    if (seed.refinePlanId) {
+    if (seed.browse) {
+      // Browse hand-off: open the content-ideas chooser instead of auto-sending,
+      // so the member starts from the three clickable paths (no blank box).
+      setShowBrowsePanel(true);
+    } else if (seed.refinePlanId) {
       void startRefineFromPlan(seed.refinePlanId, seed.prompt);
     } else {
       void send(seed.prompt);
@@ -995,6 +1040,22 @@ export default function JarvisChat({
                   </button>
                 ))}
               </div>
+              <p className="mt-5 text-sm font-medium text-abv-text">
+                …or browse all content ideas:
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                {BROWSE_IDEA_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.label}
+                    onClick={() => send(opt.prompt)}
+                    disabled={busy}
+                    className="rounded-xl border border-abv-border bg-abv-bg px-4 py-2.5 text-left transition hover:border-abv-border-strong disabled:opacity-50"
+                  >
+                    <span className="block text-sm font-medium text-abv-text">{opt.label}</span>
+                    <span className="mt-0.5 block text-xs text-abv-text-secondary">{opt.hint}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1004,6 +1065,8 @@ export default function JarvisChat({
               message={m}
               pendingAction={pendingAction}
               onAction={proposalAction}
+              onPickIdea={send}
+              pickDisabled={busy}
             />
           ))}
 
@@ -1102,7 +1165,43 @@ export default function JarvisChat({
             </div>
           </div>
         )}
+        {showBrowsePanel && (
+          <div className="mx-auto mb-2 max-w-3xl rounded-xl border border-abv-border bg-abv-card p-3">
+            <p className="mb-2 text-xs font-semibold text-abv-text-secondary">
+              Browse all content ideas
+            </p>
+            <div className="flex flex-col gap-2">
+              {BROWSE_IDEA_OPTIONS.map((opt) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setShowBrowsePanel(false);
+                    void send(opt.prompt);
+                  }}
+                  className="rounded-lg border border-abv-border bg-abv-bg px-3 py-2 text-left transition hover:border-abv-border-strong disabled:opacity-50"
+                >
+                  <span className="block text-sm font-medium text-abv-text">{opt.label}</span>
+                  <span className="mt-0.5 block text-xs text-abv-text-secondary">{opt.hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mx-auto mb-2 flex max-w-3xl flex-wrap gap-1.5">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setShowBrowsePanel((v) => !v)}
+            className={`rounded-full border px-3 py-1.5 text-xs transition disabled:opacity-50 ${
+              showBrowsePanel
+                ? "border-abv-border-strong bg-abv-bg-warm text-abv-text"
+                : "border-abv-border bg-abv-card text-abv-text hover:border-abv-border-strong"
+            }`}
+          >
+            Browse all content ideas
+          </button>
           {QUICK_REPLIES.map((q) => (
             <button
               key={q}
@@ -1184,10 +1283,14 @@ function MessageBubble({
   message,
   pendingAction,
   onAction,
+  onPickIdea,
+  pickDisabled,
 }: {
   message: ChatMessage;
   pendingAction: string | null;
   onAction: (id: string, action: "confirming" | "reopen" | "decline" | "save") => void;
+  onPickIdea: (prompt: string) => void;
+  pickDisabled: boolean;
 }) {
   if (message.role === "user") {
     return (
@@ -1230,6 +1333,10 @@ function MessageBubble({
         <ScriptDraft draft={message.draft ?? ""} status={message.draftStatus} />
       )}
 
+      {message.ideas && message.ideas.items.length > 0 && (
+        <IdeaCards ideas={message.ideas} onPick={onPickIdea} disabled={pickDisabled} />
+      )}
+
       {message.proposal && (
         <ProposalCard
           proposal={message.proposal}
@@ -1238,6 +1345,58 @@ function MessageBubble({
           onAction={onAction}
         />
       )}
+    </div>
+  );
+}
+
+/** A list of selectable idea cards (story leads / themes / validation). Tapping
+ *  a card sends its built-in prompt as the next member message, continuing the
+ *  normal pre-draft → build_script flow (no special build short-circuit). */
+function IdeaCards({
+  ideas,
+  onPick,
+  disabled,
+}: {
+  ideas: IdeasState;
+  onPick: (prompt: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="max-w-[92%] rounded-2xl border border-abv-border bg-abv-card p-4">
+      {ideas.heading && (
+        <p className="text-sm font-semibold text-abv-text">{ideas.heading}</p>
+      )}
+      {ideas.note && (
+        <p className="mt-1 text-xs text-abv-text-secondary">{ideas.note}</p>
+      )}
+      <div className={`flex flex-col gap-2 ${ideas.heading || ideas.note ? "mt-3" : ""}`}>
+        {ideas.items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => onPick(item.prompt)}
+            className="group rounded-xl border border-abv-border bg-abv-bg px-4 py-3 text-left transition hover:border-abv-border-strong disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium text-abv-text">{item.title}</p>
+              {item.themeLabel && (
+                <span className="shrink-0 rounded-full bg-abv-bg-warm px-2 py-0.5 text-[11px] font-medium text-abv-text-secondary">
+                  {item.themeLabel}
+                </span>
+              )}
+            </div>
+            {item.hook && (
+              <p className="mt-1 text-xs leading-relaxed text-abv-text-secondary">{item.hook}</p>
+            )}
+            {typeof item.citedFactCount === "number" && item.citedFactCount > 0 && (
+              <p className="mt-1.5 text-[11px] text-abv-text-secondary">
+                Grounded in {item.citedFactCount} of your facts
+              </p>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

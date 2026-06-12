@@ -13,7 +13,7 @@ import JarvisChat, {
   type JarvisContext,
 } from "@/components/jarvis/JarvisChat";
 import { listThreadSummaries } from "@/lib/jarvis/thread-summaries";
-import type { MessageContent, ProposalState, ToolCallRecord } from "@/lib/jarvis/types";
+import type { MessageContent, ProposalState, ToolCallRecord, IdeasState } from "@/lib/jarvis/types";
 
 export const dynamic = "force-dynamic";
 
@@ -207,6 +207,7 @@ export default async function JarvisPage({
         content: true,
         toolCalls: true,
         proposalState: true,
+        ideasState: true,
       },
     });
     initialMessages = rows
@@ -222,6 +223,7 @@ export default async function JarvisPage({
             text: c.text,
             toolCalls: (r.toolCalls as ToolCallRecord[] | null) ?? undefined,
             proposal: (r.proposalState as ProposalState | null) ?? undefined,
+            ideas: (r.ideasState as IdeasState | null) ?? undefined,
           };
         }
         return null;

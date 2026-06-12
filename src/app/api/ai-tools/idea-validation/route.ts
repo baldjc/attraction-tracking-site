@@ -21,6 +21,7 @@ import {
   loadLatestValidatedUpload,
   loadHeadlineSafeFacts,
   loadMarketConfigSummary,
+  balanceFactsByFamily,
 } from "@/lib/content-engine-context";
 import { parseJsonResponse } from "@/lib/content-engine-validation";
 import { IDEA_VALIDATION_SYSTEM_PROMPT } from "@/lib/idea-validation-prompt";
@@ -297,38 +298,6 @@ export async function POST(req: NextRequest) {
     factsConsidered: facts.length,
     verdictRecomputed,
   });
-}
-
-/**
- * Round-robin facts across metric families so a hard cap doesn't starve
- * families that sort late in the canonical enum order (SP_LP, FAILURE_RATE).
- * Each family keeps its incoming order (the query sorts by neighbourhood).
- */
-function balanceFactsByFamily<T extends { metricFamily: string }>(
-  facts: T[],
-  cap: number,
-): T[] {
-  if (facts.length <= cap) return facts;
-  const byFamily = new Map<string, T[]>();
-  for (const f of facts) {
-    const arr = byFamily.get(f.metricFamily);
-    if (arr) arr.push(f);
-    else byFamily.set(f.metricFamily, [f]);
-  }
-  const groups = [...byFamily.values()];
-  const picked: T[] = [];
-  for (let i = 0; picked.length < cap; i++) {
-    let progressed = false;
-    for (const g of groups) {
-      if (i < g.length) {
-        picked.push(g[i]);
-        progressed = true;
-        if (picked.length >= cap) break;
-      }
-    }
-    if (!progressed) break;
-  }
-  return picked;
 }
 
 function buildUserMessage(args: {

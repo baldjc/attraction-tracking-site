@@ -518,6 +518,7 @@ model ContentManagerMessage {
   content       Json
   toolCalls     Json?
   proposalState Json?
+  ideasState    Json?
   createdAt     DateTime             @default(now())
 
   @@index([threadId])

@@ -101,6 +101,66 @@ export interface ProposalState {
   researchSourceIds?: string[];
 }
 
+// ── Browse-all-content-ideas front door (Task #60) ──────────────────────────
+
+/**
+ * The conversational path an `IdeasState` belongs to, so the UI can label the
+ * card list and so each card carries the right hand-off.
+ *  - `story_lead`   — a ranked market story lead the member can script.
+ *  - `theme_option` — one of the rotation-slot "themes" to explore (a chooser,
+ *                     not a buildable idea; tapping it asks Jarvis to generate
+ *                     ideas for that theme).
+ *  - `theme_idea`   — a generated, validated idea card (buildable).
+ *  - `validation`   — the result of validating a member's own idea (buildable
+ *                     when the verdict supports/partially-supports it).
+ */
+export type IdeaCardKind =
+  | "story_lead"
+  | "theme_option"
+  | "theme_idea"
+  | "validation";
+
+/**
+ * One selectable card rendered in the Jarvis chat as part of an `IdeasState`.
+ * Tapping a card sends its `prompt` as the next member message (the same
+ * natural-language hand-off the dashboard seed uses), so the model runs the
+ * normal pre-draft proposal + build_script flow — no new build short-circuit.
+ *
+ * `prompt` embeds everything the model needs (title/slot/premise and, for
+ * buildable cards, the exact fact ids to pass to build_script.linkedFactIds).
+ */
+export interface IdeaCardItem {
+  /** Stable id for React keys + selection (card-local, not a DB id). */
+  id: string;
+  kind: IdeaCardKind;
+  title: string;
+  /** Rotation-slot / theme label shown as a tag (e.g. "Market Update"). */
+  themeLabel?: string;
+  /** One-line hook / why-it-matters shown under the title. */
+  hook?: string;
+  /** Count of member facts this idea is anchored on (shown as provenance). */
+  citedFactCount?: number;
+  /** The natural-language message sent when the member picks this card. */
+  prompt: string;
+}
+
+/**
+ * Persisted on the assistant ContentManagerMessage (column `ideasState`) and
+ * emitted live as an `ideas` SSE frame. Renders a list of selectable idea
+ * cards beneath the assistant's prose. Mirrors how `ProposalState` rides along
+ * an assistant turn.
+ */
+export interface IdeasState {
+  kind: "ideas";
+  /** Which front-door path produced these cards. */
+  path: "story_leads" | "themes" | "theme_ideas" | "validation";
+  /** Optional heading shown above the cards. */
+  heading?: string;
+  /** Optional one-line note shown above the cards (e.g. a thin-data caveat). */
+  note?: string;
+  items: IdeaCardItem[];
+}
+
 // ── Persisted ContentManagerMessage.content shapes ──────────────────────────
 
 export interface UserTextContent {

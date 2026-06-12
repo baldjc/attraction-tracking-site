@@ -284,6 +284,15 @@ export function validateIdeaCard(
    * batch, where any valid rotation slot is accepted.
    */
   requiredRotationSlot: RotationSlotKey | null = null,
+  /**
+   * Grouped/comparison-by-default toggle (Task #60 — Browse front door). When
+   * `false`, a title locked to a SINGLE neighbourhood is rejected even WITH a
+   * $/%/MOI/year-month data anchor — the browse paths want comparison /
+   * multi-hood framing unless the member explicitly asked for one community.
+   * Defaults to `true` so the wizard (Content Engine v2) keeps its exact
+   * existing behaviour (single-hood + data-anchor titles still pass).
+   */
+  allowSingleNeighbourhood = true,
 ): ValidationResult {
   const errors: string[] = [];
   const c = (card ?? {}) as Partial<IdeaCard> & Record<string, unknown>;
@@ -339,7 +348,11 @@ export function validateIdeaCard(
   // framing. Catches cases like "Saddle Ridge Just Got Interesting"
   // that pass hasNamedAnchor but lock the entire video to one community.
   if (title) {
-    const scopeErr = checkSingleNeighbourhoodScope(title, neighbourhoods);
+    const scopeErr = checkSingleNeighbourhoodScope(
+      title,
+      neighbourhoods,
+      allowSingleNeighbourhood,
+    );
     if (scopeErr) errors.push(scopeErr);
   }
 
@@ -477,6 +490,7 @@ function checkTitleNumbers(title: string): string | null {
 function checkSingleNeighbourhoodScope(
   title: string,
   neighbourhoods: string[],
+  allowSingleNeighbourhood = true,
 ): string | null {
   // Hood-boundary matching (Wave 4 beta — Finding 9). \b alone treats
   // "-" as a word boundary, so /\bbridgeland\b/ still false-matches
@@ -487,7 +501,19 @@ function checkSingleNeighbourhoodScope(
   const lower = title.toLowerCase();
   const matched = neighbourhoods.filter((n) => matchesHood(lower, n));
   if (matched.length !== 1) return null;
-  // Any other numeric/temporal anchor lifts the lock.
+  // List-count anchor (3/5/7/10) — implies multi-hood / comparative framing.
+  // Lifts the single-hood lock in BOTH modes (a list IS a comparison).
+  if (/\b(?:3|5|7|10)\b/.test(title)) return null;
+  // Grouped/comparison-by-default (Task #60 — Browse front door). When
+  // single-hood ideas are NOT allowed, a title locked to one neighbourhood
+  // is rejected even WITH a $/%/MOI/year-month anchor — the browse theme
+  // path defaults to comparisons. The member can still get a single-hood
+  // deep dive by asking for one explicitly (which sets the flag back to
+  // true). The data-anchor lifts below only apply in the default mode.
+  if (!allowSingleNeighbourhood) {
+    return `title is locked to a single neighbourhood "${matched[0]}" — the Browse front door defaults to grouped / comparison ideas. Add a second neighbourhood or a list-count (3/5/7/10), or ask explicitly for a single-neighbourhood deep dive.`;
+  }
+  // Any other numeric/temporal anchor lifts the lock (default / wizard mode).
   if (/\$[\d,]+(?:\.\d+)?[KMB]?/i.test(title)) return null;
   if (/\d+(?:\.\d+)?\s*%/.test(title)) return null;
   if (/\d+(?:\.\d+)?\s*MOI\b/i.test(title)) return null;
@@ -499,8 +525,6 @@ function checkSingleNeighbourhoodScope(
     return null;
   }
   if (/\b\d{4}-\d{2}\b/.test(title)) return null;
-  // List-count anchor (3/5/7/10) — implies multi-hood / comparative framing.
-  if (/\b(?:3|5|7|10)\b/.test(title)) return null;
   return `title is locked to a single neighbourhood "${matched[0]}" with no comparative or data anchor — single-hood deep dives belong in dedicated Listing Teardown / Story videos. Add a second hood, a list-count, or a $/%/MOI/year-month anchor.`;
 }
 

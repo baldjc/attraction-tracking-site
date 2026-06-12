@@ -25,9 +25,21 @@ import {
 } from "@/lib/jarvis/system-prompt";
 import { saveConfirmedScript } from "@/lib/jarvis/save";
 import { applyConfirmedMerge } from "@/lib/jarvis/merge";
+import {
+  browseStoryLeads,
+  listThemes,
+  generateThemeIdeas,
+  validateIdea,
+  ideasAllowText,
+} from "@/lib/jarvis/idea-tools";
+import {
+  ROTATION_SLOTS,
+  type RotationSlotKey,
+} from "@/lib/content-engine-validation";
 import { extractSourcesFootnote, countCitedSources } from "@/lib/script-content-rules";
 import {
   JARVIS_MODEL,
+  type IdeasState,
   type LedgerFact,
   type ProposalState,
   type ToolCallRecord,
@@ -46,6 +58,8 @@ export interface JarvisHistoryTurn {
 export interface JarvisTurnResult {
   assistantText: string;
   proposal: ProposalState | null;
+  /** Selectable idea cards surfaced this turn (Browse front door), if any. */
+  ideas: IdeasState | null;
   newLedgerFacts: LedgerFact[];
   toolCalls: ToolCallRecord[];
   inputTokens: number;
@@ -108,6 +122,7 @@ export async function runJarvisTurn(args: {
   // grounding pass would redact the very year-over-year change Jarvis computed.
   const computedAllowText: string[] = [];
   let proposal: ProposalState | null = null;
+  let ideas: IdeasState | null = null;
   let assistantText = "";
 
   const ledger = () => [...priorLedger, ...newLedgerFacts];
@@ -232,6 +247,13 @@ export async function runJarvisTurn(args: {
         onProposal: (p) => {
           proposal = p;
         },
+        onIdeas: (s) => {
+          ideas = s;
+        },
+        onUsage: (i, o) => {
+          usage.inputTokens += i;
+          usage.outputTokens += o;
+        },
         allowText: (t) => {
           if (t) computedAllowText.push(t);
         },
@@ -275,6 +297,7 @@ export async function runJarvisTurn(args: {
   return {
     assistantText: groundedText,
     proposal,
+    ideas,
     newLedgerFacts,
     toolCalls,
     inputTokens: usage.inputTokens,
@@ -293,10 +316,12 @@ async function runTool(ctx: {
   avatarStressors?: { name: string; coreStress: string; hasFearLines: boolean }[];
   onFact: (f: LedgerFact) => void;
   onProposal: (p: ProposalState) => void;
+  onIdeas: (s: IdeasState) => void;
+  onUsage: (inputTokens: number, outputTokens: number) => void;
   allowText: (t: string) => void;
   toolCalls: ToolCallRecord[];
 }): Promise<Anthropic.ToolResultBlockParam> {
-  const { userId, threadId, targetContentPlanId, tu, emit, signal, latestUserText, avatarStressors, onFact, onProposal, allowText, toolCalls } = ctx;
+  const { userId, threadId, targetContentPlanId, tu, emit, signal, latestUserText, avatarStressors, onFact, onProposal, onIdeas, onUsage, allowText, toolCalls } = ctx;
   const input = (tu.input ?? {}) as Record<string, unknown>;
 
   const record = (status: "ok" | "error", summary: string) => {
@@ -615,6 +640,98 @@ async function runTool(ctx: {
           "member to the Review merges → Yes, clean it up buttons instead.",
         true,
       );
+    }
+
+    if (tu.name === "browse_story_leads") {
+      emit("tool", {
+        name: "browse_story_leads",
+        status: "running",
+        summary: "Pulling your top market stories…",
+      });
+      const res = await browseStoryLeads(userId);
+      if (res.ideasState) {
+        onIdeas(res.ideasState);
+        emit("ideas", { ideas: res.ideasState });
+        allowText(ideasAllowText(res.ideasState));
+      }
+      record(
+        res.ok ? "ok" : "error",
+        res.ok
+          ? `Showed ${res.ideasState?.items.length ?? 0} story leads.`
+          : "No story leads to show.",
+      );
+      return result(res.summary, !res.ok);
+    }
+
+    if (tu.name === "list_themes") {
+      const res = listThemes();
+      if (res.ideasState) {
+        onIdeas(res.ideasState);
+        emit("ideas", { ideas: res.ideasState });
+        allowText(ideasAllowText(res.ideasState));
+      }
+      record("ok", "Showed the 5 content themes.");
+      return result(res.summary, !res.ok);
+    }
+
+    if (tu.name === "generate_theme_ideas") {
+      const slot =
+        typeof input.rotationSlot === "string" ? input.rotationSlot : "";
+      if (!ROTATION_SLOTS.includes(slot as RotationSlotKey)) {
+        record("error", "Unknown theme.");
+        return result(
+          `generate_theme_ideas needs a valid rotationSlot — one of: ${ROTATION_SLOTS.join(", ")}.`,
+          true,
+        );
+      }
+      emit("tool", {
+        name: "generate_theme_ideas",
+        status: "running",
+        summary: "Generating idea cards…",
+      });
+      const res = await generateThemeIdeas(userId, {
+        rotationSlot: slot as RotationSlotKey,
+        count: typeof input.count === "number" ? input.count : undefined,
+        propertyTypeFocus:
+          typeof input.propertyTypeFocus === "string"
+            ? input.propertyTypeFocus
+            : undefined,
+        allowSingleNeighbourhood: input.allowSingleNeighbourhood === true,
+      });
+      onUsage(res.inputTokens ?? 0, res.outputTokens ?? 0);
+      if (res.ideasState) {
+        onIdeas(res.ideasState);
+        emit("ideas", { ideas: res.ideasState });
+        allowText(ideasAllowText(res.ideasState));
+      }
+      record(
+        res.ok ? "ok" : "error",
+        res.ok ? `Generated ${res.ideasState?.items.length ?? 0} idea cards.` : "No ideas generated.",
+      );
+      return result(res.summary, !res.ok);
+    }
+
+    if (tu.name === "validate_idea") {
+      emit("tool", {
+        name: "validate_idea",
+        status: "running",
+        summary: "Checking your idea against your facts…",
+      });
+      const res = await validateIdea(
+        userId,
+        typeof input.idea === "string" ? input.idea : "",
+        typeof input.propertyTypeFocus === "string"
+          ? input.propertyTypeFocus
+          : undefined,
+      );
+      onUsage(res.inputTokens ?? 0, res.outputTokens ?? 0);
+      if (res.ideasState) {
+        onIdeas(res.ideasState);
+        emit("ideas", { ideas: res.ideasState });
+        allowText(ideasAllowText(res.ideasState));
+      }
+      record(res.ok ? "ok" : "error", res.ok ? "Validated the idea." : "Could not validate.");
+      return result(res.summary, !res.ok);
     }
 
     record("error", `Unknown tool ${tu.name}.`);

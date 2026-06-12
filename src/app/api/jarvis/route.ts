@@ -321,6 +321,9 @@ export async function POST(req: NextRequest) {
             proposalState: turn.proposal
               ? (turn.proposal as unknown as Prisma.InputJsonValue)
               : undefined,
+            ideasState: turn.ideas
+              ? (turn.ideas as unknown as Prisma.InputJsonValue)
+              : undefined,
           },
           select: { id: true },
         });
@@ -331,6 +334,7 @@ export async function POST(req: NextRequest) {
           proposal: turn.proposal
             ? { ...turn.proposal, messageId: assistantMsg.id }
             : null,
+          ideas: turn.ideas ?? null,
         });
       } catch (err) {
         const msg = (err as { message?: string })?.message ?? String(err);
