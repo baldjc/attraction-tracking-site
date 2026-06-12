@@ -559,6 +559,25 @@ async function runTool(ctx: {
       record("ok", `Drafted "${built.title}".`);
       emit("script_done", {});
       const words = built.result.metrics?.dialogueWordCount ?? null;
+      // Defect-2 recap fidelity: ground Jarvis's post-build recap on what the
+      // FINAL script actually covers (derived from the draft itself), not the
+      // setup intent. List the covered areas it MAY credit and force honest
+      // disclosure of any selected area that was dropped — so the recap never
+      // claims a neighbourhood was "woven in" when it isn't in the script.
+      const covered = built.coveredNeighbourhoods ?? [];
+      const dropped = built.droppedNeighbourhoods ?? [];
+      const coverageManifest =
+        covered.length + dropped.length >= 2
+          ? ` RECAP FIDELITY — your summary MUST match the script: it actually covers ${
+              covered.length ? covered.join(", ") : "no named neighbourhood"
+            }.${
+              dropped.length
+                ? ` It does NOT cover ${dropped.join(
+                    ", ",
+                  )} — if you mention these at all, say plainly they were dropped from this draft; NEVER claim they were "woven in" or covered.`
+                : ""
+            } Do not credit any neighbourhood, fact, or beat that isn't actually in the script.`
+          : "";
       // Only nudge when no USABLE binge target was wired (member had none, chose
       // none, or picked an idea-stage video that can't be teased yet). If they
       // confirmed a real next video, the close already teases it — stay quiet.
@@ -566,7 +585,7 @@ async function runTool(ctx: {
         ? ""
         : " No usable next-video/binge target was wired in, so the close is a generic forward-looking line. After telling them it's ready, ASK which of their recent videos to point viewers to as the \"watch this next\" — offer it as a one-tap pick from their RECENT VIDEOS, and do NOT invent or suggest a title that isn't in that list.";
       return result(
-        `Script drafted successfully${words ? ` (~${words} dialogue words)` : ""}. It is shown to the member with an Approve & save button. Tell them it's ready to review; do NOT save it yourself.${bingeNudge}`,
+        `Script drafted successfully${words ? ` (~${words} dialogue words)` : ""}.${coverageManifest} It is shown to the member with an Approve & save button. Tell them it's ready to review; do NOT save it yourself.${bingeNudge}`,
       );
     }
 

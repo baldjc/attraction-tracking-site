@@ -25,6 +25,7 @@ import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { detectMetricFamily } from "@/lib/story-lead-fact-resolver";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
 import { getActiveThemeStress } from "@/lib/content-engine-prompts";
+import { stripToDialogue } from "@/lib/script-content-rules";
 import {
   METRIC_NAME_LABELS,
   ROTATION_SLOTS,
@@ -1194,6 +1195,16 @@ export type RunBuildScriptResult =
        * member's actual export period. Null when no period could be resolved.
        */
       dataPeriod: string | null;
+      /**
+       * Defect-2 recap fidelity — the comparison AREAS this build was GIVEN
+       * facts for, split by whether the FINAL draft actually NAMES them in its
+       * body. The orchestrator feeds these into the post-build tool result so
+       * Jarvis's recap reflects what the script truly covers — never claiming a
+       * dropped area was "woven in". Both empty on a non-comparison (single-hood)
+       * build.
+       */
+      coveredNeighbourhoods: string[];
+      droppedNeighbourhoods: string[];
     };
 
 /**
@@ -1622,6 +1633,41 @@ export async function runBuildScript(args: {
     callbacks: { onToken, onPhase, onViolation },
   });
 
+  // Defect-2: derive what the FINAL draft actually covers from its SPOKEN BODY
+  // so the orchestrator can ground Jarvis's recap on reality (covered areas) and
+  // force honest disclosure of any area that was dropped (a collapse). We scope
+  // to the dialogue (excluding the `## Sources` footnote) using the SAME body
+  // extractor the coverage validator uses — a hood listed only in Sources is NOT
+  // "covered". City / market-wide rollups are a SCOPE, not a comparison area —
+  // excluded, matching the generator's coverage gate.
+  const finalScriptLower = stripToDialogue(
+    result.script ?? "",
+  ).dialogue.toLowerCase();
+  const givenNeighbourhoods = Array.from(
+    new Set(
+      citedFacts
+        .map((f) => (f.neighbourhood ?? "").trim())
+        .filter(
+          (n) =>
+            n.length > 0 &&
+            !/^(city-?wide|market-?wide|overall|all\s+(?:areas|neighbou?rhoods)|metro|region(?:-?wide)?)$/i.test(
+              n,
+            ) &&
+            n.toLowerCase() !==
+              (marketConfig.marketName ?? "").trim().toLowerCase(),
+        ),
+    ),
+  );
+  const coveredNeighbourhoods = givenNeighbourhoods.filter((n) =>
+    finalScriptLower.includes(n.toLowerCase()),
+  );
+  const droppedNeighbourhoods = givenNeighbourhoods.filter(
+    (n) => !finalScriptLower.includes(n.toLowerCase()),
+  );
+  // Only meaningful as a recap manifest on a comparison (≥2 given areas); a
+  // single-hood deep-dive reports both empty so the orchestrator stays quiet.
+  const isComparison = givenNeighbourhoods.length >= 2;
+
   return {
     ok: true,
     result,
@@ -1633,6 +1679,8 @@ export async function runBuildScript(args: {
     campaignId: resolvedCampaignId,
     bingeVideoId: resolvedBingeVideoId,
     dataPeriod: formatMlsPeriod(anchorUpload?.monthYear ?? null),
+    coveredNeighbourhoods: isComparison ? coveredNeighbourhoods : [],
+    droppedNeighbourhoods: isComparison ? droppedNeighbourhoods : [],
   };
 }
 

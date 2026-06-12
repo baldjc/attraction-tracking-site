@@ -84,8 +84,21 @@ export async function POST(req: NextRequest) {
       where: { id: threadId, userId },
       select: { id: true },
     });
-    if (!owned) return jsonError(404, "thread_not_found");
-  } else {
+    if (!owned) {
+      // Defect-3 graceful degrade: a provided threadId that doesn't resolve for
+      // THIS user (stale client state, an impersonation/session switch between
+      // the build and the follow-up, or a since-deleted thread) must NEVER
+      // dead-end the member with a raw 404 mid-conversation. Drop the unknown id
+      // and fall through to start a fresh thread; the client picks up the new id
+      // from the `thread` SSE frame. We log a warning so the real trigger
+      // (most likely an impersonation/identity mismatch) stays diagnosable.
+      console.warn(
+        `[jarvis] thread_not_found (user=${userId}, threadId=${threadId}) — starting a fresh thread instead of returning 404`,
+      );
+      threadId = undefined;
+    }
+  }
+  if (!threadId) {
     // Stamp the new thread with the member's current data month so the UI can
     // default to it and offer a fresh thread when a new month validates.
     const latestUpload = await loadLatestValidatedUpload(userId);

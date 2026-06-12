@@ -131,7 +131,13 @@ export type ScriptViolationRule =
   /** The body labels the market state with a HEDGED compound label
    *  ("balanced-leaning-sellers") instead of one clean state. A value below the
    *  member's threshold reads cleanly. Generation only. */
-  | "hedged_market_state";
+  | "hedged_market_state"
+  /** A multi-neighbourhood comparison build (cited facts span ≥2 areas) dropped
+   *  one or more selected areas from the spoken body — it collapsed to the
+   *  strongest single anchor instead of covering every selected hood (thin /
+   *  disclosure-tier areas included). Generation only (INERT unless
+   *  opts.requiredNeighbourhoods lists ≥2). */
+  | "neighbourhood_coverage";
 
 export interface ScriptViolation {
   rule: ScriptViolationRule;
@@ -3554,6 +3560,17 @@ export interface ValidateScriptOptions extends HyperLocalOptions {
    * connection-dosage miss the member chose. SCOPE: generation + self-check.
    */
   enforceConnectionDosage?: boolean;
+  /**
+   * Multi-neighbourhood coverage gate. The distinct comparison-area names whose
+   * facts this build was GIVEN (city/market-wide scopes already filtered out by
+   * the caller). When this lists ≥2 names, `checkNeighbourhoodCoverage` REQUIRES
+   * the spoken body to NAME every one at least once — a multi-neighbourhood
+   * comparison must cover each selected area (thin / usable-with-disclosure ones
+   * too), never collapse to the strongest single anchor. INERT when fewer than 2
+   * names. Generation-only (buildScript sets it); a direct save leaves it unset
+   * so a hand-edited script is never hard-failed on coverage.
+   */
+  requiredNeighbourhoods?: string[];
 }
 
 /* ───────────────────────────────────────────────────────────────────────── */
@@ -4247,6 +4264,45 @@ function checkHedgedMarketState(
  * Warnings (`numerals_on_page`, `hyper_local_floor`) do not affect `ok` —
  * they're informational and surfaced alongside the saved script.
  */
+/* ───────────────────────────────────────────────────────────────────────── */
+/*  neighbourhood_coverage — a multi-neighbourhood comparison must NAME every  */
+/*  selected area in the spoken body, never collapse to the strongest anchor.  */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Generation-only (INERT unless `opts.requiredNeighbourhoods` lists ≥2 names).
+ * A build given facts spanning several neighbourhoods is a comparison: every
+ * selected area — including thin / usable-with-disclosure ones — must appear by
+ * name in the spoken body. A missing area means the draft silently collapsed to
+ * a single-anchor deep dive, so each missing name is an ERROR that drives the
+ * same re-prompt loop (degrading to a flagged best-draft only on exhaustion).
+ * Names are matched case-insensitively against the SPOKEN DIALOGUE only (the
+ * `## Sources` footnote is excluded, so a footnote-only mention can't satisfy
+ * real body coverage).
+ */
+export function checkNeighbourhoodCoverage(
+  script: string,
+  opts: ValidateScriptOptions,
+): ScriptViolation[] {
+  const required = (opts.requiredNeighbourhoods ?? [])
+    .map((n) => (typeof n === "string" ? n.trim() : ""))
+    .filter((n) => n.length > 0);
+  if (required.length < 2) return [];
+  const { dialogue } = stripToDialogue(script);
+  const haystack = dialogue.toLowerCase();
+  const violations: ScriptViolation[] = [];
+  for (const name of required) {
+    if (!haystack.includes(name.toLowerCase())) {
+      violations.push({
+        rule: "neighbourhood_coverage",
+        severity: "error",
+        message: `This is a ${required.length}-neighbourhood comparison, but "${name}" is never covered in the spoken body. Every selected area must get its own coverage — thin / disclosure-tier areas included (cover them WITH the sample-size disclosure, do not drop them). Do not collapse the comparison to the strongest single anchor.`,
+      });
+    }
+  }
+  return violations;
+}
+
 export function validateScript(
   script: string,
   opts: ValidateScriptOptions = {},
@@ -4350,6 +4406,9 @@ export function validateScript(
   // peppering, editorial/signature moments, distribution, empowered-not-
   // aggrieved). INERT unless opts.enforceConnectionDosage (generation only).
   violations.push(...checkConnectionDosage(script, opts));
+  // Multi-neighbourhood coverage — a comparison build must name EVERY selected
+  // area in the body (INERT unless ≥2 requiredNeighbourhoods; generation only).
+  violations.push(...checkNeighbourhoodCoverage(script, opts));
 
   // Lead-magnet exact-name + hedged-market-state guards. Both generation-only
   // (INERT unless opts.enforceConnectionDosage).

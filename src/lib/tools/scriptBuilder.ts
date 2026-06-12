@@ -1649,6 +1649,12 @@ function profileAnchors(
   ];
 }
 
+/** City / market-wide scope labels that are framing, not a comparison area —
+ *  excluded from the multi-neighbourhood coverage requirement so the validator
+ *  never demands a section for a city-wide rollup. */
+const CITYWIDE_SCOPE_RE =
+  /^(city-?wide|market-?wide|overall|all\s+(?:areas|neighbou?rhoods)|metro|region(?:-?wide)?)$/i;
+
 export async function buildScript(
   params: BuildScriptParams,
 ): Promise<BuildScriptResult> {
@@ -1696,6 +1702,24 @@ export async function buildScript(
   const isAborted = () => signal?.aborted ?? false;
 
   const anchors = citedFactAnchors(citedFacts);
+  // Defect-1 anti-collapse: the distinct comparison AREAS this build was given
+  // facts for (the member's own market/city rollup is a SCOPE, not an area, so
+  // it's filtered out). When ≥2 remain, the validator REQUIRES every one to be
+  // named in the body so a multi-neighbourhood comparison can't quietly collapse
+  // to the strongest single anchor (thin / disclosure-tier hoods included).
+  const comparisonNeighbourhoods = Array.from(
+    new Set(
+      citedFacts
+        .map((f) => (f.neighbourhood ?? "").trim())
+        .filter(
+          (n) =>
+            n.length > 0 &&
+            !CITYWIDE_SCOPE_RE.test(n) &&
+            n.toLowerCase() !==
+              (marketConfig.marketName ?? "").trim().toLowerCase(),
+        ),
+    ),
+  );
   // Research Reader — the EXTERNAL sources' stat strings. Folded into the
   // grounding-anchor prose (profileText) so a legitimately-cited research number
   // doesn't read as a fabrication, but kept OUT of `anchors`/`citedFacts` (the
@@ -1987,6 +2011,13 @@ export async function buildScript(
       // Empathy + connection-language dosage — enforced at GENERATION only so
       // a direct save or hand-edited script is never hard-failed for it.
       enforceConnectionDosage: true,
+      // Defect-1: multi-neighbourhood comparison coverage. INERT (<2) on a
+      // single-hood deep-dive; on a comparison it forces every cited area into
+      // the body so the draft can't collapse to the strongest single anchor.
+      requiredNeighbourhoods:
+        comparisonNeighbourhoods.length >= 2
+          ? comparisonNeighbourhoods
+          : undefined,
       // Market updates pass the lean (1,600) floor explicitly so a data-rich
       // 1,600+ word draft is never flagged degraded just because a profile loaded.
       hasNeighbourhoodProfile: useLeanFloor ? false : undefined,
