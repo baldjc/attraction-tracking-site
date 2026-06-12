@@ -42,6 +42,12 @@ import {
   type PropertyTypeFocus,
 } from "@/lib/property-type-focus";
 import { IDEA_VALIDATION_SYSTEM_PROMPT } from "@/lib/idea-validation-prompt";
+import {
+  parseDataThreadStrings,
+  matchThreadToFacts,
+  type ResolverFact,
+} from "@/lib/story-lead-fact-resolver";
+import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import type { IdeaCardItem, IdeasState } from "@/lib/jarvis/types";
 
 const SONNET_MODEL = "claude-sonnet-4-20250514";
@@ -124,6 +130,15 @@ function buildScriptHandoffPrompt(args: {
         "them into context, then call build_script with linkedFactIds set to " +
         `exactly these ids: ${args.factIds.join(", ")}.`,
     );
+    if (args.neighbourhoods && args.neighbourhoods.length > 0) {
+      lines.push(
+        "If any of those ids are no longer in my current fact ledger (my data " +
+          "may have been refreshed since this idea was saved), do NOT use the " +
+          `dead id — call get_facts for ${args.neighbourhoods.join(", ")} and ` +
+          "anchor on the live equivalent facts instead. Never invent or " +
+          "substitute a placeholder id.",
+      );
+    }
   } else if (args.neighbourhoods && args.neighbourhoods.length > 0) {
     lines.push(
       "Use get_facts for " +
@@ -174,6 +189,7 @@ export async function browseStoryLeads(userId: string): Promise<IdeaToolResult> 
       suggestedRotationSlot: true,
       anchorFactId: true,
       supportingFactIds: true,
+      dataThreads: true,
     },
   });
 
@@ -188,13 +204,75 @@ export async function browseStoryLeads(userId: string): Promise<IdeaToolResult> 
     };
   }
 
+  // Anchor every lead against the member's CURRENT, live fact ledger for this
+  // upload — the persisted anchorFactId/supportingFactIds can go stale when the
+  // upload is re-aggregated (new MarketFact PKs), and a dead id baked into the
+  // build hand-off makes build_script (correctly) refuse to fabricate. We load
+  // the live facts ONCE and resolve each lead two ways:
+  //   1. stored PKs that STILL EXIST in this upload's ledger, then
+  //   2. the textual resolver over the lead's display `dataThreads` (matched by
+  //      neighbourhood + metric family + value), which survives id drift.
+  // citedFactCount then reflects only facts that resolve live today, so the
+  // "Grounded in N of your facts" label never over-promises.
+  const factRows = await prisma.marketFact.findMany({
+    where: { userId, uploadId: upload.id, ...EXCLUDE_LEGACY_FAILURE_RATE },
+    select: {
+      id: true,
+      neighbourhood: true,
+      metricFamily: true,
+      metricValue: true,
+      dateContext: true,
+      createdAt: true,
+    },
+  });
+  const liveIds = new Set(factRows.map((f) => f.id));
+  const knownHoods = [
+    ...new Set(
+      factRows
+        .map((f) => f.neighbourhood)
+        .filter((h): h is string => !!h && h.trim().length > 0),
+    ),
+  ];
+  const resolverFacts: ResolverFact[] = factRows.map((r) => ({
+    id: r.id,
+    neighbourhood: r.neighbourhood,
+    metricFamily: String(r.metricFamily),
+    value: r.metricValue,
+    date: r.dateContext ?? r.createdAt,
+  }));
+
   const items: IdeaCardItem[] = leads.map((lead) => {
     const slot = lead.suggestedRotationSlot as RotationSlotKey | null;
     const themeLabel = slot ? ROTATION_SLOT_LABELS[slot] ?? undefined : undefined;
-    const factIds = [
+
+    // Step 1 — stored PKs that are still present in this upload's live ledger.
+    const storedPks = [
       ...(lead.anchorFactId ? [lead.anchorFactId] : []),
       ...(lead.supportingFactIds ?? []),
     ];
+    let factIds = [...new Set(storedPks.filter((id) => liveIds.has(id)))];
+
+    // Parse the lead's display data threads once — used both as the Step 2
+    // textual-resolver source AND as the neighbourhood fallback for the
+    // hand-off prompt when nothing resolves to a live PK.
+    const threadStrings = Array.isArray(lead.dataThreads)
+      ? (lead.dataThreads as unknown[]).filter(
+          (x): x is string => typeof x === "string",
+        )
+      : [];
+    const threads = parseDataThreadStrings(threadStrings, knownHoods);
+
+    // Step 2 — re-resolve by fact CONTENT when the stored PKs are stale/empty.
+    if (factIds.length === 0 && threads.length > 0) {
+      const matched = new Set<string>();
+      for (const thread of threads) {
+        const m = matchThreadToFacts(thread, resolverFacts);
+        if (m) matched.add(m.factId);
+      }
+      factIds = [...matched];
+    }
+
+    const neighbourhoods = [...new Set(threads.map((t) => t.neighbourhood))];
     const title = clip(lead.label || lead.pattern, 110);
     return {
       id: `lead-${lead.id}`,
@@ -209,6 +287,7 @@ export async function browseStoryLeads(userId: string): Promise<IdeaToolResult> 
         rotationSlot: slot,
         premise: clip(lead.pattern, 240),
         factIds,
+        neighbourhoods,
       }),
     };
   });
@@ -366,8 +445,23 @@ export async function generateThemeIdeas(
     };
   }
 
+  // id → neighbourhood for the facts we generated against, so a card can carry
+  // its hoods as a self-heal fallback if its baked ids drift dead later (the
+  // ideasState is persisted in the thread and may be picked after a re-aggregate).
+  const factHoodById = new Map<string, string>();
+  for (const f of facts) {
+    if (f.neighbourhood) factHoodById.set(f.id, f.neighbourhood);
+  }
+
   const items: IdeaCardItem[] = result.ideas.map((card, i) => {
     const ids = (card.citedFactIds ?? []).filter((s) => typeof s === "string");
+    const neighbourhoods = [
+      ...new Set(
+        ids
+          .map((id) => factHoodById.get(id))
+          .filter((h): h is string => !!h),
+      ),
+    ];
     return {
       id: `idea-${i}-${Date.now()}`,
       kind: "theme_idea",
@@ -381,6 +475,7 @@ export async function generateThemeIdeas(
         rotationSlot: card.rotationSlot,
         premise: clip(card.clarityPremise || card.titlePromise || "", 240),
         factIds: ids,
+        neighbourhoods,
       }),
     };
   });
@@ -606,6 +701,23 @@ export async function validateIdea(
     .filter((c) => c.supports === true)
     .map((c) => c.id);
 
+  // Neighbourhoods behind the cited facts — carried as a self-heal fallback so
+  // the build hand-off can re-resolve if these ids drift dead after a later
+  // re-aggregate (the validation card persists in the thread).
+  const factHoodById = new Map<string, string>();
+  for (const f of facts) {
+    if (f.neighbourhood) factHoodById.set(f.id, f.neighbourhood);
+  }
+  const buildableIds =
+    supportingIds.length > 0 ? supportingIds : survivingCited.map((c) => c.id);
+  const validationHoods = [
+    ...new Set(
+      buildableIds
+        .map((id) => factHoodById.get(id))
+        .filter((h): h is string => !!h),
+    ),
+  ];
+
   const verdictLabel =
     mode === "supports"
       ? "Your data backs this"
@@ -625,7 +737,8 @@ export async function validateIdea(
       ? buildScriptHandoffPrompt({
           title: parsed.sharperFraming || idea,
           premise: clip(parsed.reasoning || "", 240),
-          factIds: supportingIds.length > 0 ? supportingIds : survivingCited.map((c) => c.id),
+          factIds: buildableIds,
+          neighbourhoods: validationHoods,
         })
       : `Let's reshape this idea so it fits what my data actually shows: "${clip(idea, 120)}". ` +
         "Suggest a sharper angle grounded in my real facts, then we can build it.",
