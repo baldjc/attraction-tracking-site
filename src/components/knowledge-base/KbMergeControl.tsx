@@ -325,6 +325,10 @@ function MergeReviewModal({
 }) {
   const [report, setReport] = useState<MergeReport>(initialReport);
   const [busy, setBusy] = useState(false);
+  // True once the member has made any manual edit (rename / merge / move). A
+  // rename-only or split-out edit can leave report.collapsed === 0 yet still
+  // needs applying to persist, so Apply must show whenever the plan is dirty.
+  const [dirty, setDirty] = useState(false);
   const locked = applying || busy;
 
   const floorDelta = report.floorClearing.after - report.floorClearing.before;
@@ -365,6 +369,7 @@ function MergeReviewModal({
           return false;
         }
         setReport(data.report as MergeReport);
+        setDirty(true);
         return true;
       } catch {
         toast.error("Couldn’t save that change. Try again.");
@@ -546,7 +551,7 @@ function MergeReviewModal({
           >
             Discard
           </button>
-          {(report.collapsed > 0 || selected.size > 0) && (
+          {(report.collapsed > 0 || selected.size > 0 || dirty) && (
             <button
               type="button"
               onClick={() => onApply(report, [...selected])}
@@ -782,6 +787,9 @@ function ManageAreasPanel({
   // Live combined-sales preview for the proposed merge.
   useEffect(() => {
     if (effectiveVariants.length === 0) {
+      // Invalidate any in-flight preview request so a late response can't
+      // repopulate the panel after the selection was cleared.
+      previewSeq.current++;
       setPreview(null);
       return;
     }
