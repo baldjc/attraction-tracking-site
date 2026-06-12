@@ -932,6 +932,38 @@ test("runYoYCut: real delta per property type when BOTH periods exist", async ()
   assert.match(condoMed!.deltaPctString, /^\+/);
 });
 
+test("runYoYCut: thin sample in BOTH periods → real delta SHOWN with directional label, not refused", async () => {
+  // Country Hills shape: every property type sits below the 5-sale hard floor in
+  // both periods (Detached 4 then 4). The headline-safe floor governs what may
+  // HEADLINE a video, NOT what Jarvis shows a member who asks directly — so the
+  // YoY must COMPUTE the delta and flag it directional, never refuse.
+  const { deps } = stubMultiMonth(
+    {
+      "2026-05": typeCsv(soldTypeRows("Detached", 600000, 4)),
+      "2025-05": typeCsv(soldTypeRows("Detached", 560000, 4)),
+    },
+    TYPE_MAPPING,
+  );
+  const res = await runYoYCut(
+    { userId: "u", params: { dimension: "propertyClass", filters: [] } },
+    deps,
+  );
+  assert.equal(res.classification, "computed");
+  assert.equal(res.baseMonth, "2026-05");
+  assert.equal(res.comparisonMonth, "2025-05");
+  // Both endpoints are real citable facts.
+  assert.ok(res.facts.length > 0);
+  const detMed = res.deltas.find(
+    (d) => d.bucket === "Detached" && d.metricKey === "median_sale_price",
+  );
+  assert.ok(detMed, "expected a Detached median-sale-price delta even on a thin sample");
+  assert.equal(detMed!.isThinSample, true, "thin endpoints must be flagged directional");
+  assert.ok(detMed!.deltaPct > 0, "Detached prices rose YoY → positive delta");
+  // The note must carry the figure WITH a small-sample label, never a refusal.
+  assert.match(res.note, /directional only/i);
+  assert.doesNotMatch(res.note, /do NOT invent/i);
+});
+
 test("runYoYCut: only one uploaded month → no_comparison listing available months, no fabricated baseline", async () => {
   const { deps } = stubMultiMonth(
     { "2026-05": typeCsv(soldTypeRows("Condo", 400000, 20)) },

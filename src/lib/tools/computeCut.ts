@@ -1694,6 +1694,14 @@ export interface YoYGroupDelta {
   priorSold: number;
   /** EITHER endpoint is in the disclose band → cite WITH "based on N sales". */
   needsDisclosure: boolean;
+  /**
+   * EITHER endpoint is in the thin band (below the per-member hard sample floor).
+   * The delta is still real (both endpoints are persisted facts) but must be
+   * labelled "small sample — directional only" when shown. This governs how the
+   * number is CAVEATED, never whether it is shown: a member asking a direct
+   * year-over-year question gets the figure with a label, never a refusal.
+   */
+  isThinSample: boolean;
 }
 
 export interface RunYoYCutResult {
@@ -1853,7 +1861,18 @@ export async function runYoYCut(
       availableMonths,
     };
   }
-  if (baseRes.classification === "sample_too_small") {
+  // The base period genuinely has NOTHING to summarize — zero closed sales
+  // across the whole scope, or a numeric filter that excluded every row. There
+  // is no real data to show for the base period at all (no coreGroups), so an
+  // honest refusal is correct. NOTE: a thin-but-real base (groups exist but all
+  // sit below the headline floor) is NOT this case — coreGroups is populated, so
+  // we proceed and show directional deltas with a small-sample label. The
+  // headline-safe floor governs what may HEADLINE a video, never whether we'll
+  // show a member their own market when they ask a direct question.
+  if (
+    baseRes.classification === "sample_too_small" &&
+    (baseRes.coreGroups?.length ?? 0) === 0
+  ) {
     return {
       ...base,
       classification: "sample_too_small",
@@ -1889,10 +1908,16 @@ export async function runYoYCut(
   for (const [bucket, bg] of baseGroups) {
     const pg = priorGroups.get(bucket);
     if (!pg) continue;
-    const bUsable = bg.band === "headline" || bg.band === "disclose";
-    const pUsable = pg.band === "headline" || pg.band === "disclose";
-    if (!bUsable || !pUsable) continue;
+    // A member who asks a direct year-over-year question gets the real number
+    // for EVERY group present in BOTH periods. The headline-safe floor governs
+    // what may HEADLINE a video — NOT what we will show a member about their own
+    // market. Thin endpoints (below the hard floor) come back flagged
+    // `isThinSample` so the delta is labelled "small sample — directional only",
+    // never withheld. No-fabrication guard intact: both endpoints are real
+    // persisted facts (runComputeCut persists facts for ALL bands incl. thin),
+    // and the pm.value===0 guard still skips an undivideable prior.
     const needsDisclosure = bg.band === "disclose" || pg.band === "disclose";
+    const isThinSample = bg.band === "thin" || pg.band === "thin";
     const priorByKey = new Map(pg.metrics.map((m) => [m.key, m] as const));
     for (const bm of bg.metrics) {
       const pm = priorByKey.get(bm.key);
@@ -1911,6 +1936,7 @@ export async function runYoYCut(
         baseSold: bg.soldCount,
         priorSold: pg.soldCount,
         needsDisclosure,
+        isThinSample,
       });
     }
   }
@@ -1921,15 +1947,18 @@ export async function runYoYCut(
 
   const facts = [...priorRes.facts, ...baseRes.facts];
 
-  // The base period computed, but no grounded YoY delta is possible — either the
+  // The base period computed, but no grounded YoY delta is possible — the
   // comparison upload can't support this cut (export-format mismatch) or no
-  // group is usable in BOTH periods. Return the base facts so the assistant can
-  // still cite the current period, but WITHHOLD any year-over-year claim.
+  // single group appears in BOTH periods (so there is no pair to difference).
+  // Thin samples no longer land here: a group present in both periods is shown
+  // as a directional delta with a small-sample label. Return the base facts so
+  // the assistant can still cite the current period, but WITHHOLD any
+  // year-over-year claim.
   if (deltas.length === 0) {
     const reason =
       !priorRes.ok || (priorRes.coreGroups?.length ?? 0) === 0
         ? `The ${monthYearLabel(comparisonMonth)} upload can't support this cut (${priorRes.note})`
-        : `No group is headline- or disclose-usable in BOTH ${monthYearLabel(baseMonth)} and ${monthYearLabel(comparisonMonth)}`;
+        : `No single group appears in BOTH ${monthYearLabel(baseMonth)} and ${monthYearLabel(comparisonMonth)}`;
     return {
       ok: true,
       classification: "no_comparison",
@@ -1953,16 +1982,17 @@ export async function runYoYCut(
     }.`,
   );
   for (const d of deltas) {
+    const sampleLabel = d.isThinSample
+      ? ` [small sample — ${d.priorSold} then ${d.baseSold} sales, directional only: show the member this number but say the sample is small out loud, and don't build a headline video on it]`
+      : d.needsDisclosure
+        ? ` [small sample — state the sale counts: ${d.priorSold} then ${d.baseSold}]`
+        : "";
     noteParts.push(
-      `${d.bucket} · ${d.metricLabel}: ${d.priorValueString} (${comparisonMonth}) → ${d.baseValueString} (${baseMonth}) = ${d.deltaPctString}${
-        d.needsDisclosure
-          ? ` [small sample — state the sale counts: ${d.priorSold} then ${d.baseSold}]`
-          : ""
-      }.`,
+      `${d.bucket} · ${d.metricLabel}: ${d.priorValueString} (${comparisonMonth}) → ${d.baseValueString} (${baseMonth}) = ${d.deltaPctString}${sampleLabel}.`,
     );
   }
   noteParts.push(
-    "Both endpoints are real facts — cite each by its fact id. Never state a year-over-year number whose endpoints you didn't both cite.",
+    "Both endpoints are real facts — cite each by its fact id. Never state a year-over-year number whose endpoints you didn't both cite. Thin-sample deltas are real data the member asked for: SHOW them with their small-sample label; never refuse a member their own market figures.",
   );
 
   return {

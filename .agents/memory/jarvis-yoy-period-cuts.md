@@ -30,6 +30,23 @@ the tool_result payload — otherwise the model is forced to scrape the prose no
 **How to apply:** when extending a Jarvis tool, change schema + args interface +
 executor + orchestrator passthrough + orchestrator payload in lockstep.
 
+**Floor governs HEADLINE eligibility, NOT whether Jarvis shows a member their own
+data.** `compute_yoy_cut` is a conversational lookup tool (script generation uses a
+separate SoT-injection path), so it now computes a delta for EVERY group present in
+BOTH periods — including thin ones below the hard sample floor — and flags them
+`isThinSample` so they're labelled "small sample — directional only" instead of being
+withheld. A thin sample must NEVER produce a refusal ("can't be reliably run / here
+are some options"); the caveat rides alongside the real number.
+**Why:** the headline floor exists to stop a thin neighbourhood from headlining a
+video, not to hide a member's own market figures when they ask a direct question.
+Withholding thin YoY deltas read as a refusal to members.
+**How to apply:** `no_comparison` must mean ONLY "no prior period / older upload can't
+support the cut" — never "sample too thin." The base `sample_too_small` early-return
+fires only when the base period has zero `coreGroups` (genuinely no data). No-fabrication
+intact: both endpoints are still persisted facts and `pm.value===0` is still skipped.
+Keep the four surfaces in lockstep: delta loop + note text (computeCut.ts), orchestrator
+payload field, the tool description, and the system prompt's YEAR-OVER-YEAR section.
+
 **Comparison-period selection:** exact 12-months-prior if uploaded, else nearest
 available STRICTLY-prior period (ties → further back), flagged `comparisonIsFallback`
 so the assistant says the window out loud. Per-period column resolution means an older

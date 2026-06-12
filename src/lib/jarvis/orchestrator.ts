@@ -468,6 +468,7 @@ async function runTool(ctx: {
           priorSold: d.priorSold,
           baseSold: d.baseSold,
           needsDisclosure: d.needsDisclosure,
+          isThinSample: d.isThinSample,
         })),
         facts: res.facts.map((f) => ({
           id: f.id,

@@ -310,8 +310,12 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       "months DO exist — relay that honestly and do NOT invent a prior-year " +
       "number. When the exact 12-months-prior month is missing it may compare " +
       "against the nearest available prior period and flags it — say that " +
-      "comparison window out loud. Only groups with enough closed sales in BOTH " +
-      "periods get a headline delta; smaller samples come back flagged.",
+      "comparison window out loud. EVERY group present in BOTH periods comes " +
+      "back with its real % change — a member asking a direct year-over-year " +
+      "question always gets the numbers. Thin samples (below the hard sample " +
+      "floor) are flagged `isThinSample` and labelled 'small sample — directional only': " +
+      "show the member the figure with that caveat, never refuse it. The floor " +
+      "only governs what may HEADLINE a video, not what you'll show on request.",
     input_schema: {
       type: "object",
       properties: {
