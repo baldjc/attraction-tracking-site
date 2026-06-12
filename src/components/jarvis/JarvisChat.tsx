@@ -1273,6 +1273,8 @@ export default function JarvisChat({
         </div>
         <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] leading-relaxed text-abv-text-secondary">
           Jarvis proposes. You approve. Nothing is created or posted without your say-so.
+          <br />
+          Please make sure you double check any stats or content Jarvis gives you prior to publishing a video.
         </p>
       </form>
     </div>
