@@ -434,12 +434,25 @@ function MergeReviewModal({
                     <EditableMaster
                       display={m.canonical}
                       variants={m.variants}
+                      existingDisplays={report.groups
+                        .map((g) => g.display)
+                        .filter(
+                          (d) =>
+                            d.toLowerCase() !== m.canonical.toLowerCase(),
+                        )}
                       disabled={locked}
                       onRename={(newDisplay) =>
                         callEdit({
                           action: "rename",
                           groupDisplay: m.canonical,
                           newDisplay,
+                        })
+                      }
+                      onMergeInto={(target) =>
+                        callEdit({
+                          action: "merge",
+                          displays: [m.canonical],
+                          master: target,
                         })
                       }
                     />
@@ -553,24 +566,38 @@ function MergeReviewModal({
   );
 }
 
-/** Inline-editable canonical master name for a group. */
+/**
+ * Inline-editable canonical master name for a group. Typing a name that already
+ * exists as another area is NOT an error — it's offered as "merge this group
+ * into that existing area" (with a confirm). A brand-new name renames in place.
+ */
 function EditableMaster({
   display,
   variants,
+  existingDisplays,
   disabled,
   onRename,
+  onMergeInto,
 }: {
   display: string;
   variants: string[];
+  existingDisplays: string[];
   disabled: boolean;
   onRename: (newDisplay: string) => Promise<boolean>;
+  onMergeInto: (target: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(display);
+  const [mergeTarget, setMergeTarget] = useState<string | null>(null);
   const listId = useMemo(
-    () => `vars-${Math.random().toString(36).slice(2)}`,
+    () => `names-${Math.random().toString(36).slice(2)}`,
     [],
   );
+
+  const reset = () => {
+    setEditing(false);
+    setMergeTarget(null);
+  };
 
   if (!editing) {
     return (
@@ -583,23 +610,65 @@ function EditableMaster({
           disabled={disabled}
           onClick={() => {
             setValue(display);
+            setMergeTarget(null);
             setEditing(true);
           }}
           className="shrink-0 text-xs font-medium text-[var(--abv-azure)] hover:underline disabled:opacity-50"
         >
-          Rename
+          Rename / merge
         </button>
       </span>
     );
   }
 
   const save = async () => {
-    if (value.trim() && value.trim() !== display) {
-      const ok = await onRename(value.trim());
-      if (!ok) return;
+    const v = value.trim();
+    if (!v || v.toLowerCase() === display.toLowerCase()) {
+      // Same name (or case-only) — apply directly so casing edits still save.
+      if (v && v !== display) await onRename(v);
+      reset();
+      return;
     }
-    setEditing(false);
+    // Typed an existing area → offer to merge into it instead of renaming.
+    const hit = existingDisplays.find((d) => d.toLowerCase() === v.toLowerCase());
+    if (hit) {
+      setMergeTarget(hit);
+      return;
+    }
+    const ok = await onRename(v);
+    if (ok) reset();
   };
+
+  // Confirm step for merge-into-existing.
+  if (mergeTarget) {
+    return (
+      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-700 dark:text-gray-300">
+          <strong>{mergeTarget}</strong> already exists. Merge{" "}
+          <strong>{display}</strong> into it? (counts roll up)
+        </span>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={async () => {
+            const ok = await onMergeInto(mergeTarget);
+            if (ok) reset();
+          }}
+          className="shrink-0 rounded bg-[var(--abv-ink)] px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+        >
+          Merge into {mergeTarget}
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setMergeTarget(null)}
+          className="shrink-0 text-xs text-gray-500 hover:underline disabled:opacity-50"
+        >
+          Back
+        </button>
+      </span>
+    );
+  }
 
   return (
     <span className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -611,13 +680,17 @@ function EditableMaster({
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") void save();
-          if (e.key === "Escape") setEditing(false);
+          if (e.key === "Escape") reset();
         }}
+        placeholder="New name, or an existing area to merge into"
         className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-[var(--abv-azure)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
       />
       <datalist id={listId}>
         {variants.map((v) => (
-          <option key={v} value={v} />
+          <option key={`v-${v}`} value={v} />
+        ))}
+        {existingDisplays.map((d) => (
+          <option key={`d-${d}`} value={d} />
         ))}
       </datalist>
       <button
@@ -631,7 +704,7 @@ function EditableMaster({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setEditing(false)}
+        onClick={reset}
         className="shrink-0 text-xs text-gray-500 hover:underline disabled:opacity-50"
       >
         Cancel
@@ -684,14 +757,31 @@ function ManageAreasPanel({
     () => groups.filter((g) => selected.has(g.display)),
     [groups, selected],
   );
-  const selectedVariants = useMemo(
-    () => selectedGroups.flatMap((g) => g.variants),
-    [selectedGroups],
+
+  // If the master names an EXISTING area that isn't ticked, the selection folds
+  // INTO it — so its names count toward the combined total and the merge is valid
+  // even with a single selected group.
+  const masterTargetGroup = useMemo(() => {
+    const m = master.trim().toLowerCase();
+    if (!m) return null;
+    const g = groups.find((x) => x.display.toLowerCase() === m);
+    return g && !selected.has(g.display) ? g : null;
+  }, [groups, master, selected]);
+
+  const effectiveVariants = useMemo(
+    () => [
+      ...selectedGroups.flatMap((g) => g.variants),
+      ...(masterTargetGroup?.variants ?? []),
+    ],
+    [selectedGroups, masterTargetGroup],
   );
 
-  // Live combined-sales preview for the current selection.
+  // Distinct groups that would combine (selection + an unticked existing target).
+  const mergeCount = selectedGroups.length + (masterTargetGroup ? 1 : 0);
+
+  // Live combined-sales preview for the proposed merge.
   useEffect(() => {
-    if (selectedVariants.length === 0) {
+    if (effectiveVariants.length === 0) {
       setPreview(null);
       return;
     }
@@ -701,7 +791,7 @@ function ManageAreasPanel({
         const res = await fetch("/api/member/knowledge-base/merge/preview", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ variants: selectedVariants }),
+          body: JSON.stringify({ variants: effectiveVariants }),
         });
         const data = await res.json().catch(() => null);
         if (seq === previewSeq.current && res.ok) setPreview(data);
@@ -710,7 +800,7 @@ function ManageAreasPanel({
       }
     }, 250);
     return () => clearTimeout(t);
-  }, [selectedVariants]);
+  }, [effectiveVariants]);
 
   const toggle = (display: string) =>
     setSelected((prev) => {
@@ -736,8 +826,10 @@ function ManageAreasPanel({
   }, [selectedGroups, masterTouched]);
 
   const doMerge = async () => {
-    if (selected.size < 2) {
-      toast.error("Pick at least two areas to merge.");
+    if (mergeCount < 2) {
+      toast.error(
+        "Pick at least two areas to merge — or type an existing area as the master to fold the selection into it.",
+      );
       return;
     }
     const ok = await callEdit({
@@ -775,9 +867,11 @@ function ManageAreasPanel({
       {open && (
         <div className="border-t border-gray-200 px-3 py-3 dark:border-gray-800">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Search your areas, tick two or more, give them a master name, and
-            merge — counts roll up and nothing is dropped. Or move a single name
-            out of a group it was wrongly folded into.
+            Search your areas, tick the ones to combine, then set a master name —
+            type a <strong>new name</strong>, or pick an <strong>existing area</strong>{" "}
+            to fold the selection into it. Counts roll up and nothing is dropped.
+            You can also move a single name out of a group it was wrongly folded
+            into.
           </p>
 
           <input
@@ -793,26 +887,37 @@ function ManageAreasPanel({
             <div className="mt-3 rounded-md border border-[var(--abv-azure)]/40 bg-[var(--abv-azure)]/5 p-3">
               <div className="text-xs font-medium text-gray-700 dark:text-gray-200">
                 {selected.size} selected
+                {masterTargetGroup && (
+                  <> → folding into existing “{masterTargetGroup.display}”</>
+                )}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <input
                   type="text"
+                  list="kb-merge-master-areas"
                   value={master}
                   disabled={disabled}
                   onChange={(e) => {
                     setMaster(e.target.value);
                     setMasterTouched(true);
                   }}
-                  placeholder="Master name"
+                  placeholder="New name, or an existing area to merge into"
                   className="min-w-[12rem] flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-[var(--abv-azure)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                 />
+                <datalist id="kb-merge-master-areas">
+                  {groups.map((g) => (
+                    <option key={g.display} value={g.display} />
+                  ))}
+                </datalist>
                 <button
                   type="button"
                   onClick={doMerge}
-                  disabled={disabled || selected.size < 2}
+                  disabled={disabled || mergeCount < 2}
                   className="rounded-full bg-[var(--abv-ink)] px-4 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Merge {selected.size} into master
+                  {masterTargetGroup
+                    ? `Merge into ${masterTargetGroup.display}`
+                    : `Merge ${selected.size} into master`}
                 </button>
                 <button
                   type="button"

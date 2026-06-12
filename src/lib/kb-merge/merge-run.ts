@@ -504,7 +504,15 @@ export async function renameGroupMaster(
   });
 }
 
-/** Merge two or more groups into one master (combines all their variants). */
+/**
+ * Merge areas into one master. The `master` may be:
+ *  - one of the selected `displays` (combine the selection under that name),
+ *  - a brand-new name not used by any area (rename the combined group), or
+ *  - an EXISTING area not in the selection — in which case the selected groups
+ *    fold INTO that existing area (the common "merge this group into the real
+ *    community" action) and the existing area's exact name is preserved.
+ * Variants from every contributing group combine; counts roll up at apply.
+ */
 export async function mergeGroups(
   userId: string,
   mergeRunId: string,
@@ -513,33 +521,46 @@ export async function mergeGroups(
   const master = cleanName(opts.master);
   if (!master) throw new Error("Enter a master name for the merged area.");
   const wanted = new Set((opts.displays ?? []).map(cleanLower));
-  if (wanted.size < 2) throw new Error("Pick at least two areas to merge.");
+  if (wanted.size < 1) throw new Error("Pick at least one area to merge.");
   return applyGroupEdit(userId, mergeRunId, (groups) => {
     const targets = groups.filter((g) => wanted.has(cleanLower(g.display)));
-    if (targets.length < 2)
+    if (targets.length === 0)
       throw new Error(
         "Some of those areas are no longer in this cleanup. Refresh and try again.",
       );
-    const outside = groups.filter((g) => !targets.includes(g));
-    if (outside.some((g) => cleanLower(g.display) === cleanLower(master)))
-      throw new Error(
-        `"${master}" is already a separate area. Include it in the selection or choose a different master.`,
-      );
-    if (
-      outside.some((g) =>
-        g.variants.some((v) => cleanLower(v) === cleanLower(master)),
-      )
-    )
-      throw new Error(
-        `"${master}" is currently folded into another area. Move it out first, or pick a different master.`,
-      );
 
-    // Pick the normKey from the target matching the master, else the largest.
-    const masterTarget = targets.find(
+    // If the master names an EXISTING area that wasn't selected, fold the
+    // selection INTO it (merge-into-existing) rather than rejecting the name.
+    const masterGroup = groups.find(
       (g) => cleanLower(g.display) === cleanLower(master),
     );
+    if (masterGroup && !targets.includes(masterGroup)) targets.push(masterGroup);
+
+    if (targets.length < 2)
+      throw new Error(
+        "Pick at least two areas to merge — or choose a different existing area to merge into.",
+      );
+
+    // Only a BRAND-NEW master name needs the variant-collision guard: it must
+    // not clash with a name currently folded inside a group we're not touching
+    // (that would create an ambiguous second home for the same raw name).
+    if (!masterGroup) {
+      const outside = groups.filter((g) => !targets.includes(g));
+      if (
+        outside.some((g) =>
+          g.variants.some((v) => cleanLower(v) === cleanLower(master)),
+        )
+      )
+        throw new Error(
+          `"${master}" is currently folded into another area. Move it out first, or pick a different master.`,
+        );
+    }
+
+    // Preserve the existing area's exact name when merging into it; otherwise
+    // use the typed master. normKey comes from the master area, else the largest.
+    const display = masterGroup ? masterGroup.display : master;
     const baseGroup =
-      masterTarget ??
+      masterGroup ??
       [...targets].sort((a, b) => b.variants.length - a.variants.length)[0];
 
     const mergedVariants: string[] = [];
@@ -558,7 +579,7 @@ export async function mergeGroups(
     for (let i = groups.length - 1; i >= 0; i--)
       if (targets.includes(groups[i])) groups.splice(i, 1);
     groups.splice(Math.max(0, firstIdx), 0, {
-      display: master,
+      display,
       normKey: baseGroup.normKey,
       variants: mergedVariants,
       fuzzyMerged: true,
