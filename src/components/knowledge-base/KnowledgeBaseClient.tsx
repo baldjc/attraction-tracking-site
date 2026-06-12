@@ -86,8 +86,53 @@ function KnowledgeBaseInner({
   });
   const [showCodeHelp, setShowCodeHelp] = useState(false);
 
+  // Per-raw-name decision data (homes / sold / city), keyed by lowercased name.
+  // Loaded as a progressive enhancement alongside the discovered list — names
+  // render immediately and these fill in (or quietly stay absent on failure).
+  type AreaStat = {
+    name: string;
+    homes: number;
+    sold: number;
+    city: string | null;
+    sampleAddress: string | null;
+  };
+  const [areaStats, setAreaStats] = useState<{
+    stats: Record<string, AreaStat>;
+    hasCity: boolean;
+    hasAddress: boolean;
+  } | null>(null);
+
+  async function loadAreaStats() {
+    try {
+      const res = await fetch("/api/member/knowledge-base/area-stats");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.available) {
+        setAreaStats({
+          stats: data.stats ?? {},
+          hasCity: data.hasCity === true,
+          hasAddress: data.hasAddress === true,
+        });
+      }
+    } catch {
+      /* non-fatal — names still render without counts */
+    }
+  }
+
+  function describeStat(name: string): string | null {
+    const s = areaStats?.stats[name.trim().toLowerCase()];
+    if (!s) return null;
+    const parts: string[] = [];
+    parts.push(`${s.sold} ${s.sold === 1 ? "sale" : "sales"}`);
+    if (s.homes !== s.sold) parts.push(`${s.homes} homes`);
+    if (areaStats?.hasCity && s.city) parts.push(s.city);
+    if (areaStats?.hasAddress && s.sampleAddress)
+      parts.push(`e.g. ${s.sampleAddress}`);
+    return parts.join(" · ");
+  }
+
   async function onLoadDiscovered() {
     setDiscovered({ status: "loading" });
+    void loadAreaStats();
     try {
       const res = await fetch(
         "/api/member/knowledge-base/discovered-neighbourhoods",
@@ -347,7 +392,23 @@ function KnowledgeBaseInner({
                   validated uploads
                 </>
               )}
-              . Deselect any you don't want in your vocab.
+              .
+            </div>
+
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-xs leading-relaxed text-gray-600 dark:border-gray-800 dark:bg-gray-800/40 dark:text-gray-300">
+              <p>
+                <strong>Deselect</strong> any you don&apos;t want as a usable
+                vocab name — that only hides the name from scripts. It does{" "}
+                <strong>not</strong> move or delete any homes, and the sales stay
+                counted under their original name.
+              </p>
+              <p className="mt-1.5">
+                Two names that are really the same place (e.g.{" "}
+                <em>Austin Waters Phase 1</em> + <em>Austin Waters Phase 2</em> →{" "}
+                <em>Austin Waters</em>)? Don&apos;t deselect one — use{" "}
+                <strong>Clean up / merge areas</strong> below so their sales roll
+                up into a single area.
+              </p>
             </div>
 
             {discovered.status === "ready" && discovered.allNumeric && (
@@ -418,6 +479,11 @@ function KnowledgeBaseInner({
                         <span className="text-gray-800 dark:text-gray-200">
                           {name}
                         </span>
+                        {describeStat(name) && (
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                            · {describeStat(name)}
+                          </span>
+                        )}
                       </label>
                       {isExisting && (
                         <span className="text-[11px] text-gray-500 dark:text-gray-400">

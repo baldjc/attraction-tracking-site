@@ -41,6 +41,75 @@ interface LatestRun {
 
 type Toast = ReturnType<typeof useToast>;
 
+// Per-raw-name decision data (homes / sold / city) for the cleanup lists, so the
+// member can judge whether two names are the same place. Read-only context from
+// the latest validated upload; absent/degrades silently on any failure.
+interface AreaStat {
+  name: string;
+  homes: number;
+  sold: number;
+  city: string | null;
+  sampleAddress: string | null;
+}
+interface AreaStatsData {
+  stats: Record<string, AreaStat>;
+  hasCity: boolean;
+  hasAddress: boolean;
+}
+
+/** One example street address for a single raw name, or null when unavailable. */
+function variantSampleAddress(
+  data: AreaStatsData | null,
+  variant: string,
+): string | null {
+  if (!data?.hasAddress) return null;
+  return data.stats[variant.trim().toLowerCase()]?.sampleAddress ?? null;
+}
+
+/** Sum a set of raw variant names into one decision line, or null if unknown. */
+function aggregateVariantStats(
+  data: AreaStatsData | null,
+  variants: string[],
+): { sold: number; homes: number; city: string | null } | null {
+  if (!data) return null;
+  let sold = 0;
+  let homes = 0;
+  let matched = false;
+  const cityCounts = new Map<string, number>();
+  for (const v of variants) {
+    const s = data.stats[v.trim().toLowerCase()];
+    if (!s) continue;
+    matched = true;
+    sold += s.sold;
+    homes += s.homes;
+    if (data.hasCity && s.city)
+      cityCounts.set(s.city, (cityCounts.get(s.city) ?? 0) + s.homes);
+  }
+  if (!matched) return null;
+  let city: string | null = null;
+  let best = 0;
+  for (const [c, n] of cityCounts) {
+    if (n > best) {
+      best = n;
+      city = c;
+    }
+  }
+  return { sold, homes, city };
+}
+
+/** Compact "N sales · M homes · City" descriptor for a set of variant names. */
+function describeVariants(
+  data: AreaStatsData | null,
+  variants: string[],
+): string | null {
+  const agg = aggregateVariantStats(data, variants);
+  if (!agg) return null;
+  const parts: string[] = [`${agg.sold} ${agg.sold === 1 ? "sale" : "sales"}`];
+  if (agg.homes !== agg.sold) parts.push(`${agg.homes} homes`);
+  if (agg.city) parts.push(agg.city);
+  return parts.join(" · ");
+}
+
 type State =
   | { phase: "idle" }
   | { phase: "computing" }
@@ -53,6 +122,27 @@ export default function KbMergeControl() {
   const toast = useToast();
   const [latest, setLatest] = useState<LatestRun | null>(null);
   const [state, setState] = useState<State>({ phase: "idle" });
+  const [areaStats, setAreaStats] = useState<AreaStatsData | null>(null);
+
+  const loadAreaStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/member/knowledge-base/area-stats");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.available) {
+        setAreaStats({
+          stats: data.stats ?? {},
+          hasCity: data.hasCity === true,
+          hasAddress: data.hasAddress === true,
+        });
+      }
+    } catch {
+      /* non-fatal — lists still render without counts */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAreaStats();
+  }, [loadAreaStats]);
 
   const loadLatest = useCallback(async () => {
     try {
@@ -297,6 +387,7 @@ export default function KbMergeControl() {
           initialReport={reviewing.report}
           applying={reviewing.phase === "applying"}
           toast={toast}
+          areaStats={areaStats}
           onApply={(report, keys) => applyRun(reviewing.runId, report, keys)}
           onDiscard={() => discardRun(reviewing.runId)}
           onClose={() => setState({ phase: "idle" })}
@@ -311,6 +402,7 @@ function MergeReviewModal({
   initialReport,
   applying,
   toast,
+  areaStats,
   onApply,
   onDiscard,
   onClose,
@@ -319,6 +411,7 @@ function MergeReviewModal({
   initialReport: MergeReport;
   applying: boolean;
   toast: Toast;
+  areaStats: AreaStatsData | null;
   onApply: (report: MergeReport, selectedReviewKeys: string[]) => void;
   onDiscard: () => void;
   onClose: () => void;
@@ -465,6 +558,11 @@ function MergeReviewModal({
                       {m.variantCount} names →1
                     </span>
                   </div>
+                  {describeVariants(areaStats, m.variants) && (
+                    <p className="mt-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                      {describeVariants(areaStats, m.variants)} combined
+                    </p>
+                  )}
                   <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
                     {m.variants.slice(0, 8).join(", ")}
                     {m.variants.length > 8 ? "…" : ""}
@@ -480,6 +578,7 @@ function MergeReviewModal({
           runId={runId}
           disabled={locked}
           toast={toast}
+          areaStats={areaStats}
           callEdit={callEdit}
         />
 
@@ -723,12 +822,14 @@ function ManageAreasPanel({
   report,
   disabled,
   toast,
+  areaStats,
   callEdit,
 }: {
   report: MergeReport;
   runId: string;
   disabled: boolean;
   toast: Toast;
+  areaStats: AreaStatsData | null;
   callEdit: (payload: Record<string, unknown>) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
@@ -987,11 +1088,17 @@ function ManageAreasPanel({
                         {g.variants.length === 1 ? "" : "s"}
                       </span>
                     </div>
+                    {describeVariants(areaStats, g.variants) && (
+                      <div className="text-[11px] text-gray-400 dark:text-gray-500">
+                        {describeVariants(areaStats, g.variants)}
+                      </div>
+                    )}
                     {g.variants.length > 1 && (
                       <MoveVariants
                         group={g}
                         otherNames={otherGroupNames(g.display)}
                         disabled={disabled}
+                        areaStats={areaStats}
                         callEdit={callEdit}
                       />
                     )}
@@ -1016,11 +1123,13 @@ function MoveVariants({
   group,
   otherNames,
   disabled,
+  areaStats,
   callEdit,
 }: {
   group: CanonicalGroup;
   otherNames: string[];
   disabled: boolean;
+  areaStats: AreaStatsData | null;
   callEdit: (payload: Record<string, unknown>) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
@@ -1043,6 +1152,16 @@ function MoveVariants({
             >
               <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-gray-300">
                 {v}
+                {describeVariants(areaStats, [v]) && (
+                  <span className="ml-1 text-gray-400 dark:text-gray-500">
+                    · {describeVariants(areaStats, [v])}
+                  </span>
+                )}
+                {variantSampleAddress(areaStats, v) && (
+                  <span className="ml-1 text-gray-400 dark:text-gray-500">
+                    · e.g. {variantSampleAddress(areaStats, v)}
+                  </span>
+                )}
               </span>
               <button
                 type="button"
