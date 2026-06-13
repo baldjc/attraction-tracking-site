@@ -40,7 +40,7 @@ import {
 } from "@/lib/excluded-neighbourhoods";
 import { readUploadFile as realReadUploadFile } from "@/lib/market-csv";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
-import { normalizePropertyType, shiftMonthYear } from "@/lib/csv-aggregate";
+import { normalizePropertyType, shiftMonthYear, resolveEffectiveMapping } from "@/lib/csv-aggregate";
 import {
   resolveStatusMapping,
   bucketStatus,
@@ -1203,7 +1203,7 @@ export async function resolveAvailableCutDimensions(
     const config = await deps.getMarketConfig(input.userId);
     if (!config) return { ...empty, monthYear: upload.monthYear };
 
-    const mapping: ColumnMapping = config.columnMapping ?? {};
+    let mapping: ColumnMapping = config.columnMapping ?? {};
     const buffer = await deps.readCsv(upload.csvStorageUrl);
     const records = parseCsvRecords<Record<string, string>>(
       buffer.toString("utf8"),
@@ -1211,6 +1211,14 @@ export async function resolveAvailableCutDimensions(
     );
     const headers = records.length > 0 ? Object.keys(records[0]) : [];
     const headerLookup = buildHeaderLookup(headers);
+    // DEFECT 1 (extended to on-demand cuts) — resolve a per-file effective mapping
+    // so an OLD spaced-header "Sale Pulls" export (Status/Subdivision/Subtype) is
+    // read under the headers it ACTUALLY has, not the member's current RESO mapping.
+    // Without this, the availability SIGNAL Jarvis is told omits neighbourhood +
+    // style for old files (they report only city + year-built decade). Shares
+    // resolveEffectiveMapping with the validation path; a current-format upload's
+    // effective mapping is byte-for-byte the live mapping (zero behaviour change).
+    mapping = resolveEffectiveMapping(mapping, headers).mapping;
     const cols = resolveColumns(mapping, headerLookup);
     const dimensions = availableDimensionsFrom(cols);
     const numericFilters = availableNumericFiltersFrom(cols);
@@ -1297,13 +1305,20 @@ export async function runComputeCut(
     };
   }
 
-  const mapping: ColumnMapping = config.columnMapping ?? {};
+  let mapping: ColumnMapping = config.columnMapping ?? {};
   const buffer = await deps.readCsv(upload.csvStorageUrl);
   const records = parseCsvRecords<Record<string, string>>(buffer.toString("utf8"), {
     columns: true,
   });
   const headers = records.length > 0 ? Object.keys(records[0]) : [];
   const headerLookup = buildHeaderLookup(headers);
+
+  // DEFECT 1 (extended to on-demand cuts) — resolve a per-file effective mapping
+  // BEFORE column resolution + every cell read below, so an OLD spaced-header
+  // export is read under its real headers. The cut gate, the row reader, and the
+  // availability signal all share resolveEffectiveMapping with the validation
+  // path, so they can never disagree on which header supplies a dimension.
+  mapping = resolveEffectiveMapping(mapping, headers).mapping;
 
   const cols = resolveColumns(mapping, headerLookup);
   const { cityHeader, propertyClassHeader, priceBracketHeader } = cols;
