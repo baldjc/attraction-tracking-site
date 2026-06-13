@@ -11,7 +11,7 @@
 - [Script Builder identity guard](script-builder-identity-guard.md) — scripts can leak the exemplar's identity; the no_other_member_identity rule must get identity inputs at every validateScript() caller.
 - [Binge-title quote false positives](script-binge-quote-fp.md) — the binge_target_match "wrong quoted title" check must anchor on an explicit next-video cue or it false-positives on viewer-thought dialogue.
 - [Market fact validator](market-fact-validator.md) — validator cost is driven by detail-group count not neighbourhood count; parameterized prompt leakage rules + benchmark harness gotchas.
-- [Fact-validator persistence & tx budget](fact-validator-persistence-tx.md) — keep bulk fact/lead writes out of interactive tx (P2028); make persist idempotent; never double-charge persistence-only retries.
+- [Fact-validator persistence & tx budget](fact-validator-persistence-tx.md) — re-validation is an atomic build-then-swap (delete+insert in ONE tx, never wipe-to-empty, no up-front route deletes); recover old-format uploads via temp live-mapping swap + clear rawOutput.
 - [Impersonation auth dual-behavior](impersonation-auth-dual-behavior.md) — admin API routes authorize while impersonating, but /member pages apply the member's own flags and can redirect the admin away.
 - [Column mapping validation](column-mapping-validation.md) — persisted CSV column mappings must be validated to known-keys/string-values at EVERY entry point, or preflight throws on mapped values.
 - [Member tree has no ToastProvider](member-tree-no-toastprovider.md) — useToast() throws in /member components (only admin layout mounts a provider); wrap the subtree locally or add it to the member shell.
