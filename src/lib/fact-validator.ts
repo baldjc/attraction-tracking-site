@@ -57,7 +57,11 @@ import {
   matchThreadToFacts,
   type ResolverFact,
 } from "@/lib/story-lead-fact-resolver";
-import { persistAggregatedMetrics } from "@/lib/aggregated-metrics";
+import {
+  persistAggregatedMetrics,
+  isSuspiciouslyDegradedReplacement,
+} from "@/lib/aggregated-metrics";
+import { NEEDS_REVIEW_PREFIX } from "@/lib/upload-error-messages";
 import type { MarketConfigShape } from "@/lib/market-config";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import {
@@ -1987,24 +1991,15 @@ export async function runValidation(uploadId: string): Promise<void> {
     });
     console.log('[runValidation] step: aggregated, groups=' + table.groups.length, uploadId);
 
-    // Wave 1: persist deterministic source-of-truth metrics BEFORE the
-    // Sonnet calls run. Script Builder v2 reads these as ground truth so
-    // it can't fabricate or misattribute stats. Idempotent — safe to
-    // re-run on a re-validated upload. Wrapped in try/catch so a persist
-    // failure can never block validation itself; the backfill script can
-    // always recompute them later from the same CSV.
-    try {
-      const written = await persistAggregatedMetrics(uploadId, userId, table);
-      console.log(
-        `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
-      );
-    } catch (err) {
-      console.error(
-        '[runValidation] persistAggregatedMetrics failed (non-fatal)',
-        uploadId,
-        err,
-      );
-    }
+    // DEFECT 2 — aggregate persistence MOVED to the success path (just before
+    // persistResults, after the zero-output + degraded-fact guards). Aggregates
+    // are a deterministic projection that nothing in this function reads back from
+    // the DB during validation (the fact chunks AND the SoT rows are built from the
+    // in-memory `table`), so deferring the swap costs nothing — but it makes the
+    // "kept your existing data" path TRULY atomic: a re-validation that FAILS
+    // (zero usable output) or DEGRADES (suspicious fact collapse) now returns
+    // BEFORE touching either facts OR aggregates, so we never swap a healthy
+    // aggregate projection for a thin one while keeping the old facts.
 
     // WS2B — grow the member's neighbourhood vocab from this upload's distinct
     // subdivisions. Sourced from the aggregation (every neighbourhood that
@@ -2322,6 +2317,79 @@ export async function runValidation(uploadId: string): Promise<void> {
         });
       }
       return;
+    }
+
+    // DEFECT 2 — degraded-replacement guard. The zero-output gate above only
+    // catches a TOTAL wipe; this catches a PARTIAL collapse. A re-validation that
+    // yields dramatically FEWER usable facts than the upload already has is almost
+    // always a regression — most often an old-format CSV (spaced "Sale Pulls"
+    // headers) re-validated under a newer RESO columnMapping → status unmapped →
+    // ~0 sold → a thin fact set that would silently overwrite good data. Keep the
+    // member's existing facts/leads/aggregates, leave the upload VALIDATED (its
+    // live data is intact and unchanged), surface a needs-review note, and still
+    // bill this attempt's AI spend. Re-validation-only by nature: a brand-new
+    // upload has 0 existing facts so this can never fire on a first upload.
+    const existingFactCount = await prisma.marketFact.count({
+      where: { uploadId },
+    });
+    if (isSuspiciouslyDegradedReplacement(existingFactCount, usableFacts)) {
+      mdv("validation.degraded_kept_existing", uploadId, t0, {
+        existingFactCount,
+        newUsableFacts: usableFacts,
+        totalFacts,
+        leads: storyLeads.length,
+        totalCostUsd: totalCost.toFixed(4),
+      });
+      console.error(
+        `[runValidation] DEGRADED RE-VALIDATION uploadId=${uploadId} existingFacts=${existingFactCount} newUsableFacts=${usableFacts} — KEEPING prior facts/leads/aggregates, NOT swapping (likely an old-format CSV under a newer column mapping).`,
+      );
+      await prisma.marketDataUpload.update({
+        where: { id: uploadId },
+        data: {
+          status: "validated",
+          validatedAt: new Date(),
+          validationCostUsd: totalCost.toNumber(),
+          // Keep prior factYieldPct — the live data is unchanged. Carry a
+          // needs-review note the UI surfaces on the still-validated row.
+          validationError:
+            `${NEEDS_REVIEW_PREFIX} This re-validation produced only ${usableFacts} usable facts — far fewer than the ${existingFactCount} already saved for this month — so we kept your existing data and did NOT replace it. ` +
+            `This usually means the file's columns differ from your current market settings. Your previous data is unchanged and still in use.`,
+        },
+      });
+      // Bill the spend only when this attempt actually made AI calls (the $0
+      // reuse path must not write a usage row).
+      if (totalCost.greaterThan(0)) {
+        await prisma.aIToolUsage.create({
+          data: {
+            userId,
+            toolType: "fact_validator",
+            inputTokens: totalInputTokens,
+            outputTokens: totalOutputTokens,
+            costUsd: totalCost.toString(),
+          },
+        });
+      }
+      return;
+    }
+
+    // Success path — swap in the deterministic aggregates FIRST (Script Builder v2
+    // reads these as ground truth), then the facts/leads. Both happen only after
+    // the zero-output + degraded guards above have passed, so a degraded/failed run
+    // never reaches here and the member's prior projection stays intact. Non-fatal:
+    // an aggregate persist failure must not block the fact write (the backfill
+    // script can recompute aggregates from the same CSV later). persistAggregatedMetrics
+    // carries its own empty + catastrophic-drop guards as a second line of defence.
+    try {
+      const written = await persistAggregatedMetrics(uploadId, userId, table);
+      console.log(
+        `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
+      );
+    } catch (err) {
+      console.error(
+        '[runValidation] persistAggregatedMetrics failed (non-fatal)',
+        uploadId,
+        err,
+      );
     }
 
     mdv("db.write.start", uploadId, t0, {

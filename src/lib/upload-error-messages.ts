@@ -19,7 +19,15 @@ export type UploadErrorCategory =
   | "stream_interrupted"
   | "provider_overloaded"
   | "parse_error"
+  | "needs_review"
   | "unknown";
+
+// DEFECT 2 — sentinel prefix written to MarketDataUpload.validationError when a
+// re-validation degraded badly and we KEPT the member's prior data instead of
+// swapping. The upload stays VALIDATED (its live data is intact); this note is
+// purely informational. classifyUploadError() and UploadHistoryTable both detect
+// this prefix to surface a "kept your existing data" message rather than an error.
+export const NEEDS_REVIEW_PREFIX = "[needs-review]";
 
 export interface FriendlyError {
   category: UploadErrorCategory;
@@ -40,6 +48,24 @@ export function classifyUploadError(
 ): FriendlyError {
   const err = (rawError ?? "").toString();
   const rowCount = upload.rowCount ?? 0;
+
+  // DEFECT 2 — degraded re-validation that KEPT the member's prior data. This is
+  // an informational note on a still-VALIDATED upload, not a failure, so it is
+  // checked first and routed to a reassuring "we kept your data" message.
+  if (err.includes(NEEDS_REVIEW_PREFIX)) {
+    const detail = err.split(NEEDS_REVIEW_PREFIX).join("").trim();
+    return {
+      category: "needs_review",
+      title: "We kept your existing data",
+      body:
+        detail ||
+        "This re-validation produced far fewer facts than you already had, so we " +
+          "kept your existing data instead of replacing it. Your previous data is " +
+          "unchanged and still in use.",
+      canRetry: true,
+      nextAction: "retry",
+    };
+  }
 
   // Internal token-overflow backstop. callValidator throws
   // "Input too large for 200K context: inputTokens=... remaining=-... < min ..."
@@ -194,5 +220,6 @@ export const ERROR_CATEGORY_LABELS: Record<UploadErrorCategory, string> = {
   stream_interrupted: "Stream interrupted",
   provider_overloaded: "Provider overloaded",
   parse_error: "Parse error",
+  needs_review: "Kept existing data",
   unknown: "Unknown",
 };

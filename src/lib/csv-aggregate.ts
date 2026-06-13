@@ -27,6 +27,8 @@ import {
   type ColumnMapping,
   type MarketConfigShape,
   type PriceTier,
+  type AnyMappedField,
+  suggestMappingFromHeaders,
 } from "@/lib/market-config";
 import {
   resolveStatusMapping,
@@ -335,6 +337,68 @@ function buildHeaderLookup(headers: string[]): Map<string, string> {
   return m;
 }
 
+export interface EffectiveMappingOverride {
+  field: AnyMappedField;
+  from: string;
+  to: string;
+}
+
+/**
+ * DEFECT 1 — per-file column-format auto-detect.
+ *
+ * A member's live `MarketConfig.columnMapping` describes the column NAMES in the
+ * exports they upload TODAY (e.g. Jared's current RESO feed: MlsStatus /
+ * ClosePrice / SubdivisionName / PropertySubType). Their OLD historical "Sale
+ * Pulls" exports used different spelled-out headers (Status / Close Price /
+ * Subdivision / Subtype). Re-validating an old month under the live RESO mapping
+ * leaves status/neighbourhood/type UNMAPPED → ~0 sold → a near-empty fact set
+ * that silently overwrites good data.
+ *
+ * This resolves an EFFECTIVE mapping for ONE file's headers without ever
+ * mutating or persisting the member's live mapping:
+ *   • If a SET live column resolves in THIS file's headers → keep it untouched.
+ *     (Guarantees a current-format upload's effective mapping is byte-for-byte
+ *      the live mapping — zero behaviour change for today's exports.)
+ *   • If a SET live column is ABSENT from this file → substitute a HIGH-confidence
+ *     header detection (the same deterministic scorer the client mapper uses) when
+ *     one exists and itself resolves; otherwise leave the absent live value so the
+ *     existing loud guards fire (never silently degrade).
+ *   • Fields the member never mapped are left untouched — we never invent columns.
+ */
+export function resolveEffectiveMapping(
+  liveMapping: ColumnMapping,
+  headers: string[],
+): { mapping: ColumnMapping; overrides: EffectiveMappingOverride[] } {
+  const headerLookup = buildHeaderLookup(headers);
+  const resolves = (h: string | undefined | null): boolean =>
+    !!h && headerLookup.has(normalizeHeader(h));
+
+  const out: ColumnMapping = { ...liveMapping };
+  const overrides: EffectiveMappingOverride[] = [];
+
+  // Only computed if at least one set column is missing — keeps the common
+  // (current-format) path free of suggestion work.
+  let suggestions: ReturnType<typeof suggestMappingFromHeaders> | null = null;
+
+  for (const [field, col] of Object.entries(liveMapping) as [
+    AnyMappedField,
+    string | undefined,
+  ][]) {
+    if (!col) continue; // never mapped → leave as-is
+    if (resolves(col)) continue; // present in this file → keep (parity)
+    if (!suggestions) suggestions = suggestMappingFromHeaders(headers);
+    const sugg = suggestions[field];
+    if (sugg && sugg.confidence === "high" && resolves(sugg.header)) {
+      out[field] = sugg.header;
+      overrides.push({ field, from: col, to: sugg.header });
+    }
+    // else: leave the absent live value untouched — the price guard / unmapped
+    // handling downstream surfaces it rather than silently degrading.
+  }
+
+  return { mapping: out, overrides };
+}
+
 /**
  * Streaming-style CSV parse. We use csv-parse/sync because the existing
  * `parseCsvPreview` already does and the typical Pillar 9 monthly export is
@@ -609,11 +673,35 @@ function buildBuckets(
   canonicalize?: (raw: string) => string,
   logContext?: { uploadId: string; userId: string; monthYear: string },
 ): BucketingResult {
-  const mapping: ColumnMapping = config.columnMapping ?? {};
+  const liveMapping: ColumnMapping = config.columnMapping ?? {};
   const tiers = config.priceTiers ?? [];
 
   const { headers, rows } = parseAllRows(csvBuffer);
   const headerLookup = buildHeaderLookup(headers);
+
+  // DEFECT 1 — resolve a per-file effective mapping. For a CURRENT-format export
+  // every set column resolves and `mapping` === the live mapping (no change). For
+  // an OLD-format export whose live RESO columns are absent (Jared's "Sale Pulls"
+  // spaced headers), the missing columns are auto-substituted from this file's
+  // headers so status/neighbourhood/type map correctly — WITHOUT touching the
+  // member's persisted mapping. Applies to every caller of buildBuckets, i.e. the
+  // re-validation aggregation AND the on-demand pooled-90d path below.
+  const { mapping, overrides: mappingOverrides } = resolveEffectiveMapping(
+    liveMapping,
+    headers,
+  );
+  if (mappingOverrides.length > 0) {
+    console.warn(
+      "[market-aggregate][COLUMN_FORMAT_AUTODETECT] live mapping columns absent from this file; auto-substituted per-file (live mapping unchanged)",
+      JSON.stringify({
+        uploadId: logContext?.uploadId,
+        userId: logContext?.userId,
+        monthYear: logContext?.monthYear,
+        marketName: config.marketName,
+        overrides: mappingOverrides,
+      }),
+    );
+  }
 
   // Loud guard: a PRICE column mapped to a header that is ABSENT from this CSV
   // silently reads null for every row, so median price + sale-to-list never

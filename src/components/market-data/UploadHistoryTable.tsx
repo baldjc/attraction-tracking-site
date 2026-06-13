@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AiThinkingDots } from "@/components/ai/AiThinkingDots";
 import {
   classifyUploadError,
+  NEEDS_REVIEW_PREFIX,
   type FriendlyError,
 } from "@/lib/upload-error-messages";
 
@@ -463,10 +464,30 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-400">
                     {r.status === "validated" ? (
-                      <span>
-                        {(r.factCount ?? 0).toLocaleString()} facts ·{" "}
-                        {(r.storyLeadCount ?? 0).toLocaleString()} leads
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span>
+                          {(r.factCount ?? 0).toLocaleString()} facts ·{" "}
+                          {(r.storyLeadCount ?? 0).toLocaleString()} leads
+                        </span>
+                        {r.validationError?.includes(NEEDS_REVIEW_PREFIX) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setErrorModal({
+                                row: r,
+                                friendly: classifyUploadError(
+                                  r.validationError ?? "",
+                                  { rowCount: r.rowCount, retryCount },
+                                ),
+                              })
+                            }
+                            className="text-left text-[11px] font-medium text-amber-700 hover:underline dark:text-amber-400"
+                          >
+                            Kept previous data — re-validation produced fewer
+                            facts. Details
+                          </button>
+                        )}
+                      </div>
                     ) : r.status === "failed" ? (
                       <FailedCell
                         row={r}

@@ -203,6 +203,35 @@ export function rowsFromGroup(
 }
 
 /**
+ * DEFECT 2 — degraded-replacement guard.
+ *
+ * A re-validation that yields DRAMATICALLY fewer rows/facts than the upload
+ * already has is almost always a regression (e.g. an old spaced-header CSV
+ * mapped under a newer RESO `columnMapping` → status unmapped → ~0 sold), not a
+ * legitimate shrink. The build-then-swap empty-set guards only catch a TOTAL
+ * wipe; this catches a PARTIAL collapse so we never trade a healthy set for a
+ * thin one. Returns true when `prev` was healthy (>= minPrev) and `next` falls
+ * below `prev * dropRatio`.
+ *
+ * dropRatio is tuned per surface:
+ *   • Facts (0.5): a >50% drop on a re-validation is suspicious; legitimate
+ *     methodology changes rarely halve the citable fact count.
+ *   • Aggregates (0.2): only a catastrophic collapse trips it, because a member
+ *     legitimately EXCLUDING neighbourhoods shrinks the aggregate row count and
+ *     must not be mistaken for a degraded mapping.
+ */
+export function isSuspiciouslyDegradedReplacement(
+  prev: number,
+  next: number,
+  opts: { dropRatio?: number; minPrev?: number } = {},
+): boolean {
+  const dropRatio = opts.dropRatio ?? 0.5;
+  const minPrev = opts.minPrev ?? 20;
+  if (prev < minPrev) return false;
+  return next < prev * dropRatio;
+}
+
+/**
  * Persist deterministic aggregations for an upload. Idempotent: deletes
  * any prior rows for the same (userId, uploadId) first so a re-run of
  * the validator (or backfill on an already-processed upload) leaves a
@@ -231,6 +260,24 @@ export async function persistAggregatedMetrics(
   // wiping their live projection. The facts path mirrors this — runValidation
   // bails to "failed" without touching live facts when it yields nothing.
   if (allRows.length === 0) return 0;
+
+  // DEFECT 2 — degraded-replacement guard (extends the empty-set guard above
+  // from "produced nothing" to "produced catastrophically little"). A
+  // re-aggregation that collapses to a tiny fraction of the live projection is a
+  // mapping/format regression, not a real shrink; keep the prior aggregates. This
+  // is re-validation-only by nature — a brand-new upload has 0 existing rows, so
+  // the guard can never fire on a first upload. Uses a catastrophic 0.2 ratio so
+  // a member legitimately excluding neighbourhoods (which shrinks the row count)
+  // is never mistaken for a degraded mapping.
+  const existingAgg = await prisma.aggregatedMetric.count({
+    where: { userId, uploadId },
+  });
+  if (isSuspiciouslyDegradedReplacement(existingAgg, allRows.length, { dropRatio: 0.2 })) {
+    console.error(
+      `[aggregated-metric-persist] DEGRADED RE-AGGREGATION uploadId=${uploadId} existing=${existingAgg} new=${allRows.length} — keeping prior aggregates, not swapping (likely an old-format CSV under a newer column mapping).`,
+    );
+    return existingAgg;
+  }
 
   // Atomic build-then-swap: delete the live rows and insert the freshly-computed
   // set in ONE interactive transaction so an interrupted re-aggregation can never
