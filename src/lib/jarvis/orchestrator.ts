@@ -341,6 +341,7 @@ async function runTool(ctx: {
       const res = await executeGetFacts(userId, {
         neighbourhood: typeof input.neighbourhood === "string" ? input.neighbourhood : undefined,
         metric: typeof input.metric === "string" ? input.metric : undefined,
+        monthYear: typeof input.monthYear === "string" ? input.monthYear : undefined,
       });
       for (const f of res.facts) onFact(f);
       const tier =

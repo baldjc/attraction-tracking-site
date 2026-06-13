@@ -71,7 +71,10 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       "sale-to-list ratio, days on market, prices, etc). Returns a list of " +
       "facts, each with a stable id you MUST reuse when citing it or linking " +
       "it to a script. Only facts returned here are real — never invent a " +
-      "number that isn't in a get_facts result.",
+      "number that isn't in a get_facts result. Defaults to the member's " +
+      "LATEST validated upload; to answer a question about a SPECIFIC historical " +
+      "month (e.g. 'May 2025 Altadore detached sales'), pass monthYear so it " +
+      "reads that month's validated upload instead of the latest.",
     input_schema: {
       type: "object",
       properties: {
@@ -85,6 +88,16 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
           description:
             "Optional. Case-insensitive substring of the metric label, e.g. " +
             "'inventory', 'sale-to-list', 'days on market', 'price'.",
+        },
+        monthYear: {
+          type: "string",
+          description:
+            "Optional. A specific validated month to read (YYYY-MM, e.g. " +
+            "'2025-05'). Use this for any direct question about a historical " +
+            "month. Omit to read the member's latest validated upload. If no " +
+            "validated upload exists for that month it refuses honestly and " +
+            "lists the months that ARE on file — it never silently substitutes " +
+            "a different month.",
         },
       },
     },
@@ -298,7 +311,8 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
       "BOTH endpoints as citable facts (e.g. 'which property type grew the most " +
       "year-over-year', 'condos this May vs last May'). Use this whenever the " +
       "member asks about change over a year, growth/decline vs last year, or a " +
-      "prior-year comparison — get_facts only carries the current period. " +
+      "prior-year comparison — get_facts and a single compute_cut each return " +
+      "only ONE month, so the year delta needs this tool. " +
       "Same two property dimensions as compute_cut, never swapped: " +
       "`propertyClass` is the broad class from a raw 'Property Type' column; " +
       "`style` is whatever the member mapped to their Style column (architectural " +
@@ -558,6 +572,8 @@ export const JARVIS_TOOLS: Anthropic.Tool[] = [
 export interface GetFactsArgs {
   neighbourhood?: string;
   metric?: string;
+  /** Optional YYYY-MM — read this specific validated month instead of latest. */
+  monthYear?: string;
 }
 
 /**
@@ -740,8 +756,44 @@ export async function executeGetFacts(
   userId: string,
   args: GetFactsArgs,
 ): Promise<GetFactsResult> {
-  const upload = await loadLatestValidatedUpload(userId);
+  // A specific historical month can be requested (e.g. "May 2025 Altadore
+  // detached"); otherwise default to the member's latest validated upload. This
+  // is what lets the ledger read PRIOR-YEAR / historical uploads, not just the
+  // current month — the gap behind Jarvis claiming "I only have May 2026 data".
+  const rawMonth =
+    typeof args.monthYear === "string" ? args.monthYear.trim() : "";
+  // A malformed month string must NOT silently fall back to latest (that would
+  // answer a different question than the member asked); refuse honestly instead.
+  if (rawMonth && !/^\d{4}-\d{2}$/.test(rawMonth)) {
+    return {
+      facts: [],
+      monthYear: null,
+      state: "no_upload",
+      note: `"${rawMonth}" isn't a valid month — use YYYY-MM (e.g. "2025-05"), or omit it to read the latest validated upload.`,
+    };
+  }
+  const wantMonth = rawMonth || null;
+  const upload = await loadLatestValidatedUpload(userId, wantMonth ?? undefined);
   if (!upload) {
+    // A specific month was asked for but no validated upload exists for it —
+    // refuse honestly and list the months that ARE on file (never silently fall
+    // back to the latest month, which would answer a different question).
+    if (wantMonth) {
+      const months = await prisma.marketDataUpload.findMany({
+        where: { userId, status: "validated" },
+        select: { monthYear: true },
+        orderBy: [{ monthYear: "desc" }],
+      });
+      const avail = Array.from(new Set(months.map((m) => m.monthYear)));
+      return {
+        facts: [],
+        monthYear: null,
+        state: "no_upload",
+        note: avail.length
+          ? `No validated upload exists for ${wantMonth}. Validated months on file: ${avail.join(", ")}. Pick one of those — do not assume a month that isn't there.`
+          : "No validated market-data upload yet — upload market data first.",
+      };
+    }
     // No VALIDATED upload — but distinguish "never uploaded" from "uploaded but
     // the latest pass failed to produce anything usable". The latter is the
     // guardrail case (an upload that parsed only rejected facts now fails loudly
