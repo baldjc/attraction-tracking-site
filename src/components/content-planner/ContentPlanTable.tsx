@@ -136,12 +136,12 @@ function InlineStatusSelect({ status, options, onChange }: {
   // Always keep the current value selectable, even if it pre-dates a tier change.
   const opts = options.includes(status) ? options : [status, ...options];
   return (
-    <span className="relative inline-flex max-w-full">
+    <span className="relative inline-flex max-w-full min-w-0">
       <select
         value={status}
         onChange={(e) => onChange(e.target.value)}
         aria-label="Status"
-        className="appearance-none rounded-[6px] pl-2.5 pr-6 py-1 font-semibold tracking-[0.04em] uppercase cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
+        className="appearance-none max-w-full min-w-0 rounded-[6px] pl-2.5 pr-6 py-1 font-semibold tracking-[0.04em] uppercase cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
         style={{ background: s.bg, color: s.fg, fontSize: "11px" }}
       >
         {opts.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -161,7 +161,7 @@ function InlineRotationSlotSelect({ slot, onChange }: {
   const label = plannerThemeLabel(known);
   const v = label ? getThemeVisual(label) : null;
   return (
-    <span className="relative inline-flex items-center gap-1.5 max-w-full pr-4">
+    <span className="relative flex items-center gap-1.5 w-full min-w-0 pr-4">
       <span
         className="inline-block w-[7px] h-[7px] rounded-full shrink-0"
         style={{ background: v ? v.fg : "var(--abv-text-dim)" }}
@@ -170,7 +170,7 @@ function InlineRotationSlotSelect({ slot, onChange }: {
         value={known}
         onChange={(e) => onChange(e.target.value || null)}
         aria-label="Theme"
-        className="appearance-none bg-transparent border-0 pr-1 py-1 font-medium cursor-pointer truncate focus:outline-none"
+        className="appearance-none flex-1 min-w-0 bg-transparent border-0 pr-1 py-1 font-medium cursor-pointer truncate focus:outline-none"
         style={{ fontSize: "14px", color: v ? "var(--abv-text)" : "var(--abv-text-dim)" }}
       >
         <option value="">— Theme —</option>
@@ -191,12 +191,12 @@ function InlineBingeSelect({ value, current, options, onChange }: {
 }) {
   const hasCurrent = !!value && options.some((o) => o.id === value);
   return (
-    <span className="relative inline-flex w-full">
+    <span className="relative flex w-full min-w-0">
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
         aria-label="Binge target"
-        className="appearance-none w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-[8px] pl-1.5 pr-6 py-1 text-[12px] text-[var(--abv-text-muted)] cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
+        className="appearance-none w-full min-w-0 bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-[8px] pl-1.5 pr-6 py-1 text-[12px] text-[var(--abv-text-muted)] cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
       >
         <option value="">— None —</option>
         {!hasCurrent && value && current && <option value={value}>{current.title}</option>}
