@@ -60,8 +60,8 @@ function StatusBadge({ status }: { status: string }) {
   const s = getStatusPillStyle(status);
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap font-bold tracking-[0.04em] uppercase"
-      style={{ background: s.bg, color: s.fg, fontSize: "10.5px" }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] whitespace-nowrap font-semibold tracking-[0.04em] uppercase"
+      style={{ background: s.bg, color: s.fg, fontSize: "11px" }}
     >
       <span
         className="inline-block w-[5px] h-[5px] rounded-full shrink-0"
@@ -83,14 +83,13 @@ function ThemePill({ theme }: { theme: string | null }) {
     return <span className="text-xs text-[var(--abv-text-dim)] italic">—</span>;
   }
   const v = getThemeVisual(theme);
-  const Icon = v.Icon;
   return (
-    <span
-      className="inline-flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-full font-semibold whitespace-nowrap"
-      style={{ background: v.bg, color: v.fg, fontSize: "11.5px" }}
-    >
-      <Icon className="w-3 h-3 shrink-0" />
-      <span className="truncate max-w-[140px]">{theme}</span>
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <span
+        className="inline-block w-[7px] h-[7px] rounded-full shrink-0"
+        style={{ background: v.fg }}
+      />
+      <span className="truncate max-w-[140px] font-medium text-[var(--abv-text)]" style={{ fontSize: "14px" }}>{theme}</span>
     </span>
   );
 }
@@ -142,12 +141,12 @@ function InlineStatusSelect({ status, options, onChange }: {
         value={status}
         onChange={(e) => onChange(e.target.value)}
         aria-label="Status"
-        className="appearance-none rounded-full pl-2.5 pr-6 py-1 font-bold tracking-[0.04em] uppercase cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
-        style={{ background: s.bg, color: s.fg, fontSize: "10.5px" }}
+        className="appearance-none rounded-[6px] pl-2.5 pr-6 py-1 font-semibold tracking-[0.04em] uppercase cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
+        style={{ background: s.bg, color: s.fg, fontSize: "11px" }}
       >
         {opts.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
-      <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: s.fg }} />
+      <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--abv-text-dim)" }} />
     </span>
   );
 }
@@ -162,24 +161,24 @@ function InlineRotationSlotSelect({ slot, onChange }: {
   const label = plannerThemeLabel(known);
   const v = label ? getThemeVisual(label) : null;
   return (
-    <span className="relative inline-flex max-w-full">
+    <span className="relative inline-flex items-center gap-1.5 max-w-full pr-4">
+      <span
+        className="inline-block w-[7px] h-[7px] rounded-full shrink-0"
+        style={{ background: v ? v.fg : "var(--abv-text-dim)" }}
+      />
       <select
         value={known}
         onChange={(e) => onChange(e.target.value || null)}
         aria-label="Theme"
-        className="appearance-none rounded-full pl-2.5 pr-6 py-1 font-semibold cursor-pointer truncate focus:outline-none focus:ring-2 focus:ring-[var(--abv-azure)]/40"
-        style={
-          v
-            ? { background: v.bg, color: v.fg, fontSize: "11.5px" }
-            : { fontSize: "11.5px", color: "var(--abv-text-dim)", border: "1px solid var(--abv-border)" }
-        }
+        className="appearance-none bg-transparent border-0 pr-1 py-1 font-medium cursor-pointer truncate focus:outline-none"
+        style={{ fontSize: "14px", color: v ? "var(--abv-text)" : "var(--abv-text-dim)" }}
       >
         <option value="">— Theme —</option>
         {PLANNER_THEME_SLOTS.map((s) => (
-          <option key={s} value={s}>{PLANNER_THEME_LABELS[s]}</option>
+          <option key={s} value={s}>{PLANNER_THEME_LABELS[s as keyof typeof PLANNER_THEME_LABELS]}</option>
         ))}
       </select>
-      <ChevronDownIcon className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: v ? v.fg : "var(--abv-text-dim)" }} />
+      <ChevronDownIcon className="w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--abv-text-dim)" }} />
     </span>
   );
 }
@@ -197,7 +196,7 @@ function InlineBingeSelect({ value, current, options, onChange }: {
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
         aria-label="Binge target"
-        className="appearance-none w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md pl-1.5 pr-6 py-1 text-[12px] text-[var(--abv-text-muted)] cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
+        className="appearance-none w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-[8px] pl-1.5 pr-6 py-1 text-[12px] text-[var(--abv-text-muted)] cursor-pointer truncate focus:outline-none focus:border-[var(--abv-azure)]"
       >
         <option value="">— None —</option>
         {!hasCurrent && value && current && <option value={value}>{current.title}</option>}
@@ -226,13 +225,13 @@ function InlineDateInput({ value, onChange }: {
         value={toDateInputValue(value)}
         onChange={(e) => onChange(e.target.value || null)}
         aria-label="Change date"
-        className="w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-md px-1.5 py-1 font-mono tabular-nums cursor-pointer focus:outline-none focus:border-[var(--abv-azure)]"
-        style={{ fontSize: "11.5px" }}
+        className="w-full bg-transparent border border-transparent hover:border-[var(--abv-border)] rounded-[8px] px-1.5 py-1 font-mono tabular-nums cursor-pointer focus:outline-none focus:border-[var(--abv-azure)]"
+        style={{ fontSize: "13px" }}
       />
       <span
         aria-hidden="true"
         className="absolute inset-0 flex items-center px-1.5 font-mono tabular-nums pointer-events-none truncate"
-        style={{ fontSize: "11.5px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
+        style={{ fontSize: "13px", color: value ? "var(--abv-text-muted)" : "var(--abv-text-dim)" }}
       >
         {value ? formatDate(value) : "—"}
       </span>
@@ -583,13 +582,13 @@ export default function ContentPlanTable({
       <div style={{ minWidth: `${minTableWidth}px` }}>
       {/* Header row */}
       <div
-        className="grid gap-[14px] px-[22px] py-3 font-mono uppercase tracking-[0.10em] text-[var(--abv-text-muted)]"
+        className="grid gap-[14px] px-[22px] py-3 uppercase tracking-[0.08em] text-[var(--abv-text-muted)]"
         style={{
           gridTemplateColumns: colTemplate,
           background: "var(--abv-bg-warm)",
           borderBottom: "1px solid var(--abv-border)",
-          fontSize: "9.5px",
-          fontWeight: 700,
+          fontSize: "12px",
+          fontWeight: 600,
         }}
       >
         <div className="relative pr-2">
@@ -657,7 +656,7 @@ export default function ContentPlanTable({
           return (
             <div
               key={plan.id}
-              className="grid gap-[14px] px-[22px] py-3.5 items-center hover:bg-[var(--abv-bg-warm)] transition-colors"
+              className="group grid gap-[14px] px-[22px] py-3.5 items-center hover:bg-[var(--abv-bg-warm)] transition-colors"
               style={{
                 gridTemplateColumns: colTemplate,
                 borderBottom: "1px solid var(--abv-border)",
@@ -754,7 +753,7 @@ export default function ContentPlanTable({
                       href={plan.driveFolderLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center text-[var(--abv-text-dim)] hover:text-[var(--abv-azure)] transition-colors"
+                      className="inline-flex items-center justify-center text-[var(--abv-text-dim)] group-hover:text-[var(--abv-text)] hover:!text-[var(--abv-azure)] transition-colors"
                       title="Open Google Drive folder"
                     >
                       <ArrowTopRightOnSquareIcon className="w-4 h-4" />
@@ -770,7 +769,7 @@ export default function ContentPlanTable({
                 <button
                   onClick={() => handleDelete(plan.id)}
                   disabled={deletingId === plan.id}
-                  className="inline-flex items-center justify-center text-[var(--abv-text-dim)] hover:text-red-600 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center text-[var(--abv-text-dim)] group-hover:text-[var(--abv-text)] hover:!text-red-600 transition-colors disabled:opacity-50"
                   title="Delete video"
                   aria-label="Delete video"
                 >

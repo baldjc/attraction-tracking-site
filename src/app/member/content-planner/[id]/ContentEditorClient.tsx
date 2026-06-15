@@ -11,6 +11,8 @@ import { hasDriveFolderAccess } from "@/lib/service-tier";
 import { useToast } from "@/components/ToastProvider";
 import { buildMlsVerifyLine, formatMlsPeriod } from "@/lib/mls-verify-reminder";
 import { writeJarvisRefineSeed } from "@/lib/jarvis/seed";
+import { getStatusPillStyle, getThemeVisual } from "@/lib/content-plan-style";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -44,22 +46,6 @@ type AvatarData = {
 } | null;
 
 const FOUNDATIONS_TIERS = ["foundations"];
-const STATUS_DOT: Record<string, string> = {
-  Idea: "#9CA3AF",
-  Scripted: "#06B6D4",
-  Drafting: "#06B6D4",
-  "Ready to Shoot": "#22C55E",
-  Shooting: "#F59E0B",
-  "Shot - In Post": "#F59E0B",
-  Filmed: "#F59E0B",
-  Editing: "#A855F7",
-  "Ready to Post": "#3B82F6",
-  Scheduled: "#3B82F6",
-  Posted: "#10B981",
-  Published: "#10B981",
-  Archived: "#9CA3AF",
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Local auto-save hook
 // AbortController-based single-flight save, 2-second debounce, on-blur flush.
@@ -389,7 +375,7 @@ const MARKDOWN_COMPONENTS = {
     <h4 style={{ fontFamily: "var(--font-display, inherit)", fontWeight: 800, fontSize: 16, letterSpacing: "-0.015em", margin: "16px 0 8px" }}>{injectTags(children)}</h4>
   ),
   p: ({ children }: { children?: React.ReactNode }) => (
-    <p style={{ margin: "0 0 12px", lineHeight: 1.7 }}>{injectTags(children)}</p>
+    <p style={{ margin: "0 0 12px", lineHeight: 1.7, maxWidth: "64ch" }}>{injectTags(children)}</p>
   ),
   ul: ({ children }: { children?: React.ReactNode }) => (
     <ul style={{ margin: "0 0 12px", paddingLeft: 22, lineHeight: 1.7, listStyle: "disc" }}>{children}</ul>
@@ -530,9 +516,9 @@ export default function ContentEditorClient({
     bingeVideoId: initialPlan.bingeVideoId ?? "",
     linkedCampaignId: initialPlan.linkedCampaignId ?? "",
   }));
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"planning" | "connecting" | "tools" | "publish">("planning");
   const [lineage, setLineage] = useState<Lineage | null>(null);
-  const [lineageOpen, setLineageOpen] = useState(true);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [bingeOptions, setBingeOptions] = useState<BingeOption[]>([]);
@@ -754,12 +740,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
     }
   };
 
-  // ── v2 builder navigation ─────────────────────────────────────────────────
-  const handleBuildV2 = async () => {
-    await flush();
-    router.push(`/member/content-planner/wizard/script?planId=${planId}`);
-  };
-
   // ── completion / next-action mapping ──────────────────────────────────────
   // Read step state from the live form (merged with the persisted plan so we
   // still see server-side fields like bingeVideo). Without this merge the
@@ -793,53 +773,11 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 
   const titleH1Ref = useRef<HTMLHeadingElement | null>(null);
   const scriptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const lineageRef = useRef<HTMLDivElement | null>(null);
   const publishDateRef = useRef<HTMLInputElement | null>(null);
   const editDueDateRef = useRef<HTMLInputElement | null>(null);
   const shootDateRef = useRef<HTMLInputElement | null>(null);
   const statusSelectRef = useRef<HTMLSelectElement | null>(null);
   const researchNotesRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const scrollAndFocus = useCallback((el: HTMLElement | null) => {
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    window.setTimeout(() => {
-      try { (el as HTMLInputElement).focus({ preventScroll: true }); } catch { /* noop */ }
-    }, 350);
-  }, []);
-
-  const focusPlanningPanel = useCallback((target: HTMLElement | null) => {
-    setActiveTab("planning");
-    window.setTimeout(() => scrollAndFocus(target), 50);
-  }, [scrollAndFocus]);
-
-  const handleStepClick = useCallback((stepKey: string, state: "done" | "current" | "todo") => {
-    if (state === "todo") return;
-    switch (stepKey) {
-      case "idea":
-        scrollAndFocus(titleH1Ref.current);
-        break;
-      case "research":
-        if (lineageRef.current) scrollAndFocus(lineageRef.current);
-        else scrollAndFocus(researchNotesRef.current);
-        break;
-      case "script":
-        scrollAndFocus(scriptTextareaRef.current);
-        break;
-      case "shoot":
-        focusPlanningPanel(shootDateRef.current);
-        break;
-      case "post":
-        focusPlanningPanel(editDueDateRef.current ?? publishDateRef.current);
-        break;
-      case "publish":
-        focusPlanningPanel(publishDateRef.current);
-        break;
-      case "review":
-        focusPlanningPanel(statusSelectRef.current);
-        break;
-    }
-  }, [scrollAndFocus, focusPlanningPanel]);
 
   // ↻ Regenerate → open THIS video in Jarvis (Content Manager) in "refine this
   // script" mode rather than doing a blind one-shot rebuild. We flush any
@@ -972,7 +910,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
         </div>
       </div>
 
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 32px 80px" }}>
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? "16px 16px 64px" : "24px 32px 80px" }}>
         {/* ── dark hero ─────────────────────────────────────────────────── */}
         <section style={{
           background: "var(--abv-ink, #1A1A1A)",
@@ -981,7 +919,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
           padding: "28px 32px",
           marginBottom: 18,
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "flex-start", gap: isMobile ? 16 : 24 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <TitleEditor
                 value={form.title}
@@ -1002,18 +940,17 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
                 <span>{wordCount(form.script).toLocaleString()} words</span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: isMobile ? "flex-start" : "flex-end" }}>
               <button
                 onClick={handleNextAction}
                 style={{
                   background: "var(--abv-azure, #3B82F6)",
-                  color: "white",
+                  color: "var(--abv-ink, #1A1A1A)",
                   borderRadius: 999,
                   padding: "10px 18px",
                   fontSize: 12,
                   fontWeight: 700,
                   letterSpacing: "0.04em",
-                  textTransform: "uppercase",
                   cursor: "pointer",
                 }}
               >
@@ -1039,111 +976,11 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
           </div>
         </section>
 
-        {/* ── workflow stepper ─────────────────────────────────────────── */}
-        <section style={{
-          background: "white", border: "1px solid var(--abv-border)",
-          borderRadius: 14, padding: "16px 24px", marginBottom: 18,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: 12,
-        }}>
-          {STEPS.map((s, idx) => {
-            const st = steps[s.key];
-            const dot = st === "done"
-              ? { bg: "var(--abv-azure)", fg: "white", ring: "transparent" }
-              : st === "current"
-                ? { bg: "white", fg: "var(--abv-azure)", ring: "var(--abv-azure)" }
-                : { bg: "var(--abv-bg-warm)", fg: "var(--abv-text-muted)", ring: "transparent" };
-            const clickable = st !== "todo";
-            return (
-              <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(s.key, st)}
-                  disabled={!clickable}
-                  aria-label={`Jump to ${s.label}`}
-                  title={clickable ? `Jump to ${s.label}` : `${s.label} — not yet available`}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    background: "transparent", padding: 0, border: 0,
-                    cursor: clickable ? "pointer" : "not-allowed",
-                  }}
-                >
-                  <span style={{
-                    width: 22, height: 22, borderRadius: "50%",
-                    background: dot.bg, color: dot.fg,
-                    border: `1.5px solid ${dot.ring}`,
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 700,
-                    fontFamily: "var(--font-mono, ui-monospace)",
-                  }}>{st === "done" ? "✓" : idx + 1}</span>
-                  <span style={{
-                    fontSize: 11, fontWeight: 600, letterSpacing: "0.04em",
-                    textTransform: "uppercase",
-                    color: st === "todo" ? "var(--abv-text-muted)" : "var(--abv-text)",
-                  }}>{s.label}</span>
-                </button>
-                {idx < STEPS.length - 1 && (
-                  <span style={{
-                    flex: 1, height: 1,
-                    background: steps[STEPS[idx + 1].key] !== "todo" ? "var(--abv-azure)" : "var(--abv-border)",
-                    opacity: 0.5,
-                  }} />
-                )}
-              </div>
-            );
-          })}
-        </section>
-
-        {/* ── lineage accordion ────────────────────────────────────────── */}
-        {lineage && (
-          <section ref={lineageRef} style={{
-            background: "var(--abv-azure-tint, #E0F2FE)",
-            border: "1px solid rgba(59,130,246,0.2)",
-            borderRadius: 12, marginBottom: 18, overflow: "hidden",
-          }}>
-            <button
-              onClick={() => setLineageOpen((o) => !o)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 18px",
-                color: "var(--abv-azure)",
-                fontSize: 12, fontWeight: 700, letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              <span>↳ Idea card · {lineage.themeLabel}</span>
-              <span style={{
-                transition: "transform 0.2s",
-                transform: lineageOpen ? "rotate(180deg)" : "none",
-              }}>▾</span>
-            </button>
-            {lineageOpen && (
-              <div style={{
-                padding: "0 18px 16px", color: "var(--abv-text)",
-                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16,
-              }}>
-                {lineage.titlePromise && (
-                  <Fact label="Title promise" value={lineage.titlePromise} />
-                )}
-                {lineage.visualPeak && (
-                  <Fact label="Visual peak" value={lineage.visualPeak} />
-                )}
-                {lineage.storyLead && (
-                  <Fact label="Story lead" value={`${lineage.storyLead.pattern} — ${lineage.storyLead.whyItMattersPreview}`} />
-                )}
-                {lineage.thumbnailCallouts.length > 0 && (
-                  <Fact label="Thumbnail callouts" value={lineage.thumbnailCallouts.join(" · ")} />
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
         {/* ── two-pane layout ──────────────────────────────────────────── */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 340px",
-          gap: 24,
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 340px",
+          gap: isMobile ? 16 : 24,
           alignItems: "start",
         }}>
           {/* LEFT: script pane */}
@@ -1151,7 +988,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
             value={form.script}
             onChange={(v) => update("script", v)}
             onBlur={() => void flush()}
-            onBuildV2={scriptBuilderV2Enabled ? handleBuildV2 : null}
             planId={planId}
             title={form.title}
             textareaRef={scriptTextareaRef}
@@ -1161,7 +997,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
           />
 
           {/* RIGHT: sidebar */}
-          <aside style={{ position: "sticky", top: 16, display: "grid", gap: 12 }}>
+          <aside style={{ position: isMobile ? "static" : "sticky", top: 16, display: "grid", gap: 12 }}>
             <TabStrip
               active={activeTab}
               onChange={setActiveTab}
@@ -1225,26 +1061,12 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-        textTransform: "uppercase", color: "var(--abv-text-muted)",
-        marginBottom: 4,
-      }}>{label}</div>
-      <div style={{ fontSize: 13, lineHeight: 1.5 }}>{value}</div>
-    </div>
-  );
-}
-
 function ScriptPane({
-  value, onChange, onBlur, onBuildV2, planId, title, textareaRef, onExport, onRegenerate, dataPeriod,
+  value, onChange, onBlur, planId, title, textareaRef, onExport, onRegenerate, dataPeriod,
 }: {
   value: string;
   onChange: (v: string) => void;
   onBlur: () => void;
-  onBuildV2: (() => void) | null;
   planId: string;
   title: string;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -1285,51 +1107,26 @@ function ScriptPane({
 
   return (
     <section style={{ display: "grid", gap: 12 }}>
-      {/* v2 builder strip */}
-      {onBuildV2 && (
-        <div style={{
-          background: "var(--abv-azure-tint, #E0F2FE)",
-          border: "1px solid rgba(59,130,246,0.2)",
-          borderRadius: 10,
-          padding: "10px 14px",
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-        }}>
-          <div style={{
-            fontSize: 12, color: "var(--abv-azure)", fontWeight: 600,
-          }}>
-            v2 Builder · structured outline → script
-          </div>
-          <button
-            onClick={onBuildV2}
-            style={{
-              background: "var(--abv-azure)", color: "white",
-              padding: "7px 14px", borderRadius: 999,
-              fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}
-          >{value ? "Rebuild →" : "Build (v2) →"}</button>
-        </div>
-      )}
-
       {/* toolbar */}
       <div style={{
         background: "white", border: "1px solid var(--abv-border)",
-        borderRadius: 999, padding: "6px 8px",
-        display: "flex", gap: 4, alignSelf: "flex-start",
+        borderRadius: 10, padding: "6px 8px",
+        display: "flex", gap: 4, flexWrap: "wrap", alignSelf: "flex-start",
       }}>
         <ToolbarBtn label="↻ Regenerate" onClick={onRegenerate} />
         <Link
           href={`/member/content-tools/script-review?planId=${planId}`}
           style={{
-            padding: "6px 12px", borderRadius: 999, fontSize: 11,
-            fontWeight: 600, color: "var(--abv-azure)",
+            padding: "6px 12px", borderRadius: 8, fontSize: 11,
+            fontWeight: 600, color: "var(--abv-text-muted)",
           }}
+          className="hover:bg-[var(--abv-bg-warm)] hover:text-[var(--abv-text)]"
         >Self-Review</Link>
         <ToolbarBtn label="Copy" onClick={handleCopy} />
         <ToolbarBtn label="Export" onClick={onExport} />
         {mode === "edit"
-          ? <ToolbarBtn label="✓ Done" onClick={() => setMode("view")} />
-          : <ToolbarBtn label="✎ Edit" onClick={enterEdit} />}
+          ? <ToolbarBtn label="✓ Done" onClick={() => setMode("view")} emphasis />
+          : <ToolbarBtn label="✎ Edit" onClick={enterEdit} emphasis />}
       </div>
 
       {/* editor */}
@@ -1412,13 +1209,15 @@ function ScriptPane({
   );
 }
 
-function ToolbarBtn({ label, onClick }: { label: string; onClick?: () => void }) {
+function ToolbarBtn({ label, onClick, emphasis }: { label: string; onClick?: () => void; emphasis?: boolean }) {
   return (
     <button
       onClick={onClick}
       style={{
-        padding: "6px 12px", borderRadius: 999, fontSize: 11,
-        fontWeight: 600, color: "var(--abv-text-muted)",
+        padding: "6px 12px", borderRadius: 8, fontSize: 11,
+        fontWeight: 600,
+        color: emphasis ? "var(--abv-text)" : "var(--abv-text-muted)",
+        background: emphasis ? "var(--abv-bg-warm)" : "transparent",
       }}
       className="hover:bg-[var(--abv-bg-warm)] hover:text-[var(--abv-text)]"
     >{label}</button>
@@ -1483,10 +1282,10 @@ function Panel({ title, headerRight, children }: {
         padding: "10px 14px",
         borderBottom: "1px solid var(--abv-border)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        background: "var(--abv-bg-warm, #FAF7F2)",
+        background: "transparent",
       }}>
         <span style={{
-          fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+          fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
           textTransform: "uppercase", color: "var(--abv-text-muted)",
         }}>{title}</span>
         {headerRight}
@@ -1544,11 +1343,12 @@ function PlanningTab({
             onChange={(e) => update("status", e.target.value)}
             onBlur={onBlur}
             style={{
-              padding: "5px 12px", borderRadius: 999,
-              border: `1px solid ${STATUS_DOT[form.status] ?? "#9CA3AF"}`,
+              padding: "5px 12px", borderRadius: 6,
+              border: "none",
               fontSize: 11, fontWeight: 700,
-              color: STATUS_DOT[form.status] ?? "var(--abv-text)",
-              background: "white",
+              textTransform: "uppercase", letterSpacing: "0.04em",
+              color: getStatusPillStyle(form.status).fg,
+              background: getStatusPillStyle(form.status).bg,
             }}
           >
             {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -1566,9 +1366,15 @@ function PlanningTab({
       <Panel title="Theme & location">
         <div style={{ padding: "8px 14px" }}>
           <label style={{
-            display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+            display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
             textTransform: "uppercase", color: "var(--abv-text-muted)", marginBottom: 4,
-          }}>Video Theme</label>
+          }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: "50%", display: "inline-block",
+              background: form.theme ? getThemeVisual(form.theme).fg : "var(--abv-text-dim)",
+            }} />
+            Video Theme
+          </label>
           <select
             value={form.theme}
             onChange={(e) => update("theme", e.target.value)}
@@ -1577,7 +1383,7 @@ function PlanningTab({
           >
             <option value="">— Theme —</option>
             {themes.map((t) => (
-              <option key={t.value} value={t.value}>{t.emoji ? `${t.emoji} ${t.label}` : t.label}</option>
+              <option key={t.value} value={t.value}>{t.label}</option>
             ))}
             {form.theme && !themes.find((t) => t.value === form.theme) && (
               <option value={form.theme}>{form.theme}</option>
@@ -1603,7 +1409,7 @@ function PlanningTab({
           onClick={onGenerateResearchPrompt}
           style={{
             fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
-            textTransform: "uppercase", color: "var(--abv-azure)",
+            textTransform: "uppercase", color: "var(--abv-ai-tools)",
           }}
         >
           {researchPromptCopied ? "✓ Copied" : researchPromptError ? researchPromptError : "Copy prompt"}
@@ -1726,7 +1532,7 @@ function DriveFolderSection({ planId }: { planId: string }) {
   return (
     <Panel title="Drive folder" headerRight={
       folderUrl ? (
-        <a href={folderUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}>
+        <a href={folderUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--abv-ai-tools)", fontWeight: 600 }}>
           Open ↗
         </a>
       ) : null
@@ -1766,7 +1572,7 @@ function DriveFolderSection({ planId }: { planId: string }) {
                 className="hover:bg-[var(--abv-bg-warm)]"
               >
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
-                <span style={{ color: "var(--abv-azure)", flexShrink: 0 }}>↗</span>
+                <span style={{ color: "var(--abv-ai-tools)", flexShrink: 0 }}>↗</span>
               </a>
             ))}
           </div>
@@ -1798,7 +1604,8 @@ function DateRow({
         onBlur={onBlur}
         style={{
           fontFamily: "var(--font-mono, ui-monospace)", fontSize: 11,
-          border: "1px solid var(--abv-border)", borderRadius: 6, padding: "3px 6px",
+          fontVariantNumeric: "tabular-nums",
+          border: "1px solid var(--abv-border-strong)", borderRadius: 8, padding: "3px 6px",
         }}
       />
     </div>

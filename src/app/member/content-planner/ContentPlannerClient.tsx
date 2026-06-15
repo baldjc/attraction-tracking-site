@@ -245,23 +245,23 @@ export default function ContentPlannerClient({
             <button
               onClick={handleQuickAdd}
               disabled={addingPlan}
-              className="inline-flex items-center gap-1.5 px-4 py-[9px] rounded-full text-[12px] font-semibold uppercase tracking-[0.04em] bg-white text-[var(--abv-text)] hover:bg-[var(--abv-ink)] hover:text-white transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-[18px] py-[10px] rounded-full text-[13px] font-bold bg-white text-[var(--abv-text)] hover:bg-[var(--abv-ink)] hover:text-white transition-colors disabled:opacity-50"
               style={{ border: "1.5px solid var(--abv-ink)" }}
             >
-              <PlusIcon className="w-[13px] h-[13px]" />
-              {addingPlan ? "Adding…" : "Add Blank Video"}
+              <PlusIcon className="w-[14px] h-[14px]" />
+              {addingPlan ? "Adding…" : "Add blank video"}
             </button>
           )}
           {!isAdminView && aiWizardEnabled && (
             <Link
               href="/member/jarvis?thread=new&browse=1"
-              className="inline-flex items-center gap-1.5 px-[18px] py-[11px] rounded-full text-[13px] font-bold text-[var(--abv-ink)] transition-colors"
+              className="inline-flex items-center gap-1.5 px-[18px] py-[10px] rounded-full text-[13px] font-bold text-[var(--abv-ink)] transition-colors"
               style={{ background: "var(--abv-azure)" }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#5BCEFF")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "var(--abv-azure)")}
             >
               <SparklesIcon className="w-[14px] h-[14px]" />
-              Browse Content Ideas
+              Browse content ideas
             </Link>
           )}
         </div>
@@ -291,7 +291,7 @@ export default function ContentPlannerClient({
                   selected
                     ? "bg-[var(--abv-ink)] text-white"
                     : "bg-transparent text-[var(--abv-text-muted)] hover:bg-[var(--abv-bg-warm)] hover:text-[var(--abv-text)]"
-                }`}
+                } ${count === 0 && !selected ? "opacity-[0.45]" : ""}`}
               >
                 <span
                   className="inline-block w-[7px] h-[7px] rounded-full"
@@ -299,8 +299,8 @@ export default function ContentPlannerClient({
                 />
                 {s}
                 <span
-                  className={`font-mono text-[10.5px] px-[7px] py-[2px] rounded-full font-semibold ml-0.5 ${
-                    selected ? "text-white/85" : "text-[var(--abv-text-dim)]"
+                  className={`font-mono text-[11px] px-[7px] py-[2px] rounded-full font-semibold ml-0.5 ${
+                    selected ? "text-white/85" : "text-[var(--abv-text-muted)]"
                   }`}
                   style={{
                     background: selected ? "rgba(255,255,255,0.15)" : "var(--abv-bg-warm)",
