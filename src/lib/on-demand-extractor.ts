@@ -41,7 +41,7 @@ import {
   type ScriptDataResult,
 } from "@/lib/script-data-resolver";
 
-const SONNET_MODEL = "claude-sonnet-4-20250514";
+const SONNET_MODEL = "claude-sonnet-4-5";
 const SAMPLE_FLOOR = 10;
 const DEFAULT_MAX_COST_USD = 1.0;
 /**

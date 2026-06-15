@@ -32,7 +32,7 @@ import {
   type PropertyTypeFocus,
 } from "@/lib/property-type-focus";
 
-const SONNET_MODEL = "claude-sonnet-4-20250514";
+const SONNET_MODEL = "claude-sonnet-4-5";
 const MAX_REPROMPTS = 2;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

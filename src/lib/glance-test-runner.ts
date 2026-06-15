@@ -48,7 +48,7 @@ export async function runGlanceTestForVideo(
   ];
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5",
     max_tokens: 2048,
     system: TITLE_THUMBNAIL_ANALYZER_PROMPT,
     messages: [{ role: "user", content: userContent }],

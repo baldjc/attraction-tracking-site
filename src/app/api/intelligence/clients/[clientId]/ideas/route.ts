@@ -75,7 +75,7 @@ Respond in valid JSON only:
 
   try {
     const res = await ai.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 1500,
       messages: [{ role: "user", content: prompt }],
     });

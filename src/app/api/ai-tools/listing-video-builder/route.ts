@@ -8,7 +8,7 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-5";
 
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();

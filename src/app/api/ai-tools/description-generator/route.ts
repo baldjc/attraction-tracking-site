@@ -60,12 +60,19 @@ ${boilerplateText || "No boilerplate saved — skip Section 4."}
 TRANSCRIPT:
 ${transcript}`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2048,
-    system: DESCRIPTION_GENERATOR_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
+  let response: Anthropic.Messages.Message;
+  try {
+    response = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 2048,
+      system: DESCRIPTION_GENERATOR_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+  } catch (err) {
+    console.error("[description-generator] generation failed:", err);
+    const detail = err instanceof Error ? err.message : "AI generation failed";
+    return NextResponse.json({ error: "Generation failed", detail }, { status: 500 });
+  }
 
   await logUsage(
     user.id,

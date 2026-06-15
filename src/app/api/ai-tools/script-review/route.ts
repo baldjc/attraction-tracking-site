@@ -9,7 +9,7 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-5";
 
 async function getSystemPromptForMode(userId: string, mode: "analysis" | "chat", avatar: string): Promise<string> {
   const key = mode === "analysis" ? "script_review_analysis_prompt" : "script_review_chat_prompt";

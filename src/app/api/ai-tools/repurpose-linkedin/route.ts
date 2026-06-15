@@ -79,12 +79,19 @@ ${trimmedFeedback}
 """`
     : systemPrompt;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 8192,
-    system: finalSystemPrompt,
-    messages: [{ role: "user", content: `Video Title (use as article headline): "${title}"\n\nTranscript:\n${transcript}\n\nWrite the full LinkedIn article as JSON.` }],
-  });
+  let response: Anthropic.Messages.Message;
+  try {
+    response = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 8192,
+      system: finalSystemPrompt,
+      messages: [{ role: "user", content: `Video Title (use as article headline): "${title}"\n\nTranscript:\n${transcript}\n\nWrite the full LinkedIn article as JSON.` }],
+    });
+  } catch (err) {
+    console.error("[repurpose-linkedin] generation failed:", err);
+    const detail = err instanceof Error ? err.message : "AI generation failed";
+    return NextResponse.json({ error: "Generation failed", detail }, { status: 500 });
+  }
 
   const rawText = response.content[0].type === "text" ? response.content[0].text : "{}";
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");

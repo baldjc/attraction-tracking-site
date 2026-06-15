@@ -34,7 +34,7 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const SONNET_MODEL = "claude-sonnet-4-20250514";
+const SONNET_MODEL = "claude-sonnet-4-5";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 interface ValidationResponse {

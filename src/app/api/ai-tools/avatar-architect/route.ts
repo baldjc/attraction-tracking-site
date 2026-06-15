@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   //   - hasBuild=false AND msgCount >= 14 (likely the Phase 3 build turn) → Sonnet, 8192 tokens
   //   - everything else (early coaching turns) → Haiku, 2000 tokens
   const isBuildTurn = !hasBuild && msgCount >= 14;
-  const model = isBuildTurn ? "claude-sonnet-4-20250514" : "claude-haiku-4-5";
+  const model = isBuildTurn ? "claude-sonnet-4-5" : "claude-haiku-4-5";
   const maxTokens = isBuildTurn ? 8192 : hasBuild ? 3000 : 2000;
 
   console.log(

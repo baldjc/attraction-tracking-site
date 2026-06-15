@@ -92,7 +92,7 @@ Return ONLY valid JSON array.
 Transcript: ${m.transcript.substring(0, 15000)}`;
 
           const response = await client.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-4-5",
             max_tokens: 6000,
             messages: [{ role: "user", content: prompt }],
           });

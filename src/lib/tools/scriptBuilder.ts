@@ -125,7 +125,7 @@ export interface RegenerationBrief {
 // Tuning constants (overridable via BuildScriptParams)
 // ───────────────────────────────────────────────────────────────────────
 
-const SONNET_MODEL = "claude-sonnet-4-20250514";
+const SONNET_MODEL = "claude-sonnet-4-5";
 const MAX_REPROMPTS = 2;
 const MAX_OUTPUT_TOKENS = 12000;
 // Time budgeting — see the route's original notes. Keep generation strictly

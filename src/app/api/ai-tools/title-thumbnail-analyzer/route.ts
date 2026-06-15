@@ -107,7 +107,7 @@ Your role: Help the member refine titles, create variations, adapt for different
     );
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 2048,
       system: systemPrompt,
       messages: apiMessages,
@@ -175,7 +175,7 @@ Your role: Help the member refine titles, create variations, adapt for different
     : analysisText;
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5",
     max_tokens: 4096,
     system: finalSystemPrompt,
     messages: [{ role: "user", content: userContent }],
