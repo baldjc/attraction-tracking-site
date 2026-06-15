@@ -475,7 +475,7 @@ export default function ContentEditorClient({
     linkedCampaignId: initialPlan.linkedCampaignId ?? "",
   }));
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<"planning" | "connecting" | "tools" | "publish">("planning");
+  const [activeTab, setActiveTab] = useState<"planning" | "packaging" | "tools" | "publishing">("planning");
   const [lineage, setLineage] = useState<Lineage | null>(null);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -597,7 +597,7 @@ export default function ContentEditorClient({
     // Thumbnail variants / winner are mutated through their own routes and kept
     // fresh in `plan` via patchPlan. This PUT never touches them, so preserve the
     // locally-held values instead of letting a possibly-stale autosave response
-    // body overwrite them (which would make PublishTab re-hydrate stale on remount).
+    // body overwrite them (which would make PackagingTab re-hydrate stale on remount).
     if (data?.plan) {
       setPlan((prev) => ({
         ...(data.plan as ContentPlan),
@@ -623,7 +623,7 @@ export default function ContentEditorClient({
   // Merge server-confirmed fields back into the held plan so they survive a
   // tab switch (each tab unmounts/remounts and re-reads from `plan`). Thumbnail
   // uploads/scores/winner picks write straight to the DB via their own routes,
-  // so without this the parent `plan` would go stale and the PublishTab would
+  // so without this the parent `plan` would go stale and the PackagingTab would
   // re-hydrate empty after leaving and returning to the tab.
   const patchPlan = useCallback((partial: Record<string, unknown>) => {
     setPlan((p) => ({ ...p, ...partial } as ContentPlan));
@@ -886,7 +886,17 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
           />
 
           {/* RIGHT: sidebar */}
-          <aside style={{ position: isMobile ? "static" : "sticky", top: 16, display: "grid", gap: 12 }}>
+          <aside
+            style={{
+              position: isMobile ? "static" : "sticky",
+              top: 16,
+              alignSelf: "start",
+              display: "grid",
+              gap: 12,
+              maxHeight: isMobile ? undefined : "calc(100vh - 32px)",
+              overflowY: isMobile ? undefined : "auto",
+            }}
+          >
             <TabStrip
               active={activeTab}
               onChange={setActiveTab}
@@ -896,10 +906,14 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
               <PlanningTab
                 planId={planId}
                 canUseDrive={canUseDrive}
+                plan={plan}
                 form={form}
                 update={update}
                 statusOptions={statusOptions}
                 themes={themes}
+                campaigns={campaigns}
+                bingeOptions={bingeOptions}
+                loadBingeOptions={loadBingeOptions}
                 showEditDue={showEditDue}
                 onDelete={handleDelete}
                 onBlur={() => void flush()}
@@ -914,15 +928,14 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
               />
             )}
 
-            {activeTab === "connecting" && (
-              <ConnectingTab
+            {activeTab === "packaging" && (
+              <PackagingTab
+                planId={planId}
                 plan={plan}
                 form={form}
                 update={update}
-                campaigns={campaigns}
-                bingeOptions={bingeOptions}
-                loadBingeOptions={loadBingeOptions}
                 onBlur={() => void flush()}
+                onPersist={patchPlan}
               />
             )}
 
@@ -930,14 +943,12 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
               <ToolsTab planId={planId} lineage={lineage} />
             )}
 
-            {activeTab === "publish" && (
-              <PublishTab
+            {activeTab === "publishing" && (
+              <PublishingTab
                 planId={planId}
-                plan={plan}
                 form={form}
                 update={update}
                 onBlur={() => void flush()}
-                onPersist={patchPlan}
               />
             )}
           </aside>
@@ -1117,13 +1128,13 @@ function TabStrip({
   active, onChange,
 }: {
   active: string;
-  onChange: (t: "planning" | "connecting" | "tools" | "publish") => void;
+  onChange: (t: "planning" | "packaging" | "tools" | "publishing") => void;
 }) {
-  const tabs: Array<{ id: "planning" | "connecting" | "tools" | "publish"; label: string }> = [
+  const tabs: Array<{ id: "planning" | "packaging" | "tools" | "publishing"; label: string }> = [
     { id: "planning", label: "Planning" },
-    { id: "connecting", label: "Binging" },
+    { id: "packaging", label: "Packaging" },
     { id: "tools", label: "Tools" },
-    { id: "publish", label: "Publish" },
+    { id: "publishing", label: "Publishing" },
   ];
   return (
     <div style={{
@@ -1199,17 +1210,22 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function PlanningTab({
-  planId, canUseDrive, form, update, statusOptions, themes, showEditDue,
+  planId, canUseDrive, plan, form, update, statusOptions, themes,
+  campaigns, bingeOptions, loadBingeOptions, showEditDue,
   onDelete, onBlur,
   onGenerateResearchPrompt, researchPromptCopied, researchPromptError,
   statusSelectRef, shootDateRef, editDueDateRef, publishDateRef, researchNotesRef,
 }: {
   planId: string;
   canUseDrive: boolean;
+  plan: ContentPlan;
   form: Form;
   update: <K extends keyof Form>(k: K, v: Form[K]) => void;
   statusOptions: string[];
   themes: Theme[];
+  campaigns: Campaign[];
+  bingeOptions: BingeOption[];
+  loadBingeOptions: () => void;
   showEditDue: boolean;
   onDelete: () => void;
   onBlur: () => void;
@@ -1222,6 +1238,12 @@ function PlanningTab({
   publishDateRef?: React.RefObject<HTMLInputElement | null>;
   researchNotesRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
+  const selectedCampaign = campaigns.find((c) => c.id === form.linkedCampaignId) ?? null;
+  const selectedBinge = (() => {
+    const id = form.bingeVideoId;
+    if (!id) return null;
+    return bingeOptions.find((o) => o.id === id) ?? plan.bingeVideo ?? null;
+  })();
   return (
     <>
       <Panel title="Status & dates">
@@ -1293,6 +1315,23 @@ function PlanningTab({
         } />
       </Panel>
 
+      <Panel title="Notes & Thoughts">
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.thoughts}
+            onChange={(e) => update("thoughts", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Your raw thoughts, hooks, angles…"
+            style={{
+              width: "100%", minHeight: 90, padding: 10,
+              border: "1px solid var(--abv-border)", borderRadius: 6,
+              fontSize: 12, lineHeight: 1.5, resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </Panel>
+
       <Panel title="Research notes" headerRight={
         <button
           onClick={onGenerateResearchPrompt}
@@ -1321,20 +1360,73 @@ function PlanningTab({
         </div>
       </Panel>
 
-      <Panel title="Thoughts & talking points">
+      <Panel title="Binge target">
         <div style={{ padding: 12 }}>
-          <textarea
-            value={form.thoughts}
-            onChange={(e) => update("thoughts", e.target.value)}
+          <select
+            value={form.bingeVideoId}
+            onChange={(e) => update("bingeVideoId", e.target.value)}
+            onFocus={loadBingeOptions}
             onBlur={onBlur}
-            placeholder="Your raw thoughts, hooks, angles…"
-            style={{
-              width: "100%", minHeight: 90, padding: 10,
-              border: "1px solid var(--abv-border)", borderRadius: 6,
-              fontSize: 12, lineHeight: 1.5, resize: "vertical",
-              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
-            }}
-          />
+            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
+          >
+            <option value="">— Select a video to binge to —</option>
+            {selectedBinge && !bingeOptions.find((o) => o.id === selectedBinge.id) && (
+              <option value={selectedBinge.id}>{selectedBinge.title}</option>
+            )}
+            {bingeOptions.map((o) => (
+              <option key={o.id} value={o.id}>{o.title}</option>
+            ))}
+          </select>
+        </div>
+      </Panel>
+
+      <Panel title="Binge connections">
+        <div style={{ padding: 14, fontSize: 12, color: "var(--abv-text-muted)" }}>
+          {plan.bingedFromList && plan.bingedFromList.length > 0 ? (
+            <>
+              <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Binging from</div>
+              {plan.bingedFromList.map((b) => (
+                <div key={b.id} style={{ marginBottom: 8, color: "var(--abv-text)" }}>{b.title}</div>
+              ))}
+            </>
+          ) : null}
+          {plan.bingeVideo && (
+            <>
+              <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginTop: 8, marginBottom: 6 }}>Binging to</div>
+              <div style={{ color: "var(--abv-text)" }}>{plan.bingeVideo.title}</div>
+            </>
+          )}
+          {!plan.bingeVideo && (!plan.bingedFromList || plan.bingedFromList.length === 0) && (
+            <span>No binge connections yet.</span>
+          )}
+        </div>
+      </Panel>
+
+      <Panel title="Lead magnet">
+        <div style={{ padding: 12 }}>
+          <select
+            value={form.linkedCampaignId}
+            onChange={(e) => update("linkedCampaignId", e.target.value)}
+            onBlur={onBlur}
+            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
+          >
+            <option value="">— None —</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          {campaigns.length === 0 && (
+            <p style={{ marginTop: 6, fontSize: 11, fontStyle: "italic", color: "var(--abv-text-muted)" }}>
+              No campaigns yet — create one on the{" "}
+              <a href="/member/campaigns" style={{ color: "var(--abv-azure)", textDecoration: "underline" }}>Campaigns page</a>.
+            </p>
+          )}
+          {selectedCampaign && !selectedCampaign.pitchOneLiner && (
+            <p style={{ marginTop: 6, fontSize: 11, fontStyle: "italic", color: "#B45309" }}>
+              No calibrated pitch defined.{" "}
+              <a href={`/member/campaigns/${selectedCampaign.id}`} style={{ textDecoration: "underline" }}>Edit detail</a>.
+            </p>
+          )}
         </div>
       </Panel>
 
@@ -1518,98 +1610,6 @@ function QuickBtn({ children, onClick, danger }: { children: React.ReactNode; on
   );
 }
 
-function ConnectingTab({
-  plan, form, update, campaigns, bingeOptions, loadBingeOptions, onBlur,
-}: {
-  plan: ContentPlan;
-  form: Form;
-  update: <K extends keyof Form>(k: K, v: Form[K]) => void;
-  campaigns: Campaign[];
-  bingeOptions: BingeOption[];
-  loadBingeOptions: () => void;
-  onBlur: () => void;
-}) {
-  const selectedCampaign = campaigns.find((c) => c.id === form.linkedCampaignId) ?? null;
-  const selectedBinge = (() => {
-    const id = form.bingeVideoId;
-    if (!id) return null;
-    return bingeOptions.find((o) => o.id === id) ?? plan.bingeVideo ?? null;
-  })();
-  return (
-    <>
-      <Panel title="Binge target">
-        <div style={{ padding: 12 }}>
-          <select
-            value={form.bingeVideoId}
-            onChange={(e) => update("bingeVideoId", e.target.value)}
-            onFocus={loadBingeOptions}
-            onBlur={onBlur}
-            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
-          >
-            <option value="">— Select a video to binge to —</option>
-            {selectedBinge && !bingeOptions.find((o) => o.id === selectedBinge.id) && (
-              <option value={selectedBinge.id}>{selectedBinge.title}</option>
-            )}
-            {bingeOptions.map((o) => (
-              <option key={o.id} value={o.id}>{o.title}</option>
-            ))}
-          </select>
-        </div>
-      </Panel>
-
-      <Panel title="Binge connections">
-        <div style={{ padding: 14, fontSize: 12, color: "var(--abv-text-muted)" }}>
-          {plan.bingedFromList && plan.bingedFromList.length > 0 ? (
-            <>
-              <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Binging from</div>
-              {plan.bingedFromList.map((b) => (
-                <div key={b.id} style={{ marginBottom: 8, color: "var(--abv-text)" }}>{b.title}</div>
-              ))}
-            </>
-          ) : null}
-          {plan.bingeVideo && (
-            <>
-              <div style={{ fontSize: 10, textTransform: "uppercase", fontWeight: 700, marginTop: 8, marginBottom: 6 }}>Binging to</div>
-              <div style={{ color: "var(--abv-text)" }}>{plan.bingeVideo.title}</div>
-            </>
-          )}
-          {!plan.bingeVideo && (!plan.bingedFromList || plan.bingedFromList.length === 0) && (
-            <span>No binge connections yet.</span>
-          )}
-        </div>
-      </Panel>
-
-      <Panel title="Lead magnet campaign">
-        <div style={{ padding: 12 }}>
-          <select
-            value={form.linkedCampaignId}
-            onChange={(e) => update("linkedCampaignId", e.target.value)}
-            onBlur={onBlur}
-            style={{ width: "100%", fontSize: 12, padding: "6px 8px", border: "1px solid var(--abv-border)", borderRadius: 6 }}
-          >
-            <option value="">— None —</option>
-            {campaigns.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          {campaigns.length === 0 && (
-            <p style={{ marginTop: 6, fontSize: 11, fontStyle: "italic", color: "var(--abv-text-muted)" }}>
-              No campaigns yet — create one on the{" "}
-              <a href="/member/campaigns" style={{ color: "var(--abv-azure)", textDecoration: "underline" }}>Campaigns page</a>.
-            </p>
-          )}
-          {selectedCampaign && !selectedCampaign.pitchOneLiner && (
-            <p style={{ marginTop: 6, fontSize: 11, fontStyle: "italic", color: "#B45309" }}>
-              No calibrated pitch defined.{" "}
-              <a href={`/member/campaigns/${selectedCampaign.id}`} style={{ textDecoration: "underline" }}>Edit detail</a>.
-            </p>
-          )}
-        </div>
-      </Panel>
-    </>
-  );
-}
-
 function MoreItem({ children, onClick, danger }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
   return (
     <button
@@ -1630,7 +1630,6 @@ function ToolsTab({ planId, lineage }: { planId: string; lineage: Lineage | null
     { icon: "✅", name: "Script Review", desc: "Score this script before you film", href: `/member/content-tools/script-review?planId=${planId}`, primary: true },
     { icon: "📝", name: "ARC Builder", desc: "Rebuild from outline", href: `/member/content-tools/arc-script-builder?planId=${planId}` },
     { icon: "🔬", name: "Title & Thumb", desc: "A/B test the hook visually", href: `/member/content-tools/title-thumbnail-analyzer?planId=${planId}` },
-    { icon: "⚙️", name: "Content Engine", desc: "Spin variations", href: `/member/content-tools/content-engine?planId=${planId}` },
     { icon: "🎯", name: "Avatar Architect", desc: "Recheck against your avatar", href: `/member/content-tools/avatar-architect` },
     { icon: "🔁", name: "Repurpose", desc: "One video into shorts, threads, emails", href: `/member/content-tools/repurpose-content?planId=${planId}` },
     { icon: "📄", name: "Description Generator", desc: "YouTube descriptions, ready to paste", href: `/member/content-tools/description-generator?planId=${planId}` },
@@ -1706,7 +1705,7 @@ const YT_DESC_MAX = 5000;
 const PINNED_MAX = 1000;
 const MAX_THUMBS = 3;
 
-function PublishTab({
+function PackagingTab({
   planId, plan, form, update, onBlur, onPersist,
 }: {
   planId: string;
@@ -1726,7 +1725,6 @@ function PublishTab({
   const [uploading, setUploading] = useState(false);
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [thumbError, setThumbError] = useState<string | null>(null);
-  const [drafting, setDrafting] = useState(false);
   const [channel, setChannel] = useState<{ name: string | null; avatar: string | null }>({
     name: null,
     avatar: null,
@@ -1881,53 +1879,22 @@ function PublishTab({
     a.remove();
   };
 
-  const handleDraftComment = async () => {
-    setDrafting(true);
-    try {
-      const res = await fetch(`${apiBase}/${planId}/pinned-comment`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Generation failed");
-      update("pinnedComment", String(data.comment ?? "").slice(0, PINNED_MAX));
-      onBlur();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Generation failed");
-    } finally {
-      setDrafting(false);
-    }
-  };
-
-  const ytLen = form.youtubeDescription.length;
-  const pinnedLen = form.pinnedComment.length;
-
   return (
     <>
-      <Panel title="YouTube description" headerRight={
-        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: ytLen > YT_DESC_MAX ? "var(--abv-leads, #DC2626)" : "var(--abv-text-muted)" }}>{ytLen} / {YT_DESC_MAX}</span>
-      }>
+      <Panel title="Title ideas">
         <div style={{ padding: 12 }}>
           <textarea
-            value={form.youtubeDescription}
-            onChange={(e) => update("youtubeDescription", e.target.value)}
+            value={form.thumbnailWords}
+            onChange={(e) => update("thumbnailWords", e.target.value)}
             onBlur={onBlur}
-            placeholder="Write or paste the YouTube description for this video…"
-            rows={6}
+            placeholder="Title and thumbnail ideas — hooks, angles, word options…"
             style={{
-              width: "100%", resize: "vertical", padding: 10, fontSize: 12,
-              lineHeight: 1.5, border: "1px solid var(--abv-border)", borderRadius: 6,
-              color: "var(--abv-text)", background: "white", fontFamily: "inherit",
+              width: "100%", minHeight: 90, padding: 10,
+              border: "1px solid var(--abv-border)", borderRadius: 6,
+              fontSize: 12, lineHeight: 1.5, resize: "vertical",
+              fontFamily: "var(--font-sans, ui-sans-serif)", boxSizing: "border-box",
             }}
           />
-        </div>
-        <div style={{
-          padding: "8px 14px", borderTop: "1px solid var(--abv-border)",
-          display: "flex", justifyContent: "flex-end",
-        }}>
-          <Link
-            href={`/member/content-tools/description-generator?planId=${planId}`}
-            style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}
-          >
-            ✍ Generate with AI
-          </Link>
         </div>
       </Panel>
 
@@ -2049,6 +2016,71 @@ function PublishTab({
               </QuickBtn>
             </div>
           )}
+        </div>
+      </Panel>
+
+    </>
+  );
+}
+
+function PublishingTab({
+  planId, form, update, onBlur,
+}: {
+  planId: string;
+  form: Form;
+  update: <K extends keyof Form>(k: K, v: Form[K]) => void;
+  onBlur: () => void;
+}) {
+  const apiBase = "/api/member/content-plans";
+  const [drafting, setDrafting] = useState(false);
+
+  const handleDraftComment = async () => {
+    setDrafting(true);
+    try {
+      const res = await fetch(`${apiBase}/${planId}/pinned-comment`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Generation failed");
+      update("pinnedComment", String(data.comment ?? "").slice(0, PINNED_MAX));
+      onBlur();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Generation failed");
+    } finally {
+      setDrafting(false);
+    }
+  };
+
+  const ytLen = form.youtubeDescription.length;
+  const pinnedLen = form.pinnedComment.length;
+
+  return (
+    <>
+      <Panel title="YouTube description" headerRight={
+        <span style={{ fontFamily: "var(--font-mono, ui-monospace)", fontSize: 9, color: ytLen > YT_DESC_MAX ? "var(--abv-leads, #DC2626)" : "var(--abv-text-muted)" }}>{ytLen} / {YT_DESC_MAX}</span>
+      }>
+        <div style={{ padding: 12 }}>
+          <textarea
+            value={form.youtubeDescription}
+            onChange={(e) => update("youtubeDescription", e.target.value)}
+            onBlur={onBlur}
+            placeholder="Write or paste the YouTube description for this video…"
+            rows={6}
+            style={{
+              width: "100%", resize: "vertical", padding: 10, fontSize: 12,
+              lineHeight: 1.5, border: "1px solid var(--abv-border)", borderRadius: 6,
+              color: "var(--abv-text)", background: "white", fontFamily: "inherit",
+            }}
+          />
+        </div>
+        <div style={{
+          padding: "8px 14px", borderTop: "1px solid var(--abv-border)",
+          display: "flex", justifyContent: "flex-end",
+        }}>
+          <Link
+            href={`/member/content-tools/description-generator?planId=${planId}`}
+            style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}
+          >
+            ✍ Generate with AI
+          </Link>
         </div>
       </Panel>
 
