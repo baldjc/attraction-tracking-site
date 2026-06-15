@@ -41,12 +41,12 @@ import { getFeatureFlags } from "@/lib/feature-flags";
 import { getCostCapStatus, isHardCapExempt } from "@/lib/ai-tool-cost";
 import { loadMarketConfigSummary } from "@/lib/content-engine-context";
 import { getNeighbourhoodContext } from "@/lib/get-neighbourhood-context";
+import { HAIKU_MODEL } from "@/lib/ai-models";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Oct 2025 pricing — same constants used by knowledge-base-parser.ts.
-const HAIKU_MODEL = "claude-haiku-4-5";
 const HAIKU_INPUT_COST_PER_TOKEN = 0.000001;
 const HAIKU_OUTPUT_COST_PER_TOKEN = 0.000005;
 const MAX_OUTPUT_TOKENS = 2000;

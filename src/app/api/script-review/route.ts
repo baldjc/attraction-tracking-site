@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Anthropic from "@anthropic-ai/sdk";
 import { SCRIPT_REVIEW_PROMPT } from "@/lib/audit-engine";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -47,7 +48,7 @@ CRITICAL: You MUST respond with ONLY a valid JSON object. No markdown, no code f
   console.log(`[script-review] Starting analysis for ${memberName}: "${videoTitle}"`);
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-5",
+    model: SONNET_MODEL,
     max_tokens: 8000,
     system: SCRIPT_REVIEW_PROMPT,
     messages: [{ role: "user", content: userMessage }],

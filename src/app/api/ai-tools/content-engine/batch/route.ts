@@ -5,6 +5,7 @@ import { logUsage } from "@/lib/ai-tool-cost";
 import { buildBatchSystemPrompt, CONTENT_ENGINE_DEFAULT_ADDENDUM, getActiveThemeEnforceBuySide } from "@/lib/content-engine-prompts";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   let response: Anthropic.Message;
   try {
     response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 4096,
       temperature: 1,
       system: systemPrompt,

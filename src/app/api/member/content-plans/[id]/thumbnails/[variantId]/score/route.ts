@@ -5,6 +5,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
 import { getCostCapStatus, logUsage } from "@/lib/ai-tool-cost";
 import { fetchDriveFileBytes } from "@/lib/google-drive";
+import { SONNET_MODEL } from "@/lib/ai-models";
 import {
   parseVariants,
   getThumbnailBytes,
@@ -78,7 +79,7 @@ export async function POST(
   let response: Anthropic.Message;
   try {
     response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 2048,
       system: basePrompt,
       messages: [

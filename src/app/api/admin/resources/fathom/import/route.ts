@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Anthropic from "@anthropic-ai/sdk";
 import { PRINCIPLES } from "../../lessons/route";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -147,7 +148,7 @@ Transcript (first 15000 chars):
 ${transcript.substring(0, 15000)}`;
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-5",
+    model: SONNET_MODEL,
     max_tokens: 6000,
     messages: [{ role: "user", content: prompt }],
   });

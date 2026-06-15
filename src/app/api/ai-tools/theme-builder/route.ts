@@ -4,6 +4,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { THEME_BUILDER_DEFAULT_PROMPT } from "@/lib/theme-builder-prompt";
 import { checkCostCap, logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -83,7 +84,7 @@ ${docToUse}`;
 
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 8192,
       system: systemPrompt,
       messages,

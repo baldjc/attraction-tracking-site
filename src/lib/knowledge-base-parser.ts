@@ -13,8 +13,8 @@
 //      single-call path did.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { HAIKU_MODEL } from "@/lib/ai-models";
 
-const HAIKU_MODEL = "claude-haiku-4-5";
 // Haiku pricing (Oct 2025): $1 / 1M input, $5 / 1M output
 const HAIKU_INPUT_COST_PER_TOKEN = 0.000001;
 const HAIKU_OUTPUT_COST_PER_TOKEN = 0.000005;

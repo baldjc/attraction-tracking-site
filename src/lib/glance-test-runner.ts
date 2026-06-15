@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
 import { logUsage } from "@/lib/ai-tool-cost";
 import { resolveUsersForChannel } from "@/lib/reviewer-channel-resolver";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -48,7 +49,7 @@ export async function runGlanceTestForVideo(
   ];
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-5",
+    model: SONNET_MODEL,
     max_tokens: 2048,
     system: TITLE_THUMBNAIL_ANALYZER_PROMPT,
     messages: [{ role: "user", content: userContent }],

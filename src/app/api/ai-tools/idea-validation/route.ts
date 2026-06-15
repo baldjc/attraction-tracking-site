@@ -25,6 +25,7 @@ import {
 } from "@/lib/content-engine-context";
 import { parseJsonResponse } from "@/lib/content-engine-validation";
 import { IDEA_VALIDATION_SYSTEM_PROMPT } from "@/lib/idea-validation-prompt";
+import { SONNET_MODEL } from "@/lib/ai-models";
 import {
   buildFocusConstraintBlock,
   parsePropertyTypeFocus,
@@ -34,7 +35,6 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const SONNET_MODEL = "claude-sonnet-4-5";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 interface ValidationResponse {

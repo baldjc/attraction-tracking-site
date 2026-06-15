@@ -27,12 +27,12 @@ import {
   type RotationSlotKey,
 } from "@/lib/content-engine-validation";
 import { CONTENT_ENGINE_MODE_PROMPT } from "@/lib/content-engine-mode-prompt";
+import { SONNET_MODEL } from "@/lib/ai-models";
 import {
   buildFocusConstraintBlock,
   type PropertyTypeFocus,
 } from "@/lib/property-type-focus";
 
-const SONNET_MODEL = "claude-sonnet-4-5";
 const MAX_REPROMPTS = 2;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

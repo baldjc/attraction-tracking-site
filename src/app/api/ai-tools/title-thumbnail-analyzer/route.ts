@@ -5,6 +5,7 @@ import { TITLE_THUMBNAIL_ANALYZER_PROMPT } from "@/lib/audit-engine";
 import { logUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -107,7 +108,7 @@ Your role: Help the member refine titles, create variations, adapt for different
     );
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 2048,
       system: systemPrompt,
       messages: apiMessages,
@@ -175,7 +176,7 @@ Your role: Help the member refine titles, create variations, adapt for different
     : analysisText;
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-5",
+    model: SONNET_MODEL,
     max_tokens: 4096,
     system: finalSystemPrompt,
     messages: [{ role: "user", content: userContent }],

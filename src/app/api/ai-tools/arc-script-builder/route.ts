@@ -5,6 +5,7 @@ import { checkCostCap, logUsage, getMonthlyUsage } from "@/lib/ai-tool-cost";
 import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
 import { emitPhase } from "@/lib/ai-thinking-sse";
+import { SONNET_MODEL } from "@/lib/ai-models";
 import {
   MOI_READING_RULES,
   FAILURE_RATE_RATIO_FRAMING,
@@ -12,7 +13,7 @@ import {
 } from "@/lib/script-data-honesty-rules";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = "claude-sonnet-4-5";
+const MODEL = SONNET_MODEL;
 
 const CURRENT_YEAR = new Date().getFullYear();
 

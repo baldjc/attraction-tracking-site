@@ -6,10 +6,11 @@ import prisma from "@/lib/prisma";
 import { getAvatarData } from "@/lib/avatar-utils";
 import { parseOverallScore } from "@/lib/score-badge";
 import { getFeatureFlags } from "@/lib/feature-flags";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL = "claude-sonnet-4-5";
+const MODEL = SONNET_MODEL;
 
 async function getSystemPromptForMode(userId: string, mode: "analysis" | "chat", avatar: string): Promise<string> {
   const key = mode === "analysis" ? "script_review_analysis_prompt" : "script_review_chat_prompt";

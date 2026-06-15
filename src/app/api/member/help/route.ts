@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { resolveUserFromSession } from "@/lib/session-utils";
 import prisma from "@/lib/prisma";
 import { HELP_SYSTEM_PROMPT } from "@/lib/help-knowledge-base";
+import { HAIKU_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: HAIKU_MODEL,
       max_tokens: 1024,
       system: HELP_SYSTEM_PROMPT,
       messages: claudeMessages,

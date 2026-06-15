@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { DEFAULT_LINKEDIN_PROMPT, applyLinkedInTokens } from "@/lib/repurpose-prompts";
 import { getAvatarData } from "@/lib/avatar-utils";
 import { maybeSavePlanArtifact } from "@/lib/save-plan-artifact";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -82,7 +83,7 @@ ${trimmedFeedback}
   let response: Anthropic.Messages.Message;
   try {
     response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 8192,
       system: finalSystemPrompt,
       messages: [{ role: "user", content: `Video Title (use as article headline): "${title}"\n\nTranscript:\n${transcript}\n\nWrite the full LinkedIn article as JSON.` }],

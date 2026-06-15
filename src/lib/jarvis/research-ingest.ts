@@ -15,8 +15,9 @@ import { lookup as dnsLookup } from "node:dns/promises";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { extractTextFromUpload } from "@/lib/knowledge-base-parser";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
-const RESEARCH_MODEL = "claude-sonnet-4-6";
+const RESEARCH_MODEL = SONNET_MODEL;
 
 // Caps. Each source's raw text is truncated to PER_SOURCE before extraction;
 // once the combined raw text crosses COMBINED, remaining items are reported as

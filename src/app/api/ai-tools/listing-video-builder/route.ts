@@ -6,9 +6,10 @@ import { getAvatarData } from "@/lib/avatar-utils";
 import { buildListingVideoPrompt } from "@/lib/listing-video-builder-prompt";
 import { getFeatureFlags } from "@/lib/feature-flags";
 import { isListingVideoBuilderTester } from "@/lib/listing-video-builder-access";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = "claude-sonnet-4-5";
+const MODEL = SONNET_MODEL;
 
 export async function POST(req: NextRequest) {
   const user = await resolveUserFromSession();

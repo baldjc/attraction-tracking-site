@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Anthropic from "@anthropic-ai/sdk";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -75,7 +76,7 @@ Respond in valid JSON only:
 
   try {
     const res = await ai.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 1500,
       messages: [{ role: "user", content: prompt }],
     });

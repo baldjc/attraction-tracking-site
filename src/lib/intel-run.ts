@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import prisma from "./prisma";
 import { syncChannel, computeOutlierMultiples } from "./intel-channel";
 import { getTranscript } from "./youtube";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const OUTLIER_THRESHOLD = 2.5;
@@ -55,7 +56,7 @@ Respond in this exact JSON format (no markdown, no commentary):
 
   try {
     const res = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 800,
       messages: [{ role: "user", content: prompt }],
     });

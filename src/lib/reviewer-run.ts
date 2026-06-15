@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { COACH_SYSTEM_PROMPT } from "@/lib/coach-voice";
 import { logUsage } from "@/lib/ai-tool-cost";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -158,7 +159,7 @@ export async function executeCoachRun(runId: string): Promise<void> {
     };
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: SONNET_MODEL,
       max_tokens: 4096,
       system: COACH_SYSTEM_PROMPT,
       messages: [

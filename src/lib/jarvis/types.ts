@@ -7,9 +7,10 @@
 // confirmation — see save.ts.
 
 import type { RotationSlotKey } from "@/lib/content-engine-validation";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 /** Orchestrator model — spec-required. buildScript keeps its own model. */
-export const JARVIS_MODEL = "claude-sonnet-4-6";
+export const JARVIS_MODEL = SONNET_MODEL;
 
 /** AIToolUsage.toolType tag for orchestrator-side token billing. */
 export const JARVIS_TOOL_TYPE = "jarvis";

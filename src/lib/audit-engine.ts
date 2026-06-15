@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { VideoWithTranscript } from "./youtube";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -1006,7 +1007,7 @@ CRITICAL INSTRUCTIONS:
 - The "video_breakdowns" array is MANDATORY. You MUST include one entry for EVERY one of the ${videos.length} videos listed above. Do NOT omit this field. Each entry needs: title, video_id, opening_analysis, insights_analysis, connection_analysis, strength, improvement, and dimension_scores.`;
 
   const response = await client.messages.create({
-    model: "claude-sonnet-4-5",
+    model: SONNET_MODEL,
     max_tokens: 8192,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],

@@ -12,8 +12,8 @@
 //   • The prompt is told, explicitly, to err toward "leave separate".
 
 import Anthropic from "@anthropic-ai/sdk";
+import { HAIKU_MODEL } from "@/lib/ai-models";
 
-const HAIKU_MODEL = "claude-haiku-4-5";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /** Pairs at or above this confidence may be auto-applied. Below → review. */

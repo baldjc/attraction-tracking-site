@@ -4,6 +4,7 @@ import { resolveUserFromSession } from "@/lib/session-utils";
 import { AVATAR_ARCHITECT_PROMPT } from "@/lib/audit-engine";
 import prisma from "@/lib/prisma";
 import { emitPhase } from "@/lib/ai-thinking-sse";
+import { SONNET_MODEL, HAIKU_MODEL } from "@/lib/ai-models";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   //   - hasBuild=false AND msgCount >= 14 (likely the Phase 3 build turn) → Sonnet, 8192 tokens
   //   - everything else (early coaching turns) → Haiku, 2000 tokens
   const isBuildTurn = !hasBuild && msgCount >= 14;
-  const model = isBuildTurn ? "claude-sonnet-4-5" : "claude-haiku-4-5";
+  const model = isBuildTurn ? SONNET_MODEL : HAIKU_MODEL;
   const maxTokens = isBuildTurn ? 8192 : hasBuild ? 3000 : 2000;
 
   console.log(

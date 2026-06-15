@@ -8,6 +8,7 @@ import {
   type AnyMappedField,
 } from "@/lib/market-config";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
+import { HAIKU_MODEL } from "@/lib/ai-models";
 import {
   detectStructuralBlock,
   collectWarnings,
@@ -531,7 +532,6 @@ export interface ColumnMappingSuggestion {
   raw: string;
 }
 
-const HAIKU_MODEL = "claude-haiku-4-5";
 
 // Haiku pricing (Oct 2025): $1 / 1M input, $5 / 1M output
 const HAIKU_INPUT_COST_PER_TOKEN = 0.000001;

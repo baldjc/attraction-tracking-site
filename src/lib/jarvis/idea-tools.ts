@@ -49,8 +49,8 @@ import {
 } from "@/lib/story-lead-fact-resolver";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
 import type { IdeaCardItem, IdeasState } from "@/lib/jarvis/types";
+import { SONNET_MODEL } from "@/lib/ai-models";
 
-const SONNET_MODEL = "claude-sonnet-4-5";
 const DEFAULT_THEME_IDEA_COUNT = 5;
 const THEME_FACTS_LIMIT = 120;
 const VALIDATE_FACTS_CAP = 50;

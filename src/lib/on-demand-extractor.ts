@@ -30,6 +30,7 @@ import { readUploadFile } from "@/lib/market-csv";
 import { parseCsvPreview } from "@/lib/market-csv";
 import type { ColumnMapping } from "@/lib/market-config";
 import { MetricFamily } from "@/generated/prisma/enums";
+import { SONNET_MODEL } from "@/lib/ai-models";
 import {
   estimateExtractionCostUsd,
   estimateExtractionTokens,
@@ -41,7 +42,6 @@ import {
   type ScriptDataResult,
 } from "@/lib/script-data-resolver";
 
-const SONNET_MODEL = "claude-sonnet-4-5";
 const SAMPLE_FLOOR = 10;
 const DEFAULT_MAX_COST_USD = 1.0;
 /**

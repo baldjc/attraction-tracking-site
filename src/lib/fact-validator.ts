@@ -64,6 +64,7 @@ import {
 import { NEEDS_REVIEW_PREFIX } from "@/lib/upload-error-messages";
 import type { MarketConfigShape } from "@/lib/market-config";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
+import { SONNET_MODEL } from "@/lib/ai-models";
 import {
   DEFAULT_METHODOLOGY,
   settingsEqual,
@@ -72,7 +73,6 @@ import {
   type MemberMethodologySettings,
 } from "@/lib/member-metric-settings";
 
-const SONNET_MODEL = "claude-sonnet-4-5";
 // Sonnet pricing: $3 / 1M input, $12 / 1M output.
 // Cached input is billed at 10% of the base input price ($0.30 / 1M).
 const SONNET_INPUT_COST_PER_TOKEN = 0.000003;
