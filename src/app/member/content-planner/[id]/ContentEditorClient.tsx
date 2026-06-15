@@ -418,48 +418,6 @@ function inlineTagStyle(tag: string): React.CSSProperties {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Workflow stepper — 7 steps with completion logic
-// ─────────────────────────────────────────────────────────────────────────────
-const STEPS = [
-  { key: "idea", label: "Idea" },
-  { key: "research", label: "Research" },
-  { key: "script", label: "Script" },
-  { key: "shoot", label: "Shoot" },
-  { key: "post", label: "Post-prod" },
-  { key: "publish", label: "Publish" },
-  { key: "review", label: "Review" },
-];
-
-function stepStatus(plan: ContentPlan): Record<string, "done" | "current" | "todo"> {
-  // Lightweight inference. "current" = the first non-done step. Everything
-  // earlier is "done", everything later is "todo".
-  const wc = wordCount(plan.script);
-  const done = {
-    idea: Boolean(plan.title && plan.title.trim().length > 0),
-    research: Boolean(plan.notes || plan.researchNotes),
-    script: wc >= 200,
-    shoot: ["Filmed", "Shot - In Post", "Editing", "Ready to Post", "Scheduled", "Posted", "Published"].includes(plan.status),
-    post: ["Editing", "Ready to Post", "Scheduled", "Posted", "Published"].includes(plan.status),
-    publish: ["Posted", "Published"].includes(plan.status),
-    review: false, // No signal yet on the planner side.
-  };
-  const out: Record<string, "done" | "current" | "todo"> = {};
-  let foundCurrent = false;
-  for (const s of STEPS) {
-    const k = s.key as keyof typeof done;
-    if (done[k]) {
-      out[s.key] = "done";
-    } else if (!foundCurrent) {
-      out[s.key] = "current";
-      foundCurrent = true;
-    } else {
-      out[s.key] = "todo";
-    }
-  }
-  return out;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 type Form = {
@@ -740,32 +698,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
     }
   };
 
-  // ── completion / next-action mapping ──────────────────────────────────────
-  // Read step state from the live form (merged with the persisted plan so we
-  // still see server-side fields like bingeVideo). Without this merge the
-  // hero/stepper lag every unsaved keystroke and feel wrong.
-  const livePlan: ContentPlan = useMemo(
-    () => ({
-      ...plan,
-      title: form.title,
-      status: form.status,
-      script: form.script,
-      notes: form.notes,
-    }),
-    [plan, form.title, form.status, form.script, form.notes],
-  );
-  const steps = stepStatus(livePlan);
-  const currentStepKey = STEPS.find((s) => steps[s.key] === "current")?.key ?? "review";
-  const nextActionLabel = ({
-    idea: "Add a working title →",
-    research: "Add research notes →",
-    script: "Continue writing →",
-    shoot: "Mark as shot →",
-    post: "Mark as edited →",
-    publish: "Mark as posted →",
-    review: "All done — review next batch →",
-  } as Record<string, string>)[currentStepKey];
-
   // The "the" thumbnail for the hero: a picked Drive thumbnail, else the A/B
   // winner, else the first uploaded option. Reads from `plan` (kept fresh by
   // patchPlan after uploads) so it updates live when a thumbnail is added.
@@ -807,34 +739,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
     );
     router.push("/member/jarvis?thread=new");
   }, [scriptBuilderV2Enabled, flush, initialPlan, planId, router]);
-
-  // Click handler for the hero CTA. Each step routes the cursor to the
-  // most-likely next input, or advances `status` when the leftover work
-  // is production-side (shoot/post/publish) — those only flip when the
-  // member confirms the milestone, so we just bump status and let
-  // auto-save persist it on the next debounce tick.
-  const handleNextAction = () => {
-    switch (currentStepKey) {
-      case "idea":
-        titleH1Ref.current?.focus();
-        break;
-      case "research":
-      case "script":
-        scriptTextareaRef.current?.focus();
-        break;
-      case "shoot":
-        update("status", "Shot - In Post");
-        break;
-      case "post":
-        update("status", "Ready to Post");
-        break;
-      case "publish":
-        update("status", "Posted");
-        break;
-      default:
-        break;
-    }
-  };
 
   // ── back navigation ───────────────────────────────────────────────────────
   const handleBack = async () => {
@@ -941,21 +845,6 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: isMobile ? "flex-start" : "flex-end" }}>
-              <button
-                onClick={handleNextAction}
-                style={{
-                  background: "var(--abv-azure, #3B82F6)",
-                  color: "var(--abv-ink, #1A1A1A)",
-                  borderRadius: 999,
-                  padding: "10px 18px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  cursor: "pointer",
-                }}
-              >
-                {nextActionLabel}
-              </button>
               {heroThumbnailUrl && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
