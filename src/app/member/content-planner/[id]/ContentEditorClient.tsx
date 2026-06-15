@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import RichMarkdownEditor from "@/components/RichMarkdownEditor";
+import { stripToDialogue } from "@/lib/script-content-rules";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import { getStatusOptions, hasEditDueDate, PRODUCTION_TIERS, getPlanThumbnailUrl } from "@/lib/content-plan-utils";
 import { hasDriveFolderAccess } from "@/lib/service-tier";
@@ -961,6 +963,127 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
+// ── Teleprompter Mode ────────────────────────────────────────────────────────
+// Reduce a stored script to the clean, spoken-only text members read aloud:
+// stripToDialogue() removes [VISUAL: …] cues and every internal slot marker
+// ([STRESSOR BEAT], [LEAD MAGNET n/3], …), headings, and the ## Sources
+// footnote. We then drop leftover markdown emphasis/markers so nothing but the
+// words shows on the prompter.
+function toTeleprompterText(script: string): string {
+  const { dialogue } = stripToDialogue(script || "");
+  return dialogue
+    .replace(/\*\*/g, "")          // bold markers
+    .replace(/`+/g, "")            // inline code ticks
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "") // any stray heading markers
+    .replace(/^\s*[-*+]\s+/gm, "") // bullet list markers
+    .replace(/^\s*>\s?/gm, "")     // blockquote markers
+    .replace(/\n{3,}/g, "\n\n")    // collapse big gaps
+    .trim();
+}
+
+function buildTeleprompterHtml(title: string, text: string): string {
+  // Inject the script as a JSON string and set it via textContent so script
+  // contents can never break out of the document or run as markup.
+  const safeText = JSON.stringify(text).replace(/</g, "\\u003c");
+  const safeTitle = (title || "Script")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teleprompter — ${safeTitle}</title>
+<style>
+  :root { --fs: 44px; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap;
+    padding: 10px 16px; background: rgba(18,18,18,0.96); border-bottom: 1px solid #2a2a2a;
+    font-size: 13px;
+  }
+  #bar .group { display: flex; align-items: center; gap: 8px; }
+  #bar label { color: #9a9a9a; }
+  #bar button {
+    background: #222; color: #fff; border: 1px solid #444; border-radius: 6px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer;
+  }
+  #bar button:hover { background: #333; }
+  #play { min-width: 96px; font-weight: 600; }
+  input[type=range] { accent-color: #fff; cursor: pointer; }
+  #scroller { height: 100%; overflow-y: auto; padding-top: 60px; scroll-behavior: auto; }
+  #content {
+    max-width: 920px; margin: 0 auto; padding: 12vh 36px 85vh;
+    font-size: var(--fs); line-height: 1.6; font-weight: 500;
+    text-align: center; white-space: pre-wrap; word-wrap: break-word; letter-spacing: 0.01em;
+  }
+  #hint { color: #6a6a6a; }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <div class="group"><button id="play">▶ Play</button></div>
+    <div class="group">
+      <label for="speed">Speed</label>
+      <input id="speed" type="range" min="1" max="20" value="6" />
+    </div>
+    <div class="group">
+      <label>Size</label>
+      <button id="smaller" title="Smaller text">A−</button>
+      <button id="bigger" title="Larger text">A+</button>
+    </div>
+    <div class="group"><span id="hint">Spacebar = play / pause</span></div>
+  </div>
+  <div id="scroller"><div id="content"></div></div>
+  <script>
+    (function () {
+      var TEXT = ${safeText};
+      var scroller = document.getElementById('scroller');
+      var content = document.getElementById('content');
+      var playBtn = document.getElementById('play');
+      var speed = document.getElementById('speed');
+      content.textContent = TEXT || 'This script is empty.';
+      var playing = false, raf = null, acc = 0, fs = 44;
+      function atBottom() {
+        return scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+      }
+      function step() {
+        if (!playing) return;
+        acc += Number(speed.value) / 4; // px per frame, tuned by the speed slider
+        if (acc >= 1) { scroller.scrollTop += Math.floor(acc); acc -= Math.floor(acc); }
+        if (atBottom()) { stop(); return; }
+        raf = requestAnimationFrame(step);
+      }
+      function play() {
+        if (playing) return;
+        if (atBottom()) scroller.scrollTop = 0;
+        playing = true; playBtn.textContent = '❚❚ Pause'; raf = requestAnimationFrame(step);
+      }
+      function stop() {
+        playing = false; playBtn.textContent = '▶ Play';
+        if (raf) { cancelAnimationFrame(raf); raf = null; }
+      }
+      function toggle() { playing ? stop() : play(); }
+      function setFs(v) {
+        fs = Math.max(20, Math.min(120, v));
+        document.documentElement.style.setProperty('--fs', fs + 'px');
+      }
+      playBtn.addEventListener('click', toggle);
+      document.getElementById('bigger').addEventListener('click', function () { setFs(fs + 4); });
+      document.getElementById('smaller').addEventListener('click', function () { setFs(fs - 4); });
+      window.addEventListener('keydown', function (e) {
+        if (e.code === 'Space') { e.preventDefault(); toggle(); }
+        else if (e.key === '+' || e.key === '=') { setFs(fs + 4); }
+        else if (e.key === '-' || e.key === '_') { setFs(fs - 4); }
+      });
+    })();
+  </script>
+</body>
+</html>`;
+}
+
 function ScriptPane({
   value, onChange, onBlur, planId, title, textareaRef, onExport, onRegenerate, dataPeriod,
 }: {
@@ -1005,6 +1128,20 @@ function ScriptPane({
     });
   };
 
+  // Open the spoken-only script in a dedicated read-only teleprompter window.
+  // Never touches the stored script.
+  const openTeleprompter = () => {
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Popup blocked — fall back to copying so the work isn't lost.
+      window.alert("Please allow pop-ups for this site to open Teleprompter Mode.");
+      return;
+    }
+    win.document.open();
+    win.document.write(buildTeleprompterHtml(title, toTeleprompterText(value)));
+    win.document.close();
+  };
+
   return (
     <section style={{ display: "grid", gap: 12 }}>
       {/* toolbar */}
@@ -1024,8 +1161,9 @@ function ScriptPane({
         >Self-Review</Link>
         <ToolbarBtn label="Copy" onClick={handleCopy} />
         <ToolbarBtn label="Export" onClick={onExport} />
+        <ToolbarBtn label="🎬 Teleprompter" onClick={openTeleprompter} />
         {mode === "edit"
-          ? <ToolbarBtn label="✓ Done" onClick={() => setMode("view")} emphasis />
+          ? <ToolbarBtn label="✓ Done" onClick={() => { onBlur(); setMode("view"); }} emphasis />
           : <ToolbarBtn label="✎ Edit" onClick={enterEdit} emphasis />}
       </div>
 
@@ -1035,22 +1173,21 @@ function ScriptPane({
         borderRadius: 14, padding: 24, overflow: "hidden", minWidth: 0,
       }}>
         {mode === "edit" ? (
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={() => { onBlur(); setMode("view"); }}
-            placeholder={`Start writing your script for "${title || "this video"}"…`}
-            style={{
-              width: "100%", minHeight: 480,
-              border: "none", outline: "none", resize: "vertical",
-              fontFamily: "var(--font-sans, ui-sans-serif)",
-              fontSize: 14, lineHeight: 1.7,
-              color: "var(--abv-text)",
-              background: "transparent",
-              boxSizing: "border-box",
-            }}
-          />
+          // Reuse the existing WYSIWYG editor (tiptap, markdown round-trip) so
+          // members edit formatted text, not raw markdown. onChange flows back
+          // into form.script → debounced autosave persists in place; "✓ Done"
+          // flushes immediately. Hidden textarea preserves the focus ref +
+          // raw-value contract the rest of the pane relies on.
+          <>
+            <textarea ref={textareaRef} value={value} readOnly hidden aria-hidden tabIndex={-1} />
+            <RichMarkdownEditor
+              value={value}
+              onChange={onChange}
+              placeholder={`Start writing your script for "${title || "this video"}"…`}
+              ariaLabel="Edit script"
+              minHeight="480px"
+            />
+          </>
         ) : value.trim() ? (
           <div
             onClick={enterEdit}
