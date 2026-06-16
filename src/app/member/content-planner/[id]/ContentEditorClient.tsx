@@ -1733,23 +1733,17 @@ function DateRow({
   );
 }
 
-function QuickBtn({ children, onClick, danger, accent }: { children: React.ReactNode; onClick: () => void; danger?: boolean; accent?: boolean }) {
-  const borderColor = danger
-    ? "var(--abv-leads-tint, #FECACA)"
-    : accent ? "var(--abv-azure)" : "var(--abv-border)";
-  const textColor = danger
-    ? "var(--abv-leads, #DC2626)"
-    : accent ? "var(--abv-azure)" : "var(--abv-text)";
+function QuickBtn({ children, onClick, danger }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
       style={{
         padding: "6px 10px",
-        border: `1px solid ${borderColor}`,
+        border: `1px solid ${danger ? "var(--abv-leads-tint, #FECACA)" : "var(--abv-border)"}`,
         borderRadius: 6,
         background: "white",
         fontSize: 11, fontWeight: 600,
-        color: textColor,
+        color: danger ? "var(--abv-leads, #DC2626)" : "var(--abv-text)",
       }}
       className="hover:bg-[var(--abv-bg-warm)]"
     >{children}</button>
@@ -2251,9 +2245,15 @@ function PublishingTab({
           padding: "8px 14px", borderTop: "1px solid var(--abv-border)",
           display: "flex", justifyContent: "flex-end",
         }}>
-          <QuickBtn accent onClick={() => void handleDraftComment()}>
+          <button
+            onClick={() => void handleDraftComment()}
+            style={{
+              background: "none", border: "none", padding: 0, cursor: "pointer",
+              fontSize: 11, fontWeight: 600, color: "var(--abv-azure)",
+            }}
+          >
             {drafting ? "Drafting…" : "✍️ Generate with Tool"}
-          </QuickBtn>
+          </button>
         </div>
       </Panel>
     </>
