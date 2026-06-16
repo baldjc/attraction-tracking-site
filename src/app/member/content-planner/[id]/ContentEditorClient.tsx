@@ -1131,7 +1131,10 @@ function ScriptPane({
   // Open the spoken-only script in a dedicated read-only teleprompter window.
   // Never touches the stored script.
   const openTeleprompter = () => {
-    const win = window.open("", "_blank", "noopener,noreferrer");
+    // NOTE: do NOT pass "noopener" — that makes window.open() return null, so we
+    // lose the handle needed to write the teleprompter document (the tab still
+    // opens, but stays blank). We control the written content, so it's safe.
+    const win = window.open("", "_blank");
     if (!win) {
       // Popup blocked — fall back to copying so the work isn't lost.
       window.alert("Please allow pop-ups for this site to open Teleprompter Mode.");
