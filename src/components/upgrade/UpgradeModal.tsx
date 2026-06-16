@@ -176,7 +176,7 @@ export default function UpgradeModal({ trigger, open, onClose, onContinue, conti
             <Link
               href={copy.ctaHref}
               onClick={handleDismiss}
-              className="flex-1 text-center $1var(--abv-dark)$2 hover:bg-black/85 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+              className="flex-1 text-center bg-[var(--abv-dark)] hover:bg-black/85 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
             >
               {copy.ctaLabel}
             </Link>

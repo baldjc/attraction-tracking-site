@@ -383,7 +383,7 @@ function CategoryModal({ category, onClose, onSave }: { category: Category | nul
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 border border-[var(--abv-border-strong)] dark:border-white/10 rounded-lg py-2 text-sm font-semibold text-[var(--abv-text)]/60 dark:text-white/40 hover:bg-[#f7f7f7] dark:hover:bg-white/5">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 $1var(--abv-dark)$2 hover:bg-black/85 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-50">{saving ? "Saving…" : "Save Category"}</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 bg-[var(--abv-dark)] hover:bg-black/85 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-50">{saving ? "Saving…" : "Save Category"}</button>
         </div>
       </div>
     </div>
@@ -556,7 +556,7 @@ function PackageModal({ pkg, categoryId, onClose, onSave }: { pkg: Package | nul
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 border border-[var(--abv-border-strong)] dark:border-white/10 rounded-lg py-2 text-sm font-semibold text-[var(--abv-text)]/60 dark:text-white/40 hover:bg-[#f7f7f7] dark:hover:bg-white/5">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 $1var(--abv-dark)$2 hover:bg-black/85 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-50">{saving ? "Saving…" : "Save Package"}</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 bg-[var(--abv-dark)] hover:bg-black/85 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-50">{saving ? "Saving…" : "Save Package"}</button>
         </div>
       </div>
     </div>
@@ -845,7 +845,7 @@ export default function AdminHirePage() {
           </div>
         </div>
         {tab === "packages" && (
-          <button onClick={() => setShowNewCategory(true)} className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <button onClick={() => setShowNewCategory(true)} className="flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-black/85 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
             <PlusIcon className="w-4 h-4" />New Category
           </button>
         )}

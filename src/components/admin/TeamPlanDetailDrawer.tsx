@@ -253,7 +253,7 @@ export default function TeamPlanDetailDrawer({ plan, staff, currentUserId, curre
                 <button
                   onClick={addNote}
                   disabled={savingNote || !newNote.trim()}
-                  className="text-xs $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-3 py-1.5 rounded-md"
+                  className="text-xs bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-3 py-1.5 rounded-md"
                 >{savingNote ? "Saving…" : "Add note"}</button>
               </div>
             </div>

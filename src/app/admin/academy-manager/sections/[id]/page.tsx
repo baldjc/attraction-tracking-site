@@ -172,7 +172,7 @@ export default function EditSectionPage({ params }: { params: Promise<{ id: stri
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+            className="px-5 py-2.5 bg-[var(--abv-dark)] hover:bg-black/85 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
           >
             {saving ? "Saving…" : saved ? "✓ Saved" : "Save Changes"}
           </button>

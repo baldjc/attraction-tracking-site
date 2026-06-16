@@ -145,7 +145,7 @@ export default function LiveCallDetailPage({ params }: { params: Promise<{ callI
           href={call.fathomShareUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white font-bold text-sm px-6 py-3 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-black/85 text-white font-bold text-sm px-6 py-3 rounded-lg transition-colors"
         >
           <PlayCircleIcon className="w-5 h-5" />
           Watch on Fathom

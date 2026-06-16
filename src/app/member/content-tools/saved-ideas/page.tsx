@@ -76,7 +76,7 @@ export default function SavedIdeasPage() {
           </p>
           <Link
             href="/member/content-tools/content-engine"
-            className="inline-flex items-center gap-2 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+            className="inline-flex items-center gap-2 bg-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/85 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
           >
             Go to Content Engine →
           </Link>

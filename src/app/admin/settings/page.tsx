@@ -1100,7 +1100,7 @@ function PromptEditorSection({
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="$1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -1172,7 +1172,7 @@ function AIScoringPromptSection() {
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="$1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
+          className="bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
         >
           {saving ? "Saving…" : "Save Prompt"}
         </button>
@@ -1237,7 +1237,7 @@ function CurrencyRateSection() {
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="$1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors"
+            className="bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -1443,7 +1443,7 @@ function LandingPageSettingsSection() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
+          className="inline-flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
         >
           <CloudArrowUpIcon className="w-4 h-4" />
           {saving ? "Saving…" : "Save & Sync to GHL"}

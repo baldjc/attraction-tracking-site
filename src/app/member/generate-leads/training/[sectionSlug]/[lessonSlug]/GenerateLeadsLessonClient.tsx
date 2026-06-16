@@ -651,7 +651,7 @@ export default function GenerateLeadsLessonClient({
           </div>
           <Link
             href={lesson.aiToolLink}
-            className="shrink-0 flex items-center gap-1.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="shrink-0 flex items-center gap-1.5 bg-[var(--abv-dark)] hover:bg-black/85 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             {lesson.aiToolLabel}
             <ArrowRightIcon className="w-4 h-4" />

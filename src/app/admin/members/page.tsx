@@ -479,7 +479,7 @@ function MembersPageInner() {
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
+              className="flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-black/85 text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
             >
               <ArrowPathIcon className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing from GHL…" : "Sync from GHL"}
@@ -619,7 +619,7 @@ function MembersPageInner() {
                           <button
                             onClick={() => handleRunAudit(video)}
                             disabled={runningAudit[video.id]}
-                            className="w-full text-xs $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
+                            className="w-full text-xs bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-60 text-white rounded-lg px-3 py-1.5 transition"
                           >
                             {runningAudit[video.id] ? "Starting…" : "Run Audit"}
                           </button>

@@ -207,7 +207,7 @@ export default function OrphanScriptsModal({ scripts, onClose }: Props) {
           <button
             onClick={handleApply}
             disabled={working || (decision.kind === "attach" && !selectedPlanId)}
-            className="flex-1 $1var(--abv-dark)$2 hover:bg-black/85 disabled:opacity-50 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
+            className="flex-1 bg-[var(--abv-dark)] hover:bg-black/85 disabled:opacity-50 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors"
           >
             {working ? "Linking…" : "Link script →"}
           </button>

@@ -123,7 +123,7 @@ function ScriptViewModal({
             {detail?.fullScript && (
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-semibold transition-colors"
               >
                 {copied ? (
                   <>
@@ -190,7 +190,7 @@ function ScriptViewModal({
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   savedToPlan
                     ? "bg-green-50 border border-green-200 text-green-600 cursor-default"
-                    : "$1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    : "bg-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/85 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                 }`}
               >
                 <CalendarDaysIcon className="w-3.5 h-3.5" />

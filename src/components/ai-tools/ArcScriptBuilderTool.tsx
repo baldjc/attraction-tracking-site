@@ -418,7 +418,7 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
           <div className="flex gap-2 shrink-0">
             <button
               onClick={handleResumeDraft}
-              className="px-3 py-1.5 $1var(--abv-ai-tools)$2 hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-medium rounded-md transition-colors"
+              className="px-3 py-1.5 bg-[var(--abv-ai-tools)] hover:bg-[var(--abv-ai-tools)]/85 text-white text-xs font-medium rounded-md transition-colors"
             >
               Resume
             </button>

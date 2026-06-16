@@ -105,7 +105,7 @@ export default function AnnouncementModal() {
         {/* CTA */}
         <button
           onClick={dismiss}
-          className="mt-5 w-full $1var(--abv-dark)$2 hover:bg-black/85 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors"
+          className="mt-5 w-full bg-[var(--abv-dark)] hover:bg-black/85 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors"
         >
           {queue.length > 1 ? "Next →" : "Got it"}
         </button>

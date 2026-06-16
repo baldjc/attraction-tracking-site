@@ -148,7 +148,7 @@ function FoundationsTab() {
             {continueSection && (
               <Link
                 href={`/member/academy/foundations/${continueSection.slug}`}
-                className="flex items-center gap-2 $1var(--abv-dark)$2 hover:bg-black/85 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+                className="flex items-center gap-2 bg-[var(--abv-dark)] hover:bg-black/85 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
               >
                 {totalCompleted === 0 ? "Start Learning" : "Continue Learning"}
                 <ArrowRightIcon className="w-4 h-4" />

@@ -33,7 +33,7 @@ export default async function IntelligencePage() {
       <div className="mb-6">
         <Link
           href="/admin/intelligence/new-run"
-          className="inline-flex items-center gap-2 px-4 py-2.5 $1var(--abv-dark)$2 hover:bg-black/85 text-white text-sm font-semibold rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--abv-dark)] hover:bg-black/85 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <span>+</span> New Intelligence Run
         </Link>
