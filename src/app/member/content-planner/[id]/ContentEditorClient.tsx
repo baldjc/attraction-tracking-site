@@ -2219,7 +2219,7 @@ function PublishingTab({
             href={`/member/content-tools/description-generator?planId=${planId}`}
             style={{ fontSize: 11, color: "var(--abv-azure)", fontWeight: 600 }}
           >
-            ✍ Generate with AI
+            ✍️ Generate with Tool
           </Link>
         </div>
       </Panel>
@@ -2246,7 +2246,7 @@ function PublishingTab({
           display: "flex", justifyContent: "flex-end",
         }}>
           <QuickBtn onClick={() => void handleDraftComment()}>
-            {drafting ? "Drafting…" : "✦ Draft with AI"}
+            {drafting ? "Drafting…" : "✍️ Generate with Tool"}
           </QuickBtn>
         </div>
       </Panel>
