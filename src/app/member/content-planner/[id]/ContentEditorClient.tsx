@@ -825,7 +825,7 @@ Output as markdown with ## per talking point, ### per section. Every stat: \`fig
           padding: "28px 32px",
           marginBottom: 18,
         }}>
-          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "flex-start", gap: isMobile ? 16 : 24 }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 16 : 24 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <TitleEditor
                 value={form.title}
