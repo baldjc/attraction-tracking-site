@@ -10,6 +10,7 @@ import UploadPanel from "@/components/market-data/UploadPanel";
 import UploadHistoryTable from "@/components/market-data/UploadHistoryTable";
 import UploadProgressBanner from "@/components/market-data/UploadProgressBanner";
 import CsvRulesCard from "@/components/market-data/CsvRulesCard";
+import MarketSetupCard from "@/components/market-data/MarketSetupCard";
 import MethodologySettings from "@/components/market-data/MethodologySettings";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +71,11 @@ export default async function MarketDataPage() {
     !!config.columnMapping &&
     Object.keys(config.columnMapping).length > 0;
 
+  const hasStatusMapping =
+    !!config.statusMapping &&
+    typeof config.statusMapping === "object" &&
+    Object.keys(config.statusMapping as Record<string, unknown>).length > 0;
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <header className="flex items-start justify-between gap-4">
@@ -112,6 +118,11 @@ export default async function MarketDataPage() {
       />
 
       <CsvRulesCard />
+
+      <MarketSetupCard
+        hasColumnMapping={hasColumnMapping}
+        hasStatusMapping={hasStatusMapping}
+      />
 
       <UploadPanel
         existingMapping={config.columnMapping}

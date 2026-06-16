@@ -8,7 +8,42 @@ import { useAiThinking } from "@/lib/use-ai-thinking";
 import { type ColumnMapping } from "@/lib/market-config";
 import { Button } from "@/components/ui/Button";
 import ColumnMapper from "@/components/market-data/ColumnMapper";
+import StatusMapper, {
+  type UnknownStatusValue,
+} from "@/components/market-data/StatusMapper";
+import UploadPreview, {
+  type PreviewCounts,
+  type SampleRowField,
+} from "@/components/market-data/UploadPreview";
+import {
+  mergeConfirmationsIntoMapping,
+  type StatusMapping,
+  type MappableBucket,
+} from "@/lib/market-status-buckets";
 import { formatActionImpactPercent } from "@/lib/cost-display";
+
+/** Shape of POST /api/member/market-data/analyze. */
+interface AnalyzeResult {
+  filename: string;
+  rowCount: number;
+  headers: string[];
+  columnMapping: ColumnMapping;
+  suggestedColumnMapping: ColumnMapping;
+  columnMappingComplete: boolean;
+  missingRequiredFields: string[];
+  statusColumnFound: boolean;
+  resolvedStatusMapping: StatusMapping;
+  statusValues: Array<{
+    value: string;
+    count: number;
+    bucket: string;
+    alreadyMapped: boolean;
+    proposed: MappableBucket | null;
+  }>;
+  unknownCount: number;
+  previewCounts: PreviewCounts & { unknown: number };
+  sampleRow: SampleRowField[];
+}
 
 interface Props {
   existingMapping: ColumnMapping | null;
@@ -198,6 +233,24 @@ export default function UploadPanel({
   const [uploadWarnings, setUploadWarnings] = useState<
     Array<{ filename: string; code: string; message: string }>
   >([]);
+  // Task #66 — status-mapping step. Shown only when analyze finds raw status
+  // values that don't resolve under the member's mapping.
+  const [statusStep, setStatusStep] = useState<{
+    values: UnknownStatusValue[];
+    baseMapping: StatusMapping;
+    uploadMapping: ColumnMapping | null;
+    filename: string;
+  } | null>(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+  // Task #66 — preview/confirm gate. Always shown right before the full upload.
+  const [previewStep, setPreviewStep] = useState<{
+    filename: string;
+    rowCount: number;
+    counts: PreviewCounts & { unknown: number };
+    sampleRow: SampleRowField[];
+    unmappedStatusCount: number;
+    uploadMapping: ColumnMapping | null;
+  } | null>(null);
 
   const thinking = useAiThinking({
     mode: "phase",
@@ -311,8 +364,9 @@ export default function UploadPanel({
     if (selected.length === 0) return;
 
     if (hasColumnMapping) {
-      // Skip mapping — go straight to upload.
-      await doFinalUpload(null);
+      // Mapping already saved — analyze the representative file (zero AI) to
+      // surface any NEW status values + a preview before we pay for validation.
+      await runAnalyze(null);
       return;
     }
 
@@ -345,6 +399,130 @@ export default function UploadPanel({
       setError((e as Error).message);
     } finally {
       thinking.stop();
+    }
+  }
+
+  /**
+   * Task #66 pre-upload step. Analyze the representative (oldest) file with the
+   * given column mapping (null = use the member's saved mapping), then route to
+   * the right next screen:
+   *   - column mapping incomplete  → ColumnMapper (preflight context)
+   *   - NEW (unknown) status values → StatusMapper
+   *   - otherwise                   → preview/confirm gate
+   * `mapping` is the explicit member mapping (from the ColumnMapper); it's
+   * threaded through to doFinalUpload only when the member actually chose one,
+   * so saved-mapping members never overwrite their saved mapping on upload.
+   */
+  async function runAnalyze(
+    mapping: ColumnMapping | null,
+    opts?: { skipStatusGate?: boolean },
+  ) {
+    if (!oldestFile) return;
+    setError(null);
+    setStatusStep(null);
+    setPreviewStep(null);
+    setMapper(null);
+    thinking.start();
+    try {
+      const fd = new FormData();
+      fd.append("file", oldestFile.file);
+      if (mapping) fd.append("columnMapping", JSON.stringify(mapping));
+      const res = await fetch("/api/member/market-data/analyze", {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Could not analyze this file.");
+      }
+      const data = (await res.json()) as AnalyzeResult;
+
+      // 1) Columns incomplete → open the mapper seeded with the deterministic
+      //    suggestion so the member can finish routing required fields.
+      if (!data.columnMappingComplete) {
+        setMapper({
+          headers: data.headers,
+          initialMapping: data.suggestedColumnMapping ?? mapping ?? existingMapping ?? {},
+          context: "preflight",
+          filename: data.filename,
+          banner: {
+            message: "We couldn't match some required columns in this file.",
+            detail:
+              "Route each required field to the matching column, then we'll re-check it.",
+          },
+        });
+        return;
+      }
+
+      // 2) NEW status values → ask the member to bucket them (only the unknowns).
+      //    After a status save we skip this gate: any values the member chose to
+      //    leave unmapped are acknowledged for this upload, so they flow straight
+      //    to the preview gate (which surfaces the unmapped count) instead of
+      //    re-opening the mapper in a loop.
+      const unknowns: UnknownStatusValue[] = data.statusValues
+        .filter((s) => !s.alreadyMapped)
+        .map((s) => ({ value: s.value, count: s.count, proposed: s.proposed }));
+      if (unknowns.length > 0 && !opts?.skipStatusGate) {
+        setStatusStep({
+          values: unknowns,
+          baseMapping: data.resolvedStatusMapping,
+          uploadMapping: mapping,
+          filename: data.filename,
+        });
+        return;
+      }
+
+      // 3) Everything resolves → preview/confirm gate.
+      const unmappedStatusCount = data.statusValues.filter(
+        (s) => !s.alreadyMapped,
+      ).length;
+      setPreviewStep({
+        filename: data.filename,
+        rowCount: data.rowCount,
+        counts: data.previewCounts,
+        sampleRow: data.sampleRow,
+        unmappedStatusCount,
+        uploadMapping: mapping,
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      thinking.stop();
+    }
+  }
+
+  /** StatusMapper "Save" — persist the member's confirmations as a 4-bucket
+   *  statusMapping override (resolved ∪ confirmations) on their MarketConfig,
+   *  then re-analyze so the now-resolved values flow into the preview gate. */
+  async function onStatusSave(confirmations: Record<string, MappableBucket>) {
+    if (!statusStep) return;
+    setStatusSaving(true);
+    setError(null);
+    try {
+      const merged = mergeConfirmationsIntoMapping(
+        statusStep.baseMapping,
+        confirmations,
+      );
+      const res = await fetch("/api/member/market-data/config", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ statusMapping: merged }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Could not save your status mapping.");
+      }
+      const uploadMapping = statusStep.uploadMapping;
+      setStatusStep(null);
+      // Re-analyze with the same column mapping; the saved statusMapping now
+      // resolves the confirmed values. skipStatusGate carries the member's
+      // "leave unmapped" choices forward so we land on the preview gate instead
+      // of re-opening the mapper for the values they intentionally skipped.
+      await runAnalyze(uploadMapping, { skipStatusGate: true });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setStatusSaving(false);
     }
   }
 
@@ -568,12 +746,22 @@ export default function UploadPanel({
     }
   }
 
-  /** Mapper "Save" — uploads (initial/preflight) or persists only (proactive). */
+  /** Mapper "Save" — persists only (proactive) or advances the upload flow by
+   *  re-analyzing with the chosen mapping (initial/preflight). The analyze pass
+   *  routes on to the status step / preview gate before any AI cost. */
   async function onMapperSave(mapping: ColumnMapping) {
     if (mapper?.context === "proactive") {
       await saveProactiveMapping(mapping);
       return;
     }
+    await runAnalyze(mapping);
+  }
+
+  /** Preview gate "Upload" — commit the validated upload. */
+  async function onPreviewConfirm() {
+    if (!previewStep) return;
+    const mapping = previewStep.uploadMapping;
+    setPreviewStep(null);
     await doFinalUpload(mapping);
   }
 
@@ -695,7 +883,11 @@ export default function UploadPanel({
 
       {/* Proactive column-mapping control — lets members review/fix the saved
           mapping without having to trigger a failed upload first. */}
-      {!mapper && !thinking.isThinking && stage === "picking" && (
+      {!mapper &&
+        !thinking.isThinking &&
+        stage === "picking" &&
+        !statusStep &&
+        !previewStep && (
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-gray-500 dark:text-gray-400">
             {hasColumnMapping
@@ -754,7 +946,46 @@ export default function UploadPanel({
         </div>
       )}
 
-      {!mapper && !thinking.isThinking && stage === "picking" && (
+      {/* Task #66 — status-mapping step (only NEW unknown values). */}
+      {statusStep && !thinking.isThinking && stage === "picking" && (
+        <div className="mt-4">
+          <StatusMapper
+            values={statusStep.values}
+            saving={statusSaving}
+            onSave={onStatusSave}
+            onCancel={() => {
+              setStatusStep(null);
+              setError(null);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Task #66 — preview/confirm gate before validation. */}
+      {previewStep && !thinking.isThinking && stage === "picking" && (
+        <div className="mt-4">
+          <UploadPreview
+            filename={previewStep.filename}
+            rowCount={previewStep.rowCount}
+            counts={previewStep.counts}
+            sampleRow={previewStep.sampleRow}
+            unmappedStatusCount={previewStep.unmappedStatusCount}
+            saving={mapperSaving}
+            onConfirm={onPreviewConfirm}
+            onCancel={() => {
+              setPreviewStep(null);
+              setError(null);
+            }}
+            confirmLabel={`Looks right — upload ${selected.length} file${selected.length === 1 ? "" : "s"}`}
+          />
+        </div>
+      )}
+
+      {!mapper &&
+        !thinking.isThinking &&
+        stage === "picking" &&
+        !statusStep &&
+        !previewStep && (
         <div className="mt-4 space-y-4">
           <label className="block">
             <span className="sr-only">Choose CSV files</span>
@@ -879,7 +1110,7 @@ export default function UploadPanel({
                     </button>
                     {!s.monthYear && (
                       <span className="col-span-12 text-[11px] text-red-600 dark:text-red-400">
-                        ⚠ Pick a month before uploading — we won't guess for you.
+                        ⚠ Pick a month before uploading — we won&apos;t guess for you.
                       </span>
                     )}
                   </li>
@@ -941,7 +1172,7 @@ export default function UploadPanel({
           <p className="mt-1 text-xs">
             MLS exports often shatter one neighbourhood across dozens of
             subdivision names. Once validation finishes, we automatically flag
-            fragmented areas so you can collapse them into single areas — that's
+            fragmented areas so you can collapse them into single areas — that&apos;s
             what lifts more areas over the sample floor for scripts. Review and
             confirm any cleanup on your{" "}
             <Link

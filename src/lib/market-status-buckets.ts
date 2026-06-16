@@ -302,6 +302,181 @@ export function countByBucket(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Member-facing status mapping setup (Task #66).
+//
+// When a member uploads a CSV whose status column contains values that don't
+// resolve under their current mapping (countByBucket().unknownLabels), we ask
+// them to confirm each one. proposeStatusBucket() seeds that UI with a best
+// guess so the common case is one click; mergeConfirmationsIntoMapping() folds
+// the member's confirmations into an explicit statusMapping override that
+// resolveStatusMapping's branch-1 then honours on every future upload.
+
+/** A bucket a member can assign a raw status to (everything except "unknown"). */
+export type MappableBucket = MappedBucket;
+
+// Phrase/word patterns matched as substrings of the normalized (lowercased,
+// trimmed) raw label. Ordered checks: sold → offMarket → pending → active,
+// mirroring BUCKET_TOKEN_PRECEDENCE so "active under contract" reads pending
+// and a stray off-market word never gets swallowed by a generic "active".
+const PROPOSE_SOLD_PATTERNS = [
+  "sold",
+  "closed",
+  "close of escrow",
+  "settled",
+  "completed",
+  "firm sale",
+  "clsd",
+  "sld",
+];
+const PROPOSE_OFFMARKET_PATTERNS = [
+  "expired",
+  "cancel", // cancel / canceled / cancelled
+  "terminated",
+  "terminate",
+  "withdrawn",
+  "withdraw",
+  "off market",
+  "off-market",
+  "offmarket",
+  "dead",
+  "fell through",
+];
+const PROPOSE_PENDING_PATTERNS = [
+  "pending",
+  "conditional",
+  "under contract",
+  "contingent",
+  "backup",
+  "accepting backups",
+  "offer accepted",
+  "sale pending",
+  "ucb",
+  "cnd",
+  "cond",
+];
+const PROPOSE_ACTIVE_PATTERNS = [
+  "active",
+  "for sale",
+  "available",
+  "on market",
+  "on-market",
+];
+
+// Exact single-letter / short MLS status codes. Kept separate from the
+// substring patterns because a single letter ("a") must match exactly, never
+// as a substring of a longer word.
+const PROPOSE_EXACT_CODES: Record<string, MappableBucket> = {
+  s: "sold",
+  sld: "sold",
+  c: "sold", // Closed (NTREIS/RESO) — same convention as the preflight tokenizer
+  cl: "sold",
+  clsd: "sold",
+  a: "active",
+  act: "active",
+  p: "pending",
+  pend: "pending",
+  cnd: "pending",
+  ctg: "pending",
+  x: "offMarket",
+  e: "offMarket",
+  exp: "offMarket",
+  t: "offMarket",
+  term: "offMarket",
+  w: "offMarket",
+  wd: "offMarket",
+  wth: "offMarket",
+};
+
+/**
+ * Deterministic best-guess bucket for an unrecognized raw MLS status label,
+ * using common cross-board naming conventions. Returns null when nothing
+ * matches confidently — the member then picks from the dropdown themselves
+ * (we never silently mis-file an ambiguous value like "Coming Soon" or
+ * "Leased"). Pure + side-effect-free; safe to import client-side.
+ */
+export function proposeStatusBucket(
+  rawLabel: string | null | undefined,
+): MappableBucket | null {
+  if (rawLabel == null) return null;
+  const key = normalizeLabel(String(rawLabel));
+  if (!key) return null;
+
+  // Exact short-code match first (so "a" → active, not a substring false hit).
+  const exact = PROPOSE_EXACT_CODES[key];
+  if (exact) return exact;
+
+  const has = (patterns: string[]) => patterns.some((p) => key.includes(p));
+  if (has(PROPOSE_SOLD_PATTERNS)) return "sold";
+  if (has(PROPOSE_OFFMARKET_PATTERNS)) return "offMarket";
+  if (has(PROPOSE_PENDING_PATTERNS)) return "pending";
+  if (has(PROPOSE_ACTIVE_PATTERNS)) return "active";
+
+  // Token fallback for glued composites the substring pass missed
+  // (e.g. "X/EXPIRED" → tokens "x","expired"). Reuse the exact-code table per
+  // token; precedence sold > offMarket > pending > active (a terminal state like
+  // sold/off-market wins over a transient pending, which wins over active).
+  const PROPOSE_TOKEN_PRECEDENCE: MappableBucket[] = [
+    "sold",
+    "offMarket",
+    "pending",
+    "active",
+  ];
+  const tokens = key.split(/[^a-z0-9]+/).filter(Boolean);
+  if (tokens.length >= 2) {
+    let best: MappableBucket | null = null;
+    let bestRank = Infinity;
+    for (const tok of tokens) {
+      const hit = PROPOSE_EXACT_CODES[tok];
+      if (!hit) continue;
+      const rank = PROPOSE_TOKEN_PRECEDENCE.indexOf(hit);
+      if (rank < bestRank) {
+        best = hit;
+        bestRank = rank;
+      }
+    }
+    if (best) return best;
+  }
+  return null;
+}
+
+/**
+ * Fold member confirmations ({ rawLabel: bucket }) into a base StatusMapping,
+ * producing a new explicit override mapping. The base is normally
+ * resolveStatusMapping(config) so that previously-recognized labels are
+ * preserved and only the newly-confirmed labels are added. De-dupes
+ * case-insensitively within each bucket; ignores invalid bucket names and
+ * blank labels. Returns a fresh object (never mutates the input).
+ */
+export function mergeConfirmationsIntoMapping(
+  base: StatusMapping,
+  confirmations: Record<string, string>,
+): StatusMapping {
+  const out: StatusMapping = {
+    sold: [...base.sold],
+    offMarket: [...base.offMarket],
+    active: [...base.active],
+    pending: [...base.pending],
+  };
+  const seen: Record<MappableBucket, Set<string>> = {
+    sold: new Set(out.sold.map(normalizeLabel)),
+    offMarket: new Set(out.offMarket.map(normalizeLabel)),
+    active: new Set(out.active.map(normalizeLabel)),
+    pending: new Set(out.pending.map(normalizeLabel)),
+  };
+  for (const [rawLabel, bucket] of Object.entries(confirmations)) {
+    if (!(MAPPED_BUCKETS as readonly string[]).includes(bucket)) continue;
+    const b = bucket as MappableBucket;
+    const label = rawLabel.trim();
+    if (!label) continue;
+    const norm = normalizeLabel(label);
+    if (seen[b].has(norm)) continue;
+    out[b].push(label);
+    seen[b].add(norm);
+  }
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Derived metrics — PURE math, all return RATIOS (0..n), never percentages.
 // Sample-size guards return null ("insufficient sample") so callers don't
 // publish noisy ratios off tiny denominators.

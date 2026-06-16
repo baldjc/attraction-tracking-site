@@ -7,6 +7,7 @@ import {
   validateColumnMapping,
   type MarketConfigShape,
 } from "@/lib/market-config";
+import { validateStatusMapping } from "@/lib/market-status-buckets";
 import { requireMarketAccess } from "@/lib/market-config-server";
 
 export async function GET() {
@@ -112,6 +113,19 @@ export async function PATCH(req: NextRequest) {
       return Response.json({ error: result.error }, { status: 400 });
     }
     data.columnMapping = result.mapping;
+  }
+  if ("statusMapping" in body) {
+    // Per-member status-value override (Task #66). validateStatusMapping returns
+    // a clean 4-bucket mapping or null (absent/malformed/empty). Persisting null
+    // clears the override and reverts to statusCodes/seed resolution.
+    const mapping = validateStatusMapping(body.statusMapping);
+    if (body.statusMapping != null && mapping === null) {
+      return Response.json(
+        { error: "statusMapping must assign at least one status label." },
+        { status: 400 },
+      );
+    }
+    data.statusMapping = mapping ?? Prisma.JsonNull;
   }
   if ("teamYearsInBusiness" in body)
     data.teamYearsInBusiness = coerceInt(body.teamYearsInBusiness);
