@@ -7,8 +7,6 @@ import ContentEditorClient from "./ContentEditorClient";
 import type { ContentPlan } from "@/components/content-planner/ContentPlanEditModal";
 import type { PlanAccessReason } from "@/lib/content-plan-access";
 
-const PRODUCTION_TIERS = ["production", "growth", "done_with_you"];
-
 type ErrorState = "none" | "not-found" | "deleted" | "wrong-owner" | "load-failed";
 
 interface ErrorDetail {
@@ -234,16 +232,6 @@ export default function ContentEditorWrapper({ planId }: { planId: string }) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="w-6 h-6 border-2 border-[var(--abv-azure)] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!PRODUCTION_TIERS.includes(serviceTier) && serviceTier !== "foundations") {
-    return (
-      <div className="max-w-[1280px] mx-auto px-9 py-16 text-center">
-        <p className="text-[var(--abv-text-muted)]">
-          Upgrade required to access the Content Editor.
-        </p>
       </div>
     );
   }

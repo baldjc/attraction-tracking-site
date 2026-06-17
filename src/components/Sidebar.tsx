@@ -118,7 +118,7 @@ const memberLinks = [
   { href: "/member/jarvis",          label: "Content Manager - Jarvis", icon: ChatBubbleLeftRightIcon,  featureKey: "tool_jarvis", colour: "var(--abv-ai-tools)", tierRequired: null,          section: "CREATE" },
   // Content Planner also carries section: "CREATE" so the header survives when
   // the (flag-gated) Content Manager link above is filtered out for a member.
-  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: PRODUCTION_TIERS, section: "CREATE" },
+  { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null, section: "CREATE" },
   { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: "tool_market_data",            colour: "var(--abv-azure)",   tierRequired: null },
   { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)",   tierRequired: null },
 
