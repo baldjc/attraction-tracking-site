@@ -1173,15 +1173,11 @@ function AvatarArchitectInner() {
   if (screen === "landing") {
     return (
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Link href="/member/content-tools" className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3">
-            <ArrowLeftIcon className="w-3.5 h-3.5" />
-            Back to Content Tools
-          </Link>
-          <h1 className="text-2xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Build your ideal client avatar — it powers every tool on this platform</p>
-        </div>
+        {/* Header — matches standard top-level pages (Market Data / Knowledge Base) */}
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Avatar Architect</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Build your ideal client avatar — it powers every tool on this platform</p>
+        </header>
 
         {/* How it works — 2-step instructions */}
         <div className="mb-6 bg-gradient-to-r from-[var(--abv-ai-tools)]/5 to-[var(--abv-ai-tools)]/10 border border-[var(--abv-ai-tools)]/20 rounded-xl p-5">
@@ -1477,17 +1473,10 @@ function AvatarArchitectInner() {
   if (screen === "import") {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="mb-5">
-          <Link
-            href="/member/content-tools"
-            className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors mb-3"
-          >
-            <ArrowLeftIcon className="w-3.5 h-3.5" />
-            Back to Content Tools
-          </Link>
-          <h1 className="text-2xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
-          <p className="text-sm text-[var(--abv-text)]/60 mt-1">Import your existing avatar notes</p>
-        </div>
+        <header className="mb-5">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Avatar Architect</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Import your existing avatar notes</p>
+        </header>
 
         <p className="text-sm text-[var(--abv-text)]/70 mb-4 leading-relaxed">
           Paste your avatar notes below — this can be a full avatar document, rough notes, bullet points, or anything you&apos;ve already written about your ideal client. The more you give me, the less I&apos;ll need to ask.
@@ -1523,15 +1512,18 @@ function AvatarArchitectInner() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
-      <div className="flex-shrink-0 mb-1">
-        <Link
-          href={isTestAvatarMode ? "/admin/ai-tools" : "/member/content-tools"}
-          className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors"
-        >
-          <ArrowLeftIcon className="w-3.5 h-3.5" />
-          {isTestAvatarMode ? "Back to Admin AI Tools" : "Back to Content Tools"}
-        </Link>
-      </div>
+      {/* Admin-only Test Avatar back link; members reach this top-level page from the sidebar. */}
+      {isTestAvatarMode && (
+        <div className="flex-shrink-0 mb-1">
+          <Link
+            href="/admin/ai-tools"
+            className="flex items-center gap-1.5 text-xs text-[var(--abv-text)]/50 hover:text-[var(--abv-ai-tools)] transition-colors"
+          >
+            <ArrowLeftIcon className="w-3.5 h-3.5" />
+            Back to Admin AI Tools
+          </Link>
+        </div>
+      )}
 
       {/* Test avatar mode banner */}
       {isTestAvatarMode && (
@@ -1552,7 +1544,7 @@ function AvatarArchitectInner() {
 
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-[var(--abv-text)]">🎯 Avatar Architect</h1>
+          <h1 className="text-xl font-bold text-[var(--abv-text)]">Avatar Architect</h1>
           <p className="text-sm text-[var(--abv-text)]/50">Chat with your coach</p>
         </div>
         <button

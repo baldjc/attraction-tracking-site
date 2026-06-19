@@ -121,10 +121,11 @@ const memberLinks = [
   { href: "/member/content-planner", label: "Content Planner", icon: CalendarDaysIcon,         featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null, section: "CREATE" },
   { href: "/member/market-data",     label: "Market Data",     icon: ChartBarSquareIcon,       featureKey: "tool_market_data",            colour: "var(--abv-azure)",   tierRequired: null },
   { href: "/member/knowledge-base",  label: "Knowledge Base",  icon: BookOpenIcon,             featureKey: "tool_neighbourhood_knowledge", colour: "var(--abv-azure)",   tierRequired: null },
+  { href: "/member/content-tools/avatar-architect", label: "Avatar Architect", icon: UserCircleIcon, featureKey: "tool_avatar_architect", colour: "var(--abv-azure)", tierRequired: null },
 
   // IMPROVE
-  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,                 featureKey: null,        colour: "var(--abv-scores)",  tierRequired: null,           section: "IMPROVE",   featureColour: "var(--abv-scores)" },
-  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,          featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,                                 featureColour: "var(--abv-academy)" },
+  { href: "/member/academy",         label: "Academy",         icon: AcademicCapIcon,          featureKey: null,        colour: "var(--abv-academy)", tierRequired: null,           section: "IMPROVE",   featureColour: "var(--abv-academy)" },
+  { href: "/member/scores",          label: "My Scores",       icon: StarIcon,                 featureKey: null,        colour: "var(--abv-scores)",  tierRequired: null,                                 featureColour: "var(--abv-scores)" },
   { href: "/member/my-calls",        label: "My Calls",        icon: VideoCameraIcon,          featureKey: null,        colour: "var(--abv-azure)",   tierRequired: null,                                 badgeKey: "unwatched_calls" },
 
   // GROW
@@ -307,6 +308,14 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   function isActive(href: string) {
     if (href === "/admin" || href === "/member/scores" || href === "/member/dashboard") {
       return pathname === href;
+    }
+    // Advanced Tools must not light up when the now-top-level Avatar Architect
+    // sub-route (which still lives under /member/content-tools) is active.
+    if (href === "/member/content-tools") {
+      return (
+        pathname.startsWith(href) &&
+        !pathname.startsWith("/member/content-tools/avatar-architect")
+      );
     }
     return pathname.startsWith(href);
   }

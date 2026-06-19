@@ -27,13 +27,6 @@ interface ActivitySummary {
   scriptReview: { lastReviewLabel: string | null };
 }
 
-const IconTarget = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
-    <circle cx="12" cy="12" r="9" />
-    <circle cx="12" cy="12" r="5.5" />
-    <circle cx="12" cy="12" r="2" fill="currentColor" />
-  </svg>
-);
 const IconSparkles = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
     <path d="M12 3l1.8 4.5L18 9l-4.2 1.5L12 15l-1.8-4.5L6 9l4.2-1.5z" />
@@ -120,14 +113,6 @@ export default function AIToolsHub({ basePath, featureFlags }: Props) {
       : null;
 
   const tools: ToolCard[] = [
-    {
-      href: `${basePath}/avatar-architect`,
-      name: "Avatar Architect",
-      tag: "Define who you talk to.",
-      icon: IconTarget,
-      featureKey: "tool_avatar_architect",
-      activity: avatarActivity,
-    },
     {
       href: `${basePath}/content-engine`,
       name: "Content Engine",
