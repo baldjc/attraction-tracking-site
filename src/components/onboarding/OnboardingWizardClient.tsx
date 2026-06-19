@@ -22,16 +22,20 @@ interface Props {
 }
 
 /**
- * Wizard step plan:
- *   1 Welcome → 2 Market data → 3 Avatar → 4 Sub-personas →
- *   5 Team credentials → 6 Knowledge Base →
- *   [7 Voice Guide — gated by tool_member_voice_guide] →
+ * Wizard step plan (identity-first; slow async tasks tail the flow):
+ *   1 Welcome → 2 Avatar → 3 Sub-personas → 4 Team credentials →
+ *   [5 Voice Guide — gated by tool_member_voice_guide] →
+ *   6 Market data (non-blocking) → 7 Knowledge Base (non-blocking) →
  *   8 First plan → 9 Done
  *
- * When the voice-guide flag is off, step 7 is hidden entirely: continue from
- * step 6 jumps straight to step 8, and the progress dots show 6 visible
+ * When the voice-guide flag is off, step 5 is hidden entirely: continue from
+ * step 4 jumps straight to step 6, and the progress dots show 6 visible
  * positions instead of 7. The internal step numbers (used for persistence
- * and URL ?step=) are stable across tiers — only the visible count changes.
+ * and URL ?step=) are contiguous 1-9 — only the visible count changes.
+ *
+ * Note: the component *file* names (Step2MarketData, Step3Avatar, …) reflect
+ * the original ordering and are intentionally left unchanged; the mapping
+ * below is the source of truth for render order.
  */
 export default function OnboardingWizardClient({
   cohort,
@@ -39,25 +43,33 @@ export default function OnboardingWizardClient({
   startStep,
 }: Props) {
   const router = useRouter();
-  const [step, setStepLocal] = useState<number>(
-    Math.max(1, Math.min(9, startStep)),
-  );
+  const [step, setStepLocal] = useState<number>(() => {
+    const clamped = Math.max(1, Math.min(9, startStep));
+    // Voice (step 5) is hidden without the flag — never land a resume there.
+    return clamped === 5 && !voiceGuideEnabled ? 6 : clamped;
+  });
 
   const visibleSteps = useMemo(() => {
-    const list = [1, 2, 3, 4, 5, 6];
-    if (voiceGuideEnabled) list.push(7);
-    list.push(8, 9);
+    const list = [1, 2, 3, 4];
+    if (voiceGuideEnabled) list.push(5);
+    list.push(6, 7, 8, 9);
     return list;
   }, [voiceGuideEnabled]);
 
   const totalForDisplay = totalWizardSteps(voiceGuideEnabled); // 6 or 7 (excludes 1=welcome, 9=done)
   const positionInDisplay = useMemo(() => {
-    // Spec labels step 2 as "Step 1 of 6", step 3 as "Step 2 of 6", etc.
-    // (Welcome and Done don't count.) Step 7 is "Step 6 of 6 (DWY only)".
+    // Welcome (1) and Done (9) show no counter. Every other visible step's
+    // display position is just its index in the visible sequence (Welcome at
+    // index 0 ⇒ first numbered step = index 1 = "Step 1 of N").
     if (step <= 1 || step >= 9) return null;
-    if (step === 7) return totalForDisplay; // always last numbered step when shown
-    return step - 1; // step 2 → 1, step 3 → 2, ..., step 8 → 7 (or 6 if no voice guide)
-  }, [step, totalForDisplay]);
+    const idx = visibleSteps.indexOf(step);
+    return idx > 0 ? idx : null;
+  }, [step, visibleSteps]);
+
+  const stepLabel =
+    positionInDisplay !== null
+      ? `Step ${positionInDisplay} of ${totalForDisplay}`
+      : undefined;
 
   const persistProgress = useCallback(
     async (completedStep: number) => {
@@ -113,7 +125,12 @@ export default function OnboardingWizardClient({
     router.push("/member/dashboard");
   }, [router]);
 
-  const stepProps = { cohort, onContinue: () => advance(step), onSkip: skip };
+  const stepProps = {
+    cohort,
+    onContinue: () => advance(step),
+    onSkip: skip,
+    stepLabel,
+  };
 
   return (
     <div className="mx-auto max-w-[760px]">
@@ -146,13 +163,15 @@ export default function OnboardingWizardClient({
 
       {/* Step card */}
       <section className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm p-8 sm:p-10">
+        {/* Render order (identity-first); component file names keep their
+            original numbering — see the step-plan comment above. */}
         {step === 1 && <Step1Welcome {...stepProps} />}
-        {step === 2 && <Step2MarketData {...stepProps} />}
-        {step === 3 && <Step3Avatar {...stepProps} />}
-        {step === 4 && <Step4SubPersonas {...stepProps} />}
-        {step === 5 && <Step5TeamCredentials {...stepProps} />}
-        {step === 6 && <Step6KnowledgeBase {...stepProps} />}
-        {step === 7 && voiceGuideEnabled && <Step7VoiceGuide {...stepProps} />}
+        {step === 2 && <Step3Avatar {...stepProps} />}
+        {step === 3 && <Step4SubPersonas {...stepProps} />}
+        {step === 4 && <Step5TeamCredentials {...stepProps} />}
+        {step === 5 && voiceGuideEnabled && <Step7VoiceGuide {...stepProps} />}
+        {step === 6 && <Step2MarketData {...stepProps} />}
+        {step === 7 && <Step6KnowledgeBase {...stepProps} />}
         {step === 8 && <Step8FirstPlan {...stepProps} />}
         {step === 9 && <Step9Done cohort={cohort} onFinish={finish} />}
       </section>

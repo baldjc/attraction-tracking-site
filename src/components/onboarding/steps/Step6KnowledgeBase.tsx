@@ -13,7 +13,7 @@ import { StepFooter, StepHeader, WhyBlock, type StepProps } from "./_shared";
  *
  * KB upload is recommended, not required → Continue is always enabled.
  */
-export default function Step6KnowledgeBase({ onContinue, onSkip }: StepProps) {
+export default function Step6KnowledgeBase({ onContinue, onSkip, stepLabel }: StepProps) {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
 
@@ -41,7 +41,7 @@ export default function Step6KnowledgeBase({ onContinue, onSkip }: StepProps) {
   return (
     <div>
       <StepHeader
-        label="Step 5 of 6 — Your neighbourhood research"
+        label={stepLabel ? `${stepLabel} — Your neighbourhood research` : "Your neighbourhood research"}
         title="Your neighbourhood research"
         subtitle="The hyper-local context that makes scripts feel like you've walked every block."
       />

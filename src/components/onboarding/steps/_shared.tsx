@@ -6,6 +6,12 @@ export interface StepProps {
   cohort: TierCohort;
   onContinue: () => void | Promise<void>;
   onSkip: () => void | Promise<void>;
+  /**
+   * "Step X of N" label, computed centrally by the wizard from the member's
+   * visible-step sequence so re-ordering steps doesn't desync per-step headers.
+   * Undefined for bookend steps (Welcome / Done) that show no counter.
+   */
+  stepLabel?: string;
 }
 
 /** Header used by every numbered step (2-8). */

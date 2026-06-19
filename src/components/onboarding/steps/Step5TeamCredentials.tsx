@@ -35,7 +35,7 @@ function autoLineFor(transactions: number | null) {
  * line untouched. Once the member edits the textarea manually we flip
  * `notesUserEdited` and never overwrite again.
  */
-export default function Step5TeamCredentials({ onContinue, onSkip }: StepProps) {
+export default function Step5TeamCredentials({ onContinue, onSkip, stepLabel }: StepProps) {
   const [form, setForm] = useState<TeamForm>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +136,7 @@ export default function Step5TeamCredentials({ onContinue, onSkip }: StepProps) 
   return (
     <div>
       <StepHeader
-        label="Step 4 of 6 — What makes you credible"
+        label={stepLabel ? `${stepLabel} — What makes you credible` : "What makes you credible"}
         title="What makes you credible"
         subtitle="The numbers your scripts will use, verbatim, in every video."
       />

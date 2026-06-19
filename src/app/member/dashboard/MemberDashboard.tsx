@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import OnboardingBanner from "@/components/onboarding/OnboardingBanner";
+import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
 import { LinkButton } from "@/components/ui/Button";
 import { writeJarvisSeed } from "@/lib/jarvis/seed";
 
@@ -226,6 +227,7 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
     <div className="space-y-10 pb-12 max-w-5xl mx-auto">
 
       <OnboardingBanner />
+      <OnboardingChecklist />
       <PaymentBanner />
 
       {/* ── Greeting (font-sans / Satoshi, 30px — not the display face) ── */}

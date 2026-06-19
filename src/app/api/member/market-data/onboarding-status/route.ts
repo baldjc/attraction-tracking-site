@@ -16,14 +16,34 @@ export async function GET() {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const validatedUpload = await prisma.marketDataUpload.findFirst({
-    where: { userId: user.id, status: "validated" },
-    orderBy: { validatedAt: "desc" },
-    select: { id: true },
-  });
+  const [validatedUpload, latestUpload] = await Promise.all([
+    prisma.marketDataUpload.findFirst({
+      where: { userId: user.id, status: "validated" },
+      orderBy: { validatedAt: "desc" },
+      select: { id: true },
+    }),
+    // Most-recent upload of ANY status — lets the wizard treat "accepted /
+    // queued / validating" as a non-blocking "upload received" state without
+    // waiting on validation to finish.
+    prisma.marketDataUpload.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: { status: true },
+    }),
+  ]);
+
+  // hasAnyUpload is the non-blocking signal: the member started an upload, so
+  // the wizard's Continue can light up immediately. latestStatus mirrors the
+  // UploadStatus enum (pending | validating | validated | failed) or null.
+  const latestStatus = latestUpload?.status ?? null;
+  const hasAnyUpload = !!latestUpload;
 
   if (!validatedUpload) {
-    return Response.json({ hasValidatedUpload: false });
+    return Response.json({
+      hasValidatedUpload: false,
+      hasAnyUpload,
+      latestStatus,
+    });
   }
 
   const [factCount, neighbourhoodCount] = await Promise.all([
@@ -39,6 +59,8 @@ export async function GET() {
 
   return Response.json({
     hasValidatedUpload: true,
+    hasAnyUpload,
+    latestStatus,
     factCount,
     neighbourhoodCount,
   });

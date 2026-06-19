@@ -19,7 +19,7 @@ const OPTIONS = [
  * Step 4 — Sub-personas. Picks 3-4 from a preset list. Saves to
  * MarketConfig.subPersonas as an array of strings via the config PATCH.
  */
-export default function Step4SubPersonas({ onContinue, onSkip }: StepProps) {
+export default function Step4SubPersonas({ onContinue, onSkip, stepLabel }: StepProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export default function Step4SubPersonas({ onContinue, onSkip }: StepProps) {
   return (
     <div>
       <StepHeader
-        label="Step 3 of 6 — Who else watches"
+        label={stepLabel ? `${stepLabel} — Who else watches` : "Who else watches"}
         title="Who else watches"
         subtitle="The people who aren't your main viewer but still show up."
       />

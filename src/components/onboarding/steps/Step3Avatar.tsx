@@ -17,7 +17,7 @@ interface AvatarInfo {
  *   - Not populated: minimal 5-field inline form that writes to
  *     MarketConfig.primaryAvatar via the existing config PUT endpoint.
  */
-export default function Step3Avatar({ onContinue, onSkip }: StepProps) {
+export default function Step3Avatar({ onContinue, onSkip, stepLabel }: StepProps) {
   const [info, setInfo] = useState<AvatarInfo | null>(null);
   const [name, setName] = useState("");
   const [profile, setProfile] = useState("");
@@ -85,7 +85,7 @@ export default function Step3Avatar({ onContinue, onSkip }: StepProps) {
   return (
     <div>
       <StepHeader
-        label="Step 2 of 6 — Who's on the other side of the camera"
+        label={stepLabel ? `${stepLabel} — Who's on the other side of the camera` : "Who's on the other side of the camera"}
         title="Who's on the other side of the camera"
         subtitle="The single person you're talking to."
       />

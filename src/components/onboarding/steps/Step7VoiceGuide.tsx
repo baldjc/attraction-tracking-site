@@ -47,7 +47,7 @@ const EMPTY_Q: QuestionnaireState = {
  *      guide via a fixed template, shows it in an editable preview textarea
  *      for one last edit, then saves to the same endpoint.
  */
-export default function Step7VoiceGuide({ onContinue, onSkip }: StepProps) {
+export default function Step7VoiceGuide({ onContinue, onSkip, stepLabel }: StepProps) {
   const [tab, setTab] = useState<Tab>("questionnaire");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +102,7 @@ export default function Step7VoiceGuide({ onContinue, onSkip }: StepProps) {
   return (
     <div>
       <StepHeader
-        label="Step 6 of 6 — Your voice"
+        label={stepLabel ? `${stepLabel} — Your voice` : "Your voice"}
         title="Your voice (Done-With-You only)"
         subtitle="If your scripts should sound like YOU, not the channel default."
       />
