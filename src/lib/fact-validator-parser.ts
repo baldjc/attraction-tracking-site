@@ -585,6 +585,27 @@ function detectScanType(pattern: string): number {
   return 0; // unmapped — revisit later
 }
 
+// Story-lead field labels may be emitted plain ("PATTERN:") OR decorated with
+// markdown emphasis and/or a list marker ("**PATTERN:**", "**PATTERN**:",
+// "- **PATTERN:**", "*PATTERN*:"). The validator is not consistent run-to-run,
+// and the previous plain-only label regex silently dropped EVERY lead whenever
+// the model bolded the labels — a perfectly good validation (hundreds of facts,
+// 8 well-formed leads in the raw output) then persisted 0 story leads. These
+// helpers tolerate the emphasis so both formats parse identically.
+const LEAD_FIELD_EMPHASIS = String.raw`(?:\*\*|\*|__|_)?`;
+const LEAD_FIELD_KEYS_ALT = String.raw`PATTERN|DATA\s+THREADS|WHY\s+IT\s+MATTERS(?:\s+TO\s+VIEWERS)?|SUB-PERSONAS\s+SERVED|ROTATION\s+SLOT\s+FIT|SUGGESTED\s+FRAMEWORK|TACTILE\s+TYPE`;
+
+/**
+ * Build a regex fragment that matches a story-lead field label, tolerating
+ * optional leading horizontal whitespace, an optional list marker, and optional
+ * markdown emphasis around the key — with the colon either inside ("**KEY:**")
+ * or outside ("**KEY**:") the emphasis.
+ */
+function leadFieldLabelPattern(key: string): string {
+  const k = key.trim().replace(/\s+/g, String.raw`\s+`);
+  return String.raw`[^\S\r\n]*(?:[-*•]\s+)?${LEAD_FIELD_EMPHASIS}\s*${k}\s*${LEAD_FIELD_EMPHASIS}\s*:\s*${LEAD_FIELD_EMPHASIS}`;
+}
+
 function parseStoryLeads(section: string): ParsedStoryLead[] {
   if (!section.trim()) return [];
   const parts = section.split(/(?=^###\s*LEAD\s*#)/im);
@@ -595,22 +616,25 @@ function parseStoryLeads(section: string): ParsedStoryLead[] {
 
     // Heading: "### LEAD #1 — Some Label" (optionally with "THESIS LEAD" marker)
     const headingMatch = block.match(/^###\s*LEAD\s*#\s*\d+\s*[—\-:]?\s*(.+?)$/im);
-    const rawHeading = (headingMatch?.[1] ?? "").trim();
+    const rawHeading = (headingMatch?.[1] ?? "").trim().replace(/\*\*/g, "");
     const isThesisLead = /thesis\s+lead/i.test(rawHeading) || /thesis\s+lead/i.test(block.slice(0, 200));
     const label = rawHeading
       .replace(/^thesis\s+lead\s*[:\-—]?\s*/i, "")
       .replace(/\s*\(?thesis\s+lead\)?\s*$/i, "")
       .trim() || null;
 
-    // Field-based extraction.
+    // Field-based extraction. Stops the captured value at the next field label
+    // (emphasis-tolerant), a "### " heading, a "---" rule, or absolute
+    // end-of-string. The `$(?![\s\S])` anchor is a real end-of-string assertion;
+    // the prior `\Z` was a JS bug (literal "Z"), which dropped the LAST field of
+    // every block (typically TACTILE TYPE).
     function takeField(key: string): string {
-      // Match "PATTERN:" ... up to next ALL-CAPS field heading or end.
       const re = new RegExp(
-        `^\\s*${key}\\s*:\\s*([\\s\\S]*?)(?=^\\s*(PATTERN|DATA THREADS|WHY IT MATTERS(?: TO VIEWERS)?|SUB-PERSONAS SERVED|ROTATION SLOT FIT|SUGGESTED FRAMEWORK|TACTILE TYPE)\\s*:|^###|\\Z)`,
+        `^${leadFieldLabelPattern(key)}([\\s\\S]*?)(?=^${leadFieldLabelPattern(`(?:${LEAD_FIELD_KEYS_ALT})`)}|^[^\\S\\r\\n]*###|^[^\\S\\r\\n]*---[^\\S\\r\\n]*$|$(?![\\s\\S]))`,
         "im",
       );
       const m = block.match(re);
-      return (m?.[1] ?? "").trim();
+      return (m?.[1] ?? "").replace(/(?:\*\*|\*|__|_)+\s*$/, "").trim();
     }
 
     const pattern = takeField("PATTERN").replace(/\s+/g, " ").trim();
