@@ -402,7 +402,30 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
                     </>
                   );
                 }
-                // 4) No upload yet (or failed) → the original upload prompt.
+                // 4) Last upload failed → surface it calmly. Don't pretend
+                //    nothing happened (and never spin forever): point at the
+                //    market-data page where the error detail + Retry button live.
+                if (marketDataState === "failed") {
+                  return (
+                    <>
+                      <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
+                        Your last upload <span className="text-[var(--abv-azure)]">needs another look</span>.
+                      </h2>
+                      <p className="text-white/70 text-sm sm:text-base mt-3 max-w-lg">
+                        We couldn&apos;t finish processing your most recent
+                        market-data upload. Open the market-data page to see what
+                        happened and retry — it usually just takes one more go.
+                      </p>
+                      <LinkButton
+                        href="/member/market-data"
+                        className="mt-5 !bg-white !text-[var(--abv-dark)] hover:!bg-white/90"
+                      >
+                        Review &amp; retry →
+                      </LinkButton>
+                    </>
+                  );
+                }
+                // 5) No upload yet → the original upload prompt.
                 return (
                   <>
                     <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">

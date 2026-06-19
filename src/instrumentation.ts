@@ -33,6 +33,13 @@ export async function register() {
     const { scheduleBackup } = await import("@/lib/backup-scheduler");
     scheduleBackup();
 
+    // Reclaim market-data validations orphaned by a process restart/redeploy and
+    // watchdog any that hang, so an upload never sits in "validating" forever.
+    const { scheduleValidationWatchdog } = await import(
+      "@/lib/validation-recovery"
+    );
+    scheduleValidationWatchdog();
+
     try {
       const prisma = (await import("@/lib/prisma")).default;
 
