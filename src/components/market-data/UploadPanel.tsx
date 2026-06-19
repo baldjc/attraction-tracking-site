@@ -7,6 +7,7 @@ import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { type ColumnMapping } from "@/lib/market-config";
 import { Button } from "@/components/ui/Button";
+import Notice, { NOTICE_PILL_CLASS } from "@/components/ui/Notice";
 import ColumnMapper from "@/components/market-data/ColumnMapper";
 import StatusMapper, {
   type UnknownStatusValue,
@@ -835,36 +836,32 @@ export default function UploadPanel({
         : "Confirm how your CSV columns map to our required fields. We'll save this so you don't have to do it again.";
 
   const mapperBanner = mapper?.banner ? (
-    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/20">
-      <div className="text-sm font-medium text-amber-900 dark:text-amber-200">
-        {mapper.banner.message}
-      </div>
-      {mapper.banner.detail && (
-        <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
-          {mapper.banner.detail}
-        </p>
-      )}
+    <Notice
+      variant="warning"
+      title={mapper.banner.message}
+      action={
+        mapper.banner.confirm ? (
+          <button
+            type="button"
+            onClick={mapper.banner.confirm.onConfirm}
+            disabled={mapperSaving}
+            className={`${NOTICE_PILL_CLASS} disabled:opacity-60`}
+          >
+            {mapper.banner.confirm.label}
+          </button>
+        ) : undefined
+      }
+    >
+      {mapper.banner.detail && <p>{mapper.banner.detail}</p>}
       {mapper.banner.suggestion && (
-        <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+        <p className={mapper.banner.detail ? "mt-1" : ""}>
           <span className="font-medium">Tip:</span> {mapper.banner.suggestion}
         </p>
       )}
       {mapper.filename && (
-        <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
-          File: {mapper.filename}
-        </p>
+        <p className="mt-1 text-[11px] opacity-80">File: {mapper.filename}</p>
       )}
-      {mapper.banner.confirm && (
-        <button
-          type="button"
-          onClick={mapper.banner.confirm.onConfirm}
-          disabled={mapperSaving}
-          className="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-60 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
-        >
-          {mapper.banner.confirm.label}
-        </button>
-      )}
-    </div>
+    </Notice>
   ) : mapper?.filename ? (
     <p className="text-xs text-gray-500 dark:text-gray-400">
       Columns read from <span className="font-medium">{mapper.filename}</span>
@@ -1050,7 +1047,7 @@ export default function UploadPanel({
           )}
 
           {oversizedFiles.length > 0 && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <Notice variant="warning">
               <span className="font-medium">Heads up:</span>{" "}
               {oversizedFiles.length === 1 ? (
                 <>
@@ -1067,7 +1064,7 @@ export default function UploadPanel({
               it doesn&apos;t process you may need to filter your MLS export to
               your specific territory (your suburbs, zip codes, or
               neighbourhoods) before uploading.
-            </div>
+            </Notice>
           )}
 
           {selected.length > 0 && (
@@ -1147,7 +1144,7 @@ export default function UploadPanel({
         uploadWarnings.length > 0 &&
         conflicts.length === 0 &&
         stage === "picking" && (
-          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+          <Notice variant="warning" className="mt-4">
             <div className="font-medium">
               {uploadWarnings.length} data warning
               {uploadWarnings.length === 1 ? "" : "s"} — uploaded anyway, but
@@ -1160,11 +1157,15 @@ export default function UploadPanel({
                 </li>
               ))}
             </ul>
-          </div>
+          </Notice>
         )}
 
       {justUploadedCount > 0 && conflicts.length === 0 && stage === "picking" && (
-        <div className="mt-4 rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200">
+        <Notice
+          variant="success"
+          className="mt-4"
+          onDismiss={() => setJustUploadedCount(0)}
+        >
           <div className="font-medium">
             Uploaded {justUploadedCount} file
             {justUploadedCount === 1 ? "" : "s"} — validating now.
@@ -1183,66 +1184,61 @@ export default function UploadPanel({
             </Link>{" "}
             page (nothing changes until you confirm).
           </p>
-          <button
-            type="button"
-            onClick={() => setJustUploadedCount(0)}
-            className="mt-2 text-xs underline hover:no-underline"
-          >
-            Dismiss
-          </button>
-        </div>
+        </Notice>
       )}
 
       {conflicts.length > 0 && (
-        <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                Already uploaded for{" "}
-                {conflicts.length === 1 ? "this month" : "these months"}
+        <Notice variant="warning" className="mt-4">
+          <div className="w-full">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium">
+                  Already uploaded for{" "}
+                  {conflicts.length === 1 ? "this month" : "these months"}
+                </div>
+                <p className="mt-1 text-xs">
+                  Replace to delete the existing facts and re-validate — or
+                  remove the file from the batch.
+                </p>
               </div>
-              <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
-                Replace to delete the existing facts and re-validate — or
-                remove the file from the batch.
-              </p>
-            </div>
-            {conflicts.length >= 2 && (
-              <button
-                type="button"
-                onClick={() => openReplaceDialog(conflicts)}
-                disabled={bulkReplacing}
-                className="shrink-0 rounded-md bg-amber-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Replace all {conflicts.length} months
-              </button>
-            )}
-          </div>
-          <ul className="mt-2 space-y-1">
-            {conflicts.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between gap-3 rounded bg-white/60 px-2 py-1.5 text-xs dark:bg-gray-900/40"
-              >
-                <span className="text-gray-800 dark:text-gray-200">
-                  <span className="font-medium">{c.label}</span>
-                  <span className="text-gray-500 dark:text-gray-400">
-                    {" "}
-                    · {c.status} · {c.factCount.toLocaleString()} facts,{" "}
-                    {c.storyLeadCount.toLocaleString()} leads
-                  </span>
-                </span>
+              {conflicts.length >= 2 && (
                 <button
                   type="button"
-                  onClick={() => openReplaceDialog([c])}
-                  disabled={bulkReplacing || replacingId === c.id}
-                  className="rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => openReplaceDialog(conflicts)}
+                  disabled={bulkReplacing}
+                  className="shrink-0 rounded-full bg-[var(--abv-ink)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-[var(--abv-dark)]"
                 >
-                  {replacingId === c.id ? "Replacing…" : "Replace"}
+                  Replace all {conflicts.length} months
                 </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+              )}
+            </div>
+            <ul className="mt-2 space-y-1">
+              {conflicts.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded bg-white/60 px-2 py-1.5 text-xs dark:bg-gray-900/40"
+                >
+                  <span className="text-gray-800 dark:text-gray-200">
+                    <span className="font-medium">{c.label}</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {" "}
+                      · {c.status} · {c.factCount.toLocaleString()} facts,{" "}
+                      {c.storyLeadCount.toLocaleString()} leads
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => openReplaceDialog([c])}
+                    disabled={bulkReplacing || replacingId === c.id}
+                    className="shrink-0 rounded-full bg-[var(--abv-ink)] px-3 py-1 text-xs font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-[var(--abv-dark)]"
+                  >
+                    {replacingId === c.id ? "Replacing…" : "Replace"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Notice>
       )}
 
       {replaceDialog && (

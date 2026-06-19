@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { upgradeYouTubeImage } from "@/lib/youtube";
+import Notice from "@/components/ui/Notice";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -585,10 +586,9 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
                   )}
 
                   {gap.what_this_costs_you && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
-                      <p className="text-xs font-semibold text-amber-800 mb-1">What this costs you</p>
-                      <p className="text-xs text-[var(--abv-text)]/80">{gap.what_this_costs_you}</p>
-                    </div>
+                    <Notice variant="warning" title="What this costs you" className="mb-2">
+                      {gap.what_this_costs_you}
+                    </Notice>
                   )}
 
                   {gap.inside_attraction && (
@@ -1408,14 +1408,13 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
 
       {/* Single Video: Quick Wins */}
       {isSingleVideo && report?.quick_wins?.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 print-avoid-break">
-          <h2 className="text-base font-semibold text-amber-800 mb-3">⚡ Quick Win for Next Video</h2>
+        <Notice variant="info" title="⚡ Quick Win for Next Video" className="print-avoid-break">
           <ul className="space-y-2">
             {report.quick_wins.slice(0, 1).map((win: string, i: number) => (
-              <li key={i} className="text-sm text-amber-900 leading-relaxed">{win}</li>
+              <li key={i} className="leading-relaxed">{win}</li>
             ))}
           </ul>
-        </div>
+        </Notice>
       )}
 
       {/* Monthly progress summary */}
@@ -1558,9 +1557,9 @@ export default function AuditReportView({ audit, chrome }: { audit: any; chrome?
         <div className="bg-white rounded-lg border border-gray-200 p-6 print-page-break">
           <h2 className="text-base font-semibold text-[var(--abv-text)] mb-4">Videos Analysed</h2>
           {!report?.video_breakdowns?.length && (
-            <div className="mb-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+            <Notice variant="warning" className="mb-4">
               Per-video analysis unavailable for this audit. Delete and re-run to see dimension scores, strengths, and improvements per video.
-            </div>
+            </Notice>
           )}
           <div className="space-y-5">
             {videos.map((v: any, i: number) => {

@@ -8,6 +8,7 @@ import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
 import InlineUpgradeBanner from "@/components/upgrade/InlineUpgradeBanner";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 
@@ -1289,9 +1290,9 @@ function RepurposeContentPageInner() {
                               <button onClick={() => openCampaignPicker("newsletter")} className="text-xs text-[var(--abv-ai-tools)] hover:underline">+ Add Campaign Link</button>
                             )}
                             {noLeadMagnet && (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-3 py-2">
+                              <Notice variant="warning">
                                 This campaign has no Lead Magnet URL set. The newsletter link will point to the Landing Page instead. <a href={`/member/campaigns/${camp!.id}`} className="underline">Update campaign →</a>
-                              </p>
+                              </Notice>
                             )}
                           </>
                         );

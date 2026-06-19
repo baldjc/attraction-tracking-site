@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { FactPickerModal } from "./FactPickerModal";
 import { formatActionImpactPercent } from "@/lib/cost-display";
@@ -316,11 +317,12 @@ export function FactBlockGate({
   const [manualOpen, setManualOpen] = useState(false);
 
   return (
-    <div className="mx-auto mt-10 max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-6 shadow-sm dark:border-amber-700/60 dark:bg-amber-900/15">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        This plan has no linked facts yet
-      </h1>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+    <Notice
+      variant="warning"
+      className="mx-auto mt-10 max-w-xl shadow-sm"
+      title="This plan has no linked facts yet"
+    >
+      <p className="text-sm">
         Script Builder v2 anchors every script on cited market facts, and this
         plan doesn&apos;t have any linked yet. Link facts, run a data search, or
         add one yourself to continue.
@@ -373,7 +375,7 @@ export function FactBlockGate({
           }}
         />
       )}
-    </div>
+    </Notice>
   );
 }
 

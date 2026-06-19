@@ -12,6 +12,7 @@ import MarkdownMessage from "@/components/MarkdownMessage";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import LinkedPlanBanner from "@/components/ai-tools/LinkedPlanBanner";
+import Notice from "@/components/ui/Notice";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 
@@ -807,16 +808,15 @@ function TitleThumbnailAnalyzerPageInner() {
                   </p>
                 )}
                 {(result.thumbnail?.mistakes_flagged?.length ?? 0) > 0 && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Common Mistakes Detected</p>
+                  <Notice variant="warning" title="Common Mistakes Detected">
                     <ul className="space-y-1">
                       {result.thumbnail?.mistakes_flagged?.map((m, i) => (
-                        <li key={i} className="text-sm text-amber-700 flex gap-2">
+                        <li key={i} className="flex gap-2">
                           <span>⚠</span>{m}
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Notice>
                 )}
                 <SubScoreBreakdown subScores={result.thumbnail?.sub_scores} />
               </div>
@@ -904,16 +904,15 @@ function TitleThumbnailAnalyzerPageInner() {
               </div>
             )}
             {(result.title?.mistakes_flagged?.length ?? 0) > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
-                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Common Mistakes Detected</p>
+              <Notice variant="warning" title="Common Mistakes Detected" className="mb-2">
                 <ul className="space-y-1">
                   {result.title?.mistakes_flagged?.map((m, i) => (
-                    <li key={i} className="text-sm text-amber-700 flex gap-2">
+                    <li key={i} className="flex gap-2">
                       <span>⚠</span>{m}
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Notice>
             )}
             <SubScoreBreakdown subScores={result.title?.sub_scores} />
           </div>
@@ -1050,16 +1049,15 @@ function TitleThumbnailAnalyzerPageInner() {
               </div>
             )}
             {(result.combined?.mistakes_flagged?.length ?? 0) > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
-                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1.5">Combination Mistakes Detected</p>
+              <Notice variant="warning" title="Combination Mistakes Detected" className="mt-4">
                 <ul className="space-y-1">
                   {result.combined?.mistakes_flagged?.map((m, i) => (
-                    <li key={i} className="text-sm text-amber-700 flex gap-2">
+                    <li key={i} className="flex gap-2">
                       <span>⚠</span>{m}
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Notice>
             )}
             <SubScoreBreakdown subScores={result.combined?.sub_scores} />
           </div>

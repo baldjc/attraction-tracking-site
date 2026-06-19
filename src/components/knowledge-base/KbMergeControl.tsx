@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
+import Notice from "@/components/ui/Notice";
 
 interface GroupSummary {
   canonical: string;
@@ -322,7 +323,7 @@ export default function KbMergeControl() {
       </p>
 
       {pending && state.phase === "idle" && (
-        <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
+        <Notice variant="info" className="mt-4">
           A cleanup is ready to review:{" "}
           <strong>{pending.report.collapsed}</strong> name
           {pending.report.collapsed === 1 ? "" : "s"} would collapse (
@@ -334,7 +335,7 @@ export default function KbMergeControl() {
               {pending.report.reviewQueueCount === 1 ? "" : "s"} need a look.
             </>
           )}
-        </div>
+        </Notice>
       )}
 
       {state.phase === "error" && (

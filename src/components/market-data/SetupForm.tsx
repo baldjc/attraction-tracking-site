@@ -12,6 +12,7 @@ import {
   type SubPersona,
 } from "@/lib/market-config";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 interface VoiceGuideInfo {
   charCount: number;
@@ -315,13 +316,7 @@ export default function SetupForm({
   return (
     <form onSubmit={onSave} className="space-y-8">
       {/* Status banner */}
-      <div
-        className={`rounded-lg border p-3 text-sm ${
-          readyToUpload
-            ? "border-green-300 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200"
-            : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
-        }`}
-      >
+      <Notice variant={readyToUpload ? "success" : "info"}>
         {readyToUpload
           ? "Ready to upload data."
           : "Add a market name and MLS source to enable uploads."}
@@ -331,7 +326,7 @@ export default function SetupForm({
             now).
           </span>
         )}
-      </div>
+      </Notice>
 
       {/* Required */}
       <section className="space-y-4">

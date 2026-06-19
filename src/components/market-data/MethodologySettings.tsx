@@ -19,6 +19,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 import { ToastProvider, useToast } from "@/components/ToastProvider";
 import { formatActionImpactPercent } from "@/lib/cost-display";
 import {
@@ -324,11 +325,11 @@ function MethodologySettingsInner() {
           ) : (
             <>
               {!hasUpload && (
-                <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+                <Notice variant="info">
                   Upload a market report to see live preview numbers for each
                   option. You can still choose your methodology now — it applies to
                   your next upload automatically.
-                </div>
+                </Notice>
               )}
 
               {/* Preset comparison */}

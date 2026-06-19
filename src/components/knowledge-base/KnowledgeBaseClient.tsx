@@ -7,6 +7,7 @@ import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { ToastProvider, useToast } from "@/components/ToastProvider";
 import KbMergeControl from "@/components/knowledge-base/KbMergeControl";
+import Notice from "@/components/ui/Notice";
 import {
   renderResearchBrief,
   estimatedResearchMinutes,
@@ -534,11 +535,11 @@ function KnowledgeBaseInner({
             </div>
 
             {discovered.status === "ready" && discovered.allNumeric && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
-                <p className="font-medium">
-                  Your data uses area codes, not neighbourhood names.
-                </p>
-                <p className="mt-1">
+              <Notice
+                variant="warning"
+                title="Your data uses area codes, not neighbourhood names."
+              >
+                <p>
                   Scripts using these will reference codes (e.g.{" "}
                   <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[12px] dark:bg-amber-900/40">
                     {discovered.discovered.find((n) => /^\d+$/.test(n)) ??
@@ -555,7 +556,7 @@ function KnowledgeBaseInner({
                   {showCodeHelp ? "Hide" : "Learn how to get names"}
                 </button>
                 {showCodeHelp && (
-                  <div className="mt-2 rounded border border-amber-300/70 bg-white/60 p-2 text-xs leading-relaxed text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-100">
+                  <div className="mt-2 rounded border border-[var(--abv-border)] bg-white/60 p-2 text-xs leading-relaxed">
                     Your MLS export contains numeric area codes. Many MLSes can
                     export the area <strong>name</strong> instead — check your
                     export tool for a{" "}
@@ -566,7 +567,7 @@ function KnowledgeBaseInner({
                     that column as your neighbourhood field.
                   </div>
                 )}
-              </div>
+              </Notice>
             )}
 
             {discovered.status === "ready" &&
@@ -786,7 +787,7 @@ function KnowledgeBaseInner({
         )}
 
         {neighbourhoods.length === 0 && (
-          <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <Notice variant="warning" className="mt-3">
             Add at least one neighbourhood to your{" "}
             <Link
               href="/member/market-data/setup"
@@ -795,7 +796,7 @@ function KnowledgeBaseInner({
               Market Data setup
             </Link>{" "}
             before generating the brief.
-          </div>
+          </Notice>
         )}
 
         {briefOpen && (

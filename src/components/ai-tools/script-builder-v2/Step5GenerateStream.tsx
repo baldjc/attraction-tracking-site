@@ -43,6 +43,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiThinking, type PipelineStep } from "@/components/ai/AiThinking";
+import Notice from "@/components/ui/Notice";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { formatUsagePercent } from "@/lib/cost-display";
 import type { ShootType } from "./Step4ShootType";
@@ -823,20 +824,20 @@ function DoneView({
       </div>
 
       {done.warnings.length > 0 && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/30">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-200">
+        <Notice variant="warning">
+          <p className="font-semibold uppercase tracking-wide">
             {done.degraded
               ? `Shipped with ${done.warnings.length} issue(s) flagged — review before publishing`
               : `Soft warnings (${done.warnings.length})`}
           </p>
-          <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-amber-900 dark:text-amber-100">
+          <ul className="mt-2 list-inside list-disc space-y-1">
             {done.warnings.map((w, i) => (
               <li key={i}>
                 <span className="font-mono">{w.rule}</span> — {w.message}
               </li>
             ))}
           </ul>
-        </div>
+        </Notice>
       )}
 
       {done.planWarnings && done.planWarnings.length > 0 && (

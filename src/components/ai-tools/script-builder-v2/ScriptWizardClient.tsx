@@ -15,6 +15,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 import { FactPickerModal } from "@/components/content-planner/FactPickerModal";
 import {
   RunDataSearchButton,
@@ -92,7 +93,7 @@ function LowSupportBanner({
       ? "This is a data-driven slot, so it usually carries 3+ supporting facts. It's below the recommended 3 right now — the script will have thin numbers to anchor on. Consider adding more before you publish."
       : "This is a story-driven slot, so it can carry a lighter fact set — but it's below the recommended 3. You can build now, or link a couple more facts for a stronger payoff.";
   return (
-    <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-900/15 dark:text-amber-200">
+    <Notice variant="warning" className="mb-4">
       <p className="font-semibold">
         Low Support — {count} linked fact{count === 1 ? "" : "s"}
       </p>
@@ -130,7 +131,7 @@ function LowSupportBanner({
           }}
         />
       )}
-    </div>
+    </Notice>
   );
 }
 
@@ -302,14 +303,14 @@ export function ScriptWizardClient({
           attempt {result.attempt + 1}
         </div>
         {result.warnings.length > 0 && (
-          <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <Notice variant="warning" className="mt-3">
             <strong>Soft warnings ({result.warnings.length}):</strong>
             <ul className="ml-4 mt-1 list-disc space-y-0.5">
               {result.warnings.map((w, i) => (
                 <li key={i}>{w.message}</li>
               ))}
             </ul>
-          </div>
+          </Notice>
         )}
         {result.planWarnings && result.planWarnings.length > 0 && (
           <div className="mt-3 rounded border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900 dark:border-sky-700/50 dark:bg-sky-900/20 dark:text-sky-100">

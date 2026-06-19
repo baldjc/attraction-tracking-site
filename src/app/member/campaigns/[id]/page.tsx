@@ -1000,9 +1000,9 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
               This will clear all clicks and leads recorded for:
             </p>
             <p className="text-sm font-semibold text-[var(--abv-text)] mb-4">{resetConfirmLink.name}</p>
-            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mb-5">
+            <Notice variant="warning" className="mb-5">
               Use this to wipe test data before sharing your link publicly. This cannot be undone.
-            </p>
+            </Notice>
             <div className="flex gap-3">
               <button
                 onClick={confirmReset}

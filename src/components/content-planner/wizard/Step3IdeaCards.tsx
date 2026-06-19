@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
+import Notice from "@/components/ui/Notice";
 import {
   ROTATION_SLOTS,
   rotationSlotToTheme,
@@ -306,7 +307,7 @@ export function Step3IdeaCards({
       </div>
 
       {isPartial && (
-        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">
+        <Notice variant="warning" className="mb-4">
           {pinnedThemeLabel
             ? `Couldn't produce ${missing} more on-theme idea${missing === 1 ? "" : "s"} from this upload — try unpinning the theme or generating from a different upload. `
             : `Generated ${shownCount} of ${result.requestedCount} — the validation gate trimmed some. `}
@@ -322,7 +323,7 @@ export function Step3IdeaCards({
             generate again
           </Link>
           .
-        </div>
+        </Notice>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ArcScriptUploadPhase from "@/components/ai-tools/ArcScriptUploadPhase";
 import ArcScriptChatPhase from "@/components/ai-tools/ArcScriptChatPhase";
+import Notice from "@/components/ui/Notice";
 import { GROWTH_DWY_TIERS } from "@/lib/content-plan-utils";
 
 function nextStatusForTier(tier: string): string {
@@ -29,10 +30,9 @@ function SaveStatusBanner({
   if (!plannerSaving && !plannerSaved && !plannerSaveError) return null;
   if (plannerSaving) {
     return (
-      <div className="mb-5 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-        <span className="text-amber-600">⏳</span>
-        <p className="text-sm text-amber-700">Saving script to your content plan…</p>
-      </div>
+      <Notice variant="info" icon="⏳" className="mb-5">
+        Saving script to your content plan…
+      </Notice>
     );
   }
   if (plannerSaved) {
@@ -380,30 +380,15 @@ export default function ArcScriptBuilderTool({ basePath, isAdmin, defaultPlanId 
       />
 
       {usage && !unlimited && pct >= 50 && (
-        <div
-          className={`mb-5 flex items-start gap-3 border rounded-lg p-4 ${
-            pct >= 90
-              ? "bg-red-50 border-red-200"
-              : pct >= 75
-                ? "bg-amber-50 border-amber-200"
-                : "border-[var(--abv-azure)] bg-[var(--abv-azure-tint)]"
-          }`}
+        <Notice
+          variant={pct >= 90 ? "error" : pct >= 75 ? "warning" : "info"}
+          icon={pct >= 90 ? "🚫" : pct >= 75 ? "⚠️" : "ℹ️"}
+          className="mb-5"
         >
-          <span className="text-lg">{pct >= 90 ? "🚫" : pct >= 75 ? "⚠️" : "ℹ️"}</span>
-          <p
-            className={`text-sm ${
-              pct >= 90
-                ? "text-red-700"
-                : pct >= 75
-                  ? "text-amber-700"
-                  : "text-[var(--abv-ink)] dark:text-white"
-            }`}
-          >
-            {pct >= 100
-              ? `You've reached your monthly AI usage limit. Resets ${usage.resetsAt}.`
-              : `You've used ${Math.round(pct)}% of your monthly AI budget. Resets ${usage.resetsAt}.`}
-          </p>
-        </div>
+          {pct >= 100
+            ? `You've reached your monthly AI usage limit. Resets ${usage.resetsAt}.`
+            : `You've used ${Math.round(pct)}% of your monthly AI budget. Resets ${usage.resetsAt}.`}
+        </Notice>
       )}
 
       {/* Resume draft banner */}

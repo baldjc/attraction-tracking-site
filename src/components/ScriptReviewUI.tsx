@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ArrowPathIcon, CheckIcon, BookmarkSquareIcon, TrashIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 const PRINCIPLE_LABELS: Record<string, string> = {
   avatar_clarity: "Avatar Clarity",
@@ -262,10 +263,9 @@ function ResultDisplay({ r, baselineScores }: { r: ReviewResult; baselineScores:
       )}
 
       {reportContent.quick_win && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-amber-800 mb-2">⚡ Quick Win — Do This Before You Record</h3>
-          <p className="text-sm text-amber-900 leading-relaxed">{reportContent.quick_win}</p>
-        </div>
+        <Notice variant="info" title="⚡ Quick Win — Do This Before You Record">
+          <p className="leading-relaxed">{reportContent.quick_win}</p>
+        </Notice>
       )}
     </div>
   );

@@ -14,6 +14,7 @@ import ArcProgressBar, { SECTIONS } from "@/components/ai-tools/ArcProgressBar";
 import { AiThinking } from "@/components/ai/AiThinking";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import NextStepCard from "@/components/ai-tools/NextStepCard";
+import Notice from "@/components/ui/Notice";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { parseSseEvent } from "@/lib/ai-thinking-sse";
 
@@ -75,9 +76,9 @@ function CostCapBanner({ level }: { level: "warning" | "critical" }) {
     );
   }
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-300 mb-4">
+    <Notice variant="warning" className="mb-4">
       You&apos;ve used 75%+ of your monthly AI allowance.
-    </div>
+    </Notice>
   );
 }
 
@@ -687,9 +688,9 @@ export default function ArcScriptChatPhase({
       </div>
 
       {atTurnLimit && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-700 dark:text-amber-300 mb-3">
+        <Notice variant="warning" className="mb-3">
           You&apos;ve reached the 20-turn limit for this session. Save your script or start a new one.
-        </div>
+        </Notice>
       )}
 
       {(finalScriptDone || isFinalScript) && (

@@ -17,6 +17,7 @@
 // facing surface that gets visited a few times a month per user.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Notice from "@/components/ui/Notice";
 
 interface InitialUpload {
   id: string;
@@ -185,27 +186,9 @@ function BannerShell({
   onDismiss: () => void;
   children: React.ReactNode;
 }) {
-  const toneClasses =
-    tone === "success"
-      ? "border-green-300 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200"
-      : tone === "warning"
-        ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
-        : "border-[var(--abv-azure)] text-[var(--abv-ink)] dark:text-white";
-
   return (
-    <div
-      role="status"
-      className={`flex items-start justify-between gap-3 rounded-md border px-4 py-3 text-sm ${toneClasses}`}
-    >
-      <div className="flex-1">{children}</div>
-      <button
-        type="button"
-        onClick={onDismiss}
-        aria-label="Dismiss"
-        className="-mt-1 -mr-1 rounded p-1 text-current opacity-60 hover:opacity-100"
-      >
-        ✕
-      </button>
-    </div>
+    <Notice variant={tone} onDismiss={onDismiss}>
+      {children}
+    </Notice>
   );
 }

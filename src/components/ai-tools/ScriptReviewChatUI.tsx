@@ -14,6 +14,7 @@ import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -269,11 +270,9 @@ export default function ScriptReviewChatUI({ basePath, noAvatar, defaultPlanId }
       />
 
       {noAvatar && phase === "input" && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg px-4 py-3">
-          <p className="text-sm text-yellow-800 dark:text-yellow-300">
-            <span className="font-semibold">Tip:</span> Build your avatar first in Avatar Architect — it makes Script Review feedback much more specific to your ideal viewer.
-          </p>
-        </div>
+        <Notice variant="info">
+          <span className="font-semibold">Tip:</span> Build your avatar first in Avatar Architect — it makes Script Review feedback much more specific to your ideal viewer.
+        </Notice>
       )}
 
       {phase === "input" ? (

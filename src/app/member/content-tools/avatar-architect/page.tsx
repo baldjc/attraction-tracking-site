@@ -21,6 +21,7 @@ import NextStepCard from "@/components/ai-tools/NextStepCard";
 import { CANONICAL_THEMES, MAX_THEMES } from "@/lib/canonical-themes";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { Button } from "@/components/ui/Button";
+import Notice, { NOTICE_PILL_CLASS } from "@/components/ui/Notice";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { parseSseEvent } from "@/lib/ai-thinking-sse";
@@ -415,17 +416,15 @@ function AvatarProfileCard({
     <div className="space-y-3">
       {/* Legacy migration banner — shown for avatars with themes missing canonicalName */}
       {showMigrationBanner && (
-        <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <p className="text-xs text-amber-800 leading-relaxed">
-            <strong>Avatar Stressor update needed:</strong> This avatar was built before we locked in our 8 canonical Avatar Stressors. Map your existing Stressors to the canonical list so the Stressor Builder and Content Engine work properly.
-          </p>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setShowRemapModal(true)} className="text-xs font-semibold text-amber-800 hover:underline whitespace-nowrap">Remap Now</button>
-            <button onClick={() => setShowMigrationBanner(false)} className="text-amber-500 hover:text-amber-700 mt-0.5">
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <Notice
+          variant="warning"
+          onDismiss={() => setShowMigrationBanner(false)}
+          action={
+            <button onClick={() => setShowRemapModal(true)} className={NOTICE_PILL_CLASS}>Remap Now</button>
+          }
+        >
+          <strong>Avatar Stressor update needed:</strong> This avatar was built before we locked in our 8 canonical Avatar Stressors. Map your existing Stressors to the canonical list so the Stressor Builder and Content Engine work properly.
+        </Notice>
       )}
 
       {/* Remap modal */}
@@ -504,12 +503,9 @@ function AvatarProfileCard({
           )}
         </div>
         {!hasThemes ? (
-          <div className="bg-amber-50 px-4 py-4">
-            <p className="text-sm font-semibold text-amber-700 mb-1">⚠ No Avatar Stressors set</p>
-            <p className="text-xs text-amber-600 leading-relaxed">
-              Avatar Stressors are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — we'll extract them automatically.
-            </p>
-          </div>
+          <Notice variant="warning" title="⚠ No Avatar Stressors set">
+            Avatar Stressors are what the Content Engine uses to generate personalised video ideas for your avatar. Start or import an avatar session below — we'll extract them automatically.
+          </Notice>
         ) : (
           <div className="bg-white divide-y divide-[var(--abv-text)]/5">
             {displayThemes.map((t, i) => {
@@ -1539,14 +1535,19 @@ function AvatarArchitectInner() {
 
       {/* Test avatar mode banner */}
       {isTestAvatarMode && (
-        <div className="flex-shrink-0 mb-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 flex items-center gap-2">
-          <span className="text-sm">🧪</span>
-          <p className="text-xs font-semibold text-amber-800">
-            Building test avatar: <span className="font-bold">{testAvatarLabel || `Slot ${testAvatarSlot}`}</span>
-            <span className="font-normal text-amber-700"> (Slot {testAvatarSlot})</span>
-          </p>
-          <p className="text-xs text-amber-600 ml-auto">Answer as if you were this client type — all saves go to the test avatar slot, not your profile.</p>
-        </div>
+        <Notice
+          variant="info"
+          icon="🧪"
+          className="flex-shrink-0 mb-3"
+          title={
+            <>
+              Building test avatar: <span className="font-bold">{testAvatarLabel || `Slot ${testAvatarSlot}`}</span>
+              <span className="font-normal"> (Slot {testAvatarSlot})</span>
+            </>
+          }
+        >
+          Answer as if you were this client type — all saves go to the test avatar slot, not your profile.
+        </Notice>
       )}
 
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
