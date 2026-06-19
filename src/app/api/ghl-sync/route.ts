@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { fetchContactsByTag, getCustomFieldValue, GHL_FIELDS } from "@/lib/ghl";
 import { getChannelInfo } from "@/lib/youtube";
-import bcrypt from "bcryptjs";
+import { provisionMember } from "@/lib/provision-member";
 
 export const maxDuration = 60;
 
@@ -114,29 +114,24 @@ export async function POST() {
           skipped++;
         }
       } else {
-        const tempPassword = "member-" + Math.random().toString(36).slice(2, 10);
-        const hash = await bcrypt.hash(tempPassword, 12);
-
         // Look up channel name for new members
         let youtubeChannelName: string | null = null;
         if (youtubeHandle) {
           youtubeChannelName = await lookupChannelName(youtubeHandle);
         }
 
-        await prisma.user.create({
-          data: {
-            email: contact.email,
-            fullName,
-            passwordHash: hash,
-            role: "foundations_member",
-            ghlContactId: contact.id,
-            phone,
-            youtubeChannelUrl: youtubeUrl || null,
-            youtubeHandle,
-            youtubeChannelName,
-            serviceTier: "foundations",
-            invitedAt: ghlDateAdded,
-          },
+        // Shared provisioning path — same function the manual admin "Add
+        // member" flow uses, so synced and manual members are identical.
+        await provisionMember({
+          email: contact.email,
+          fullName,
+          ghlContactId: contact.id,
+          phone,
+          youtubeChannelUrl: youtubeUrl || null,
+          youtubeHandle,
+          youtubeChannelName,
+          serviceTier: "foundations",
+          invitedAt: ghlDateAdded,
         });
         created++;
       }

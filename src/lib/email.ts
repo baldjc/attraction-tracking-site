@@ -211,6 +211,87 @@ export async function sendTeamInviteEmail(params: {
   }
 }
 
+/**
+ * Manual / comp member invite. Reuses the same Resend path as every other
+ * email. The app logs members in with an emailed one-time code (no magic-link
+ * token), so this email simply points the new member at the login page where
+ * they request their code with this address.
+ */
+export async function sendMemberInviteEmail(params: {
+  to: string;
+  name?: string | null;
+}): Promise<{ ok: boolean }> {
+  const { to, name } = params;
+  const greeting = name ? `Hi ${name.split(" ")[0]},` : "Hi,";
+
+  const rawBase =
+    process.env.EMAIL_BASE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NEXTAUTH_URL && !/localhost|127\.0\.0\.1|0\.0\.0\.0|\.repl(\.co|it\.dev)/i.test(process.env.NEXTAUTH_URL)
+      ? process.env.NEXTAUTH_URL
+      : null) ??
+    "https://members.attractionbyvideo.com";
+  const baseUrl = rawBase.replace(/\/$/, "");
+  const loginUrl = `${baseUrl}/login`;
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: "You've been added to Attraction by Video",
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f1f1ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <div style="display:inline-block;background:#0f172a;border-radius:16px;padding:12px;">
+                <span style="font-size:28px;">📹</span>
+              </div>
+              <div style="margin-top:12px;font-size:18px;font-weight:700;color:#0f172a;">Attraction by Video</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;padding:40px 36px;border:1px solid #e5e7eb;">
+              <p style="margin:0 0 16px;font-size:15px;color:#0f172a;">${greeting}</p>
+              <p style="margin:0 0 16px;font-size:15px;color:#374151;">Your Attraction by Video account is ready. You can sign in any time to start your onboarding and access your tools.</p>
+              <div style="text-align:center;margin:24px 0 28px;">
+                <a href="${loginUrl}" style="display:inline-block;background:#0f172a;color:#ffffff;border-radius:100px;padding:14px 28px;font-weight:700;text-decoration:none;font-size:15px;">Sign in →</a>
+              </div>
+              <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">Sign in with <strong>${to}</strong> — we'll email you a one-time code to log in. No password needed.</p>
+              <p style="margin:0;font-size:13px;color:#6b7280;">If you weren't expecting this, you can safely ignore this email.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} Attraction by Video</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  });
+
+  if (error) {
+    console.error("[email] Failed to send member invite:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `\n${"=".repeat(60)}\n[DEV MEMBER INVITE] Email failed — member can log in here:\n\n  To:    ${to}\n  Login: ${loginUrl}\n${"=".repeat(60)}\n`,
+      );
+    }
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
 export async function sendAuditReadyEmail(params: {
   to: string;
   memberName: string | null;

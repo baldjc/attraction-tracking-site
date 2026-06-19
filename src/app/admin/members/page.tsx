@@ -13,6 +13,8 @@ import {
   CursorArrowRaysIcon,
   TrophyIcon,
   ArrowDownTrayIcon,
+  UserPlusIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/components/ToastProvider";
@@ -42,6 +44,7 @@ interface Member {
   id: string;
   email: string;
   fullName: string | null;
+  isTestAccount: boolean;
   youtubeHandle: string | null;
   youtubeChannelUrl: string | null;
   youtubeChannelThumbnail: string | null;
@@ -83,6 +86,14 @@ const muted = "text-[var(--abv-text)]/60";
 const dim   = "text-[var(--abv-text)]/30";
 const card  = "bg-white rounded-lg border border-gray-200";
 const thCls = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--abv-text)]/50 bg-gray-50 whitespace-nowrap select-none cursor-pointer";
+
+function TestChip() {
+  return (
+    <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-500 border border-gray-200">
+      Test
+    </span>
+  );
+}
 
 function tierBadge(tier: string) {
   const label = tierLabels[tier] || tier;
@@ -263,6 +274,20 @@ function MembersPageInner() {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
   const [videosOpen, setVideosOpen] = useState(false);
+  const [showTestAccounts, setShowTestAccounts] = useState(false);
+  const [resendingInvite, setResendingInvite] = useState<Record<string, boolean>>({});
+
+  // Add member modal
+  const [addOpen, setAddOpen] = useState(false);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [addForm, setAddForm] = useState({
+    email: "",
+    fullName: "",
+    youtubeHandle: "",
+    serviceTier: "foundations",
+    sendInvite: true,
+    isTestAccount: false,
+  });
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -339,13 +364,87 @@ function MembersPageInner() {
     setRefreshing(false);
   }
 
+  async function handleAddMember(e: React.FormEvent) {
+    e.preventDefault();
+    if (addSubmitting) return;
+    setAddSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: addForm.email.trim(),
+          fullName: addForm.fullName.trim(),
+          youtubeHandle: addForm.youtubeHandle.trim(),
+          serviceTier: addForm.serviceTier,
+          sendInvite: addForm.sendInvite,
+          isTestAccount: addForm.isTestAccount,
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        toast.error(
+          d?.existing?.fullName
+            ? `${d.existing.fullName} already has an account with this email.`
+            : "A member with this email already exists.",
+        );
+        return;
+      }
+      if (!res.ok) {
+        toast.error(d?.error || "Could not add member.");
+        return;
+      }
+      toast.success(
+        addForm.sendInvite && d?.inviteSent
+          ? `Added ${d.member?.fullName || "member"} and sent an invite.`
+          : `Added ${d.member?.fullName || "member"}.`,
+      );
+      setAddOpen(false);
+      setAddForm({
+        email: "",
+        fullName: "",
+        youtubeHandle: "",
+        serviceTier: "foundations",
+        sendInvite: true,
+        isTestAccount: false,
+      });
+      await fetchMembers();
+    } catch {
+      toast.error("Could not add member.");
+    } finally {
+      setAddSubmitting(false);
+    }
+  }
+
+  async function handleResendInvite(member: Member) {
+    if (resendingInvite[member.id]) return;
+    setResendingInvite((p) => ({ ...p, [member.id]: true }));
+    try {
+      const res = await fetch(`/api/admin/members/${member.id}/resend-invite`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toast.success(`Invite re-sent to ${member.email}.`);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d?.error || "Could not resend invite.");
+      }
+    } catch {
+      toast.error("Could not resend invite.");
+    } finally {
+      setResendingInvite((p) => ({ ...p, [member.id]: false }));
+    }
+  }
+
   function handleExportCSV() {
     const headers = [
       "Name", "Email", "YouTube Handle", "Tier", "Subscription",
       "Audit Score", "Videos (7d)", "Clicks (7d)", "Conversions (7d)",
       "Last Active",
     ];
-    const rows = filtered.map((m: Member) => [
+    const rows = filtered
+      .filter((m: Member) => !m.isTestAccount)
+      .map((m: Member) => [
       m.fullName || "",
       m.email || "",
       m.youtubeHandle || "",
@@ -369,7 +468,7 @@ function MembersPageInner() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${filtered.length} members to CSV`);
+    toast.success(`Exported ${rows.length} members to CSV`);
   }
 
   async function handleRunAudit(video: RecentVideo) {
@@ -430,6 +529,7 @@ function MembersPageInner() {
     .filter((m) => matchesTierFilter(m.serviceTier, tierFilter))
     .filter((m) => matchesSubFilter(m, subFilter))
     .filter((m) => statusFilter === "all" || m.status === statusFilter)
+    .filter((m) => showTestAccounts || !m.isTestAccount)
     .sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
@@ -458,6 +558,15 @@ function MembersPageInner() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {!isEditorRole && (
+            <button
+              onClick={() => setAddOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[var(--abv-text)]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--abv-text)] dark:text-white transition-colors"
+            >
+              <UserPlusIcon className="w-4 h-4" />
+              Add member
+            </button>
+          )}
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[var(--abv-text)]/20 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-[var(--abv-text)] dark:text-white transition-colors"
@@ -678,6 +787,15 @@ function MembersPageInner() {
             <option key={f.value} value={f.value}>{f.value === "all" ? "All Statuses" : f.label}</option>
           ))}
         </select>
+        <label className="flex items-center gap-2 text-sm text-[var(--abv-text)] cursor-pointer select-none px-1">
+          <input
+            type="checkbox"
+            checked={showTestAccounts}
+            onChange={(e) => { setShowTestAccounts(e.target.checked); setPage(1); }}
+            className="rounded border-gray-300 text-[var(--abv-azure)] focus:ring-[var(--abv-azure)]"
+          />
+          Show test accounts
+        </label>
       </div>
 
       {/* Mobile list */}
@@ -693,6 +811,7 @@ function MembersPageInner() {
             <Link key={m.id} href={`/admin/members/${m.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
               <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <span className="font-medium text-[var(--abv-text)] text-sm truncate">{m.fullName || "—"}</span>
+                {m.isTestAccount && <TestChip />}
                 <span className="shrink-0">{tierBadge(m.serviceTier)}</span>
               </div>
               <div className="text-right shrink-0 ml-2">
@@ -734,6 +853,7 @@ function MembersPageInner() {
                   <th className={thCls} onClick={() => toggleSort("lastLoginAt")}>
                     Last Active <SortIcon col="lastLoginAt" />
                   </th>
+                  {!isEditorRole && <th className={`${thCls} cursor-default text-right`}>Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -750,6 +870,7 @@ function MembersPageInner() {
                         <Link href={`/admin/members/${m.id}`} className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
                           <span className={`font-medium ${txt} hover:text-[var(--abv-azure)] transition-colors`}>{m.fullName || "—"}</span>
+                          {m.isTestAccount && <TestChip />}
                         </Link>
                         <div className={`text-xs ${dim} ml-4`}>{m.email}</div>
                       </td>
@@ -838,6 +959,17 @@ function MembersPageInner() {
                           return <span className={`text-sm whitespace-nowrap ${cls}`}>{la.label}</span>;
                         })()}
                       </td>
+                      {!isEditorRole && (
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleResendInvite(m)}
+                            disabled={resendingInvite[m.id]}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-[var(--abv-text)]/15 hover:bg-gray-50 text-[var(--abv-text)] transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {resendingInvite[m.id] ? "Sending…" : "Resend invite"}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -871,6 +1003,119 @@ function MembersPageInner() {
           )}
         </div>
       </div>
+
+      {/* Add member modal */}
+      {addOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !addSubmitting && setAddOpen(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-[var(--abv-text)]">Add a member</h2>
+              <button
+                onClick={() => !addSubmitting && setAddOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Close"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddMember} className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/70 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={addForm.email}
+                  onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
+                  placeholder="member@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/70 mb-1">
+                  Full name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addForm.fullName}
+                  onChange={(e) => setAddForm((f) => ({ ...f, fullName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
+                  placeholder="Jane Smith"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/70 mb-1">
+                  YouTube handle
+                </label>
+                <input
+                  type="text"
+                  value={addForm.youtubeHandle}
+                  onChange={(e) => setAddForm((f) => ({ ...f, youtubeHandle: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
+                  placeholder="@channel"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--abv-text)]/70 mb-1">
+                  Tier
+                </label>
+                <select
+                  value={addForm.serviceTier}
+                  onChange={(e) => setAddForm((f) => ({ ...f, serviceTier: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-[var(--abv-text)] bg-white focus:ring-2 focus:ring-[var(--abv-azure)] focus:border-transparent outline-none"
+                >
+                  <option value="foundations">Foundations</option>
+                  <option value="production">Production</option>
+                  <option value="done_with_you">Done-With-You</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-[var(--abv-text)] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={addForm.sendInvite}
+                  onChange={(e) => setAddForm((f) => ({ ...f, sendInvite: e.target.checked }))}
+                  className="rounded border-gray-300 text-[var(--abv-azure)] focus:ring-[var(--abv-azure)]"
+                />
+                Send invite email now
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--abv-text)] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={addForm.isTestAccount}
+                  onChange={(e) => setAddForm((f) => ({ ...f, isTestAccount: e.target.checked }))}
+                  className="rounded border-gray-300 text-[var(--abv-azure)] focus:ring-[var(--abv-azure)]"
+                />
+                Mark as test account
+              </label>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(false)}
+                  disabled={addSubmitting}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-[var(--abv-text)] hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addSubmitting}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--abv-dark)] text-white hover:bg-black/85 transition-colors disabled:opacity-50"
+                >
+                  {addSubmitting ? "Adding…" : "Add member"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

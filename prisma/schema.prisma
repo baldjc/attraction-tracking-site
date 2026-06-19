@@ -110,6 +110,7 @@ model User {
   coachingNotes             String?
   coachingNotesUpdatedAt    DateTime?
   invitedAt                 DateTime?
+  isTestAccount             Boolean     @default(false)
   lastLoginAt               DateTime?
   createdAt                 DateTime    @default(now())
   updatedAt                 DateTime    @updatedAt

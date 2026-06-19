@@ -36,6 +36,12 @@ export async function GET() {
     ? { id: allowedFilter }
     : { role: "foundations_member" as const };
 
+  // Same scope but excluding QA/test accounts — used for the metric tiles and
+  // aggregate billing so throwaway accounts never inflate the real scoreboard.
+  // The members list itself still includes test accounts (the client decides
+  // whether to show them via the "Show test accounts" toggle).
+  const metricUserWhere: Record<string, unknown> = { ...userWhere, isTestAccount: false };
+
   const members = await prisma.user.findMany({
     where: userWhere,
     orderBy: { fullName: "asc" },
@@ -57,7 +63,7 @@ export async function GET() {
   const recentVideos = await prisma.youTubeVideo.findMany({
     where: {
       publishedAt: { gte: sevenDaysAgo },
-      user: userWhere,
+      user: metricUserWhere,
     },
     orderBy: { publishedAt: "desc" },
     take: 20,
@@ -74,7 +80,7 @@ export async function GET() {
   const clicksResult = await prisma.click.aggregate({
     where: {
       timestamp: { gte: sevenDaysAgo },
-      link: { campaign: { user: userWhere } },
+      link: { campaign: { user: metricUserWhere } },
     },
     _count: true,
   });
@@ -83,7 +89,7 @@ export async function GET() {
   const leads = await prisma.lead.findMany({
     where: {
       timestamp: { gte: sevenDaysAgo },
-      click: { link: { campaign: { user: userWhere } } },
+      click: { link: { campaign: { user: metricUserWhere } } },
     },
     include: { click: { include: { link: { include: { campaign: { select: { userId: true } } } } } } },
   });
@@ -165,6 +171,7 @@ export async function GET() {
         id: member.id,
         email: member.email,
         fullName: member.fullName,
+        isTestAccount: member.isTestAccount,
         youtubeHandle: member.youtubeHandle,
         youtubeChannelUrl: member.youtubeChannelUrl,
         youtubeChannelThumbnail: member.youtubeChannelThumbnail ?? null,
@@ -200,12 +207,15 @@ export async function GET() {
     .filter(Boolean)
     .sort((a, b) => b!.getTime() - a!.getTime())[0];
 
-  const activeMembers = memberRows.length;
-  const inactiveMembers = memberRows.filter((m) => m.status === "inactive").length;
-  const videosThisWeek = memberRows.reduce((sum, m) => sum + m.videos7d, 0);
+  // Metric tiles + MRR exclude QA/test accounts so they never inflate the
+  // real scoreboard. The members list returned below still includes them.
+  const realRows = memberRows.filter((m) => !m.isTestAccount);
+  const activeMembers = realRows.length;
+  const inactiveMembers = realRows.filter((m) => m.status === "inactive").length;
+  const videosThisWeek = realRows.reduce((sum, m) => sum + m.videos7d, 0);
   const rateSetting = await prisma.appSetting.findUnique({ where: { key: "usd_to_cad_rate" } });
   const USD_TO_CAD = rateSetting ? parseFloat(rateSetting.value) : 1.38;
-  const payingRows = memberRows.filter(
+  const payingRows = realRows.filter(
     (m) => (m.subscriptionStatus === "active" || m.subscriptionStatus === "past_due") && m.stripePriceAmount,
   );
   const toCadCents = (m: (typeof payingRows)[number]): number => {
