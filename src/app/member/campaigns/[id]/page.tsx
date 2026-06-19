@@ -9,6 +9,7 @@ import { LinkBarChart } from "@/components/charts/LinkBarChart";
 import ClickMap from "@/components/campaigns/ClickMap";
 import LocationTable from "@/components/campaigns/LocationTable";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 interface TrackingLinkData {
   id: string;
@@ -395,13 +396,13 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
     <div className="space-y-6">
       {/* Thank You Page Warning */}
       {hasTyUrl === false && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-          <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800">Lead tracking isn&apos;t set up yet</p>
-            <p className="text-xs text-amber-700 mt-0.5">Clicks will be recorded but leads won&apos;t count until you save your Thank You Page Path. <Link href="/member/link-tracking" className="underline font-medium">Go to Link Tracking Settings →</Link></p>
-          </div>
-        </div>
+        <Notice
+          variant="warning"
+          icon={<ExclamationTriangleIcon className="w-5 h-5" />}
+          title="Lead tracking isn't set up yet"
+        >
+          Clicks will be recorded but leads won&apos;t count until you save your Thank You Page Path. <Link href="/member/link-tracking" className="underline font-medium">Go to Link Tracking Settings →</Link>
+        </Notice>
       )}
 
       {/* Header */}

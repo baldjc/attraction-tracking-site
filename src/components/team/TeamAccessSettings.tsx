@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 import { CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 interface TeamMemberRow {
@@ -121,11 +122,9 @@ export default function TeamAccessSettings() {
 
   if (forbidden) {
     return (
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg p-4">
-        <p className="text-sm text-amber-700 dark:text-amber-400">
-          Team management is only available on your own account. Switch back to your account to manage your team.
-        </p>
-      </div>
+      <Notice variant="info">
+        Team management is only available on your own account. Switch back to your account to manage your team.
+      </Notice>
     );
   }
 

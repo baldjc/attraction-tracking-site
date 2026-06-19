@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TrashIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { MiniSparkline } from "@/components/charts/MiniSparkline";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 interface Campaign {
   id: string;
@@ -121,13 +122,14 @@ export default function CampaignsPage() {
 
       {/* Thank You Page Warning */}
       {hasTyUrl === false && (
-        <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-          <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800">Link tracking isn&apos;t fully set up</p>
-            <p className="text-xs text-amber-700 mt-0.5">Clicks are tracked but leads won&apos;t be recorded until you save your Thank You Page Path. <Link href="/member/link-tracking" className="underline font-medium">Go to Link Tracking Settings →</Link></p>
-          </div>
-        </div>
+        <Notice
+          variant="warning"
+          className="mb-5"
+          icon={<ExclamationTriangleIcon className="w-5 h-5" />}
+          title="Link tracking isn't fully set up"
+        >
+          Clicks are tracked but leads won&apos;t be recorded until you save your Thank You Page Path. <Link href="/member/link-tracking" className="underline font-medium">Go to Link Tracking Settings →</Link>
+        </Notice>
       )}
 
       {/* Summary Dashboard */}
@@ -264,10 +266,9 @@ export default function CampaignsPage() {
                 <input type="url" value={form.leadMagnetUrl} onChange={(e) => setForm({ ...form, leadMagnetUrl: e.target.value })} placeholder="e.g., Google Drive link to your guide" className={INPUT_CLS} />
               </div>
               {hasTyUrl === false && (
-                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
-                  <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700">Before this campaign can track leads, save your <Link href="/member/link-tracking" className="underline font-medium">Thank You Page Path</Link> in Link Tracking Settings.</p>
-                </div>
+                <Notice variant="warning" icon={<ExclamationTriangleIcon className="w-4 h-4" />}>
+                  Before this campaign can track leads, save your <Link href="/member/link-tracking" className="underline font-medium">Thank You Page Path</Link> in Link Tracking Settings.
+                </Notice>
               )}
               {createError && (
                 <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{createError}</p>

@@ -12,6 +12,7 @@ import {
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 interface ProfileData {
   id: string;
@@ -373,13 +374,14 @@ That's it — one snippet, site-wide. Let me know when it's done.`;
                 Enter a full URL (e.g. <span className="font-mono">https://yoursite.com/thank-you</span>) or just the path (e.g. <span className="font-mono text-[var(--abv-text)]/70 dark:text-white/70">/thank-you</span>). Either format works.
               </p>
               {!thankYouPath && (
-                <div className="mt-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-600/30 rounded-lg px-3 py-2.5">
-                  <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    Required for lead tracking. Without this, clicks are recorded but leads won't be counted.
-                    Don't have a thank you page yet? See "What's a Thank You Page?" below.
-                  </p>
-                </div>
+                <Notice
+                  variant="warning"
+                  className="mt-3"
+                  icon={<ExclamationTriangleIcon className="w-4 h-4" />}
+                >
+                  Required for lead tracking. Without this, clicks are recorded but leads won&apos;t be counted.
+                  Don&apos;t have a thank you page yet? See &quot;What&apos;s a Thank You Page?&quot; below.
+                </Notice>
               )}
             </div>
           </div>

@@ -43,6 +43,19 @@
   --abv-scores:         #F59E0B;
   --abv-scores-tint:    rgba(245, 158, 11, 0.10);
 
+  /* Notice / banner severity tints — soft fills + darker on-tint text.
+     One calm system shared by the <Notice> component. Dark-mode text is
+     lightened below in html.dark so it stays legible on dark surfaces. */
+  --abv-notice-info-bg:        var(--abv-azure-tint);
+  --abv-notice-info-heading:   var(--abv-text);
+  --abv-notice-info-text:      var(--abv-text-secondary);
+  --abv-notice-warning-bg:     rgba(245, 158, 11, 0.14);
+  --abv-notice-warning-text:   #B26B00;
+  --abv-notice-error-bg:       rgba(239, 68, 68, 0.12);
+  --abv-notice-error-text:     #B42318;
+  --abv-notice-success-bg:     rgba(16, 185, 129, 0.12);
+  --abv-notice-success-text:   #0C7A55;
+
   /* Shape */
   --abv-radius:      8px;
   --abv-radius-pill: 9999px;
@@ -108,6 +121,12 @@ html.dark {
   --abv-border:        rgba(255, 255, 255, 0.08);
   --abv-border-strong: rgba(255, 255, 255, 0.14);
   --abv-azure:         #5DD0FF;
+
+  /* Notice severity text lightened for dark surfaces; the rgba tint
+     backgrounds read fine over the dark canvas as-is. */
+  --abv-notice-warning-text:   #FBBF24;
+  --abv-notice-error-text:     #FCA5A5;
+  --abv-notice-success-text:   #6EE7B7;
 }
 
 *, *::before, *::after {

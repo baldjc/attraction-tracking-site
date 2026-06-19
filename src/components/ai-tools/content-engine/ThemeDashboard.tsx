@@ -11,6 +11,7 @@ import type { Idea } from "./IdeaCard";
 import { AiThinking } from "@/components/ai/AiThinking";
 import { useAiThinking } from "@/lib/use-ai-thinking";
 import { Button } from "@/components/ui/Button";
+import Notice from "@/components/ui/Notice";
 
 interface Props {
   themes: Array<ContentTheme | string>;
@@ -167,15 +168,14 @@ export default function ThemeDashboard({ themes, niche, city }: Props) {
       </div>
 
       {hasOldFormat && (
-        <div className="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
-          <span className="text-amber-500 text-lg flex-shrink-0">⚠️</span>
-          <div>
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Your Avatar Stressors are from an older format</p>
-            <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-              Re-run the Avatar Architect to get emoji, colour, and stress quotes on your Avatar Stressor cards. The Content Engine still works fully in the meantime.
-            </p>
-          </div>
-        </div>
+        <Notice
+          variant="warning"
+          className="mb-5"
+          icon={<span className="text-lg">⚠️</span>}
+          title="Your Avatar Stressors are from an older format"
+        >
+          Re-run the Avatar Architect to get emoji, colour, and stress quotes on your Avatar Stressor cards. The Content Engine still works fully in the meantime.
+        </Notice>
       )}
 
       {generatingAll && (

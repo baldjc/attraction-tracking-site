@@ -8,6 +8,7 @@ import LinkTrackingPage from "@/app/member/link-tracking/page";
 import MarkdownTextarea from "@/components/MarkdownTextarea";
 import { Button } from "@/components/ui/Button";
 import TeamAccessSettings from "@/components/team/TeamAccessSettings";
+import Notice from "@/components/ui/Notice";
 
 interface AvatarData {
   avatarProfile?: Record<string, unknown> | null;
@@ -338,17 +339,15 @@ function MemberSettingsPageInner() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg p-4 flex items-start gap-3">
-                <span className="text-xl">🎯</span>
-                <div>
-                  <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">No avatar profile yet</p>
-                  <p className="text-amber-700 dark:text-amber-500 text-sm mt-0.5">
-                    Use the{" "}
-                    <Link href="/member/content-tools/avatar-architect" className="underline font-medium">Avatar Architect tool</Link>{" "}
-                    to build one through a guided coaching conversation, or paste your existing avatar document below.
-                  </p>
-                </div>
-              </div>
+              <Notice
+                variant="info"
+                icon={<span className="text-xl">🎯</span>}
+                title="No avatar profile yet"
+              >
+                Use the{" "}
+                <Link href="/member/content-tools/avatar-architect" className="underline font-medium">Avatar Architect tool</Link>{" "}
+                to build one through a guided coaching conversation, or paste your existing avatar document below.
+              </Notice>
               <div>
                 <label className="block text-sm font-semibold text-[var(--abv-text)] dark:text-[#e2e8f0] mb-2">Paste your existing avatar document</label>
                 <MarkdownTextarea
@@ -416,14 +415,16 @@ function MemberSettingsPageInner() {
                   View →
                 </a>
               </div>
-              <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg px-4 py-3">
-                <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                </svg>
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  Your channel is locked. To update it, please reach out to your admin.
-                </p>
-              </div>
+              <Notice
+                variant="warning"
+                icon={
+                  <svg className="w-4 h-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                }
+              >
+                Your channel is locked. To update it, please reach out to your admin.
+              </Notice>
             </div>
           ) : (
             <div className="space-y-4">

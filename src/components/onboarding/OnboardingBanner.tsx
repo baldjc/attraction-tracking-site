@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Notice, { NOTICE_PILL_CLASS } from "@/components/ui/Notice";
 
 interface OnboardingStatus {
   onboardingComplete: boolean;
@@ -53,43 +54,38 @@ export default function OnboardingBanner() {
 
   if (showWizardNudge) {
     return (
-      <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between mb-6">
-        <div>
-          <p className="font-semibold text-amber-900 dark:text-amber-200 text-sm">
-            Finish setting up your system
-          </p>
-          <p className="text-amber-800 dark:text-amber-300 text-sm mt-0.5">
-            You completed {stepLabel} of {totalSteps} steps. Scripts work
-            better with complete setup.
-          </p>
-        </div>
-        <Link
-          href="/member/onboarding"
-          className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold hover:bg-black dark:hover:bg-gray-100"
-        >
-          Continue setup →
-        </Link>
-      </div>
+      <Notice
+        variant="info"
+        className="mb-6"
+        title="Finish setting up your system"
+        action={
+          <Link href="/member/onboarding" className={NOTICE_PILL_CLASS}>
+            Continue setup →
+          </Link>
+        }
+      >
+        You completed {stepLabel} of {totalSteps} steps. Scripts work better
+        with complete setup.
+      </Notice>
     );
   }
 
   // Legacy fallback for accounts that pre-date the wizard.
   if (!status.avatarName) {
     return (
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-lg p-4 flex items-start gap-3 mb-6">
-        <span className="text-xl shrink-0">🎯</span>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-            Finish building your avatar to unlock all AI tools
-          </p>
-          <Link
-            href="/member/content-tools/avatar-architect"
-            className="text-xs text-amber-700 dark:text-amber-400 underline underline-offset-2 mt-0.5 inline-block"
-          >
-            Build your avatar →
-          </Link>
-        </div>
-      </div>
+      <Notice
+        variant="info"
+        className="mb-6"
+        icon={<span className="text-xl">🎯</span>}
+        title="Finish building your avatar to unlock all AI tools"
+      >
+        <Link
+          href="/member/content-tools/avatar-architect"
+          className="underline underline-offset-2 inline-block"
+        >
+          Build your avatar →
+        </Link>
+      </Notice>
     );
   }
 
