@@ -503,7 +503,7 @@ function MemberSettingsPageInner() {
             </p>
           </div>
           <a
-            href="/member/onboarding"
+            href="/member/onboarding?rerun=1"
             className="text-xs text-[var(--abv-azure)] border border-[var(--abv-azure)]/30 px-3 py-1.5 rounded-lg hover:bg-[var(--abv-dark)]/10 transition-colors shrink-0"
           >
             Run Again

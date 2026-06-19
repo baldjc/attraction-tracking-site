@@ -164,6 +164,9 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
   const [unwatchedCalls] = useState(0);
   const [memberTier, setMemberTier] = useState<string | null>(null);
   const [clientHubEnabled, setClientHubEnabled] = useState(true);
+  // Onboarding launcher: { done, total } while the member hasn't finished the
+  // setup wizard; null when complete or not applicable (so the nav item hides).
+  const [onboardingSetup, setOnboardingSetup] = useState<{ done: number; total: number } | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -191,6 +194,35 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
         .catch(() => {});
     }
   }, [role, impersonate]);
+
+  // Onboarding progress for the "Finish setup" launcher. Mirrors the dashboard
+  // banner's math (6 steps, +1 when the voice guide is enabled) so the sidebar
+  // count matches what the member sees there. Hidden once onboarding completes.
+  // Keyed on `pathname` too so it refetches on navigation — the sidebar
+  // persists across client routes, so without this the launcher would stay
+  // stale (and visible) after a member finishes the wizard and navigates away.
+  useEffect(() => {
+    const imp = !!impersonate;
+    const impStaff = imp && impersonate?.targetRole === "editor";
+    const staffOnMember =
+      (role === "admin" || role === "editor") && imp && !impStaff;
+    if (role !== "member" && !staffOnMember) {
+      setOnboardingSetup(null);
+      return;
+    }
+    fetch("/api/member/onboarding")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || d.onboardingComplete || d.onboardingCompletedAt) {
+          setOnboardingSetup(null);
+          return;
+        }
+        const total = d.voiceGuideEnabled ? 7 : 6;
+        const done = Math.min(Math.max(d.onboardingStep ?? 0, 0), total);
+        setOnboardingSetup({ done, total });
+      })
+      .catch(() => {});
+  }, [role, impersonate, pathname]);
 
   useEffect(() => {
     if (role === "admin") {
@@ -414,6 +446,39 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+        {/* Finish-setup launcher — persistent, obvious entry back into the
+            onboarding wizard while it's unfinished. Deep-links to
+            /member/onboarding, which resumes where the member left off. Hidden
+            once onboarding completes. */}
+        {onboardingSetup && (
+          <Link
+            href="/member/onboarding"
+            title={collapsed ? `Finish setup (${onboardingSetup.done}/${onboardingSetup.total})` : undefined}
+            className={`relative flex items-center gap-3 py-2.5 mb-2 text-sm font-semibold transition-colors duration-200 border-l-2 rounded-r-md ${
+              collapsed ? "px-3 justify-center border-l-0" : "px-3"
+            } ${
+              isActive("/member/onboarding")
+                ? "border-[var(--abv-azure)] bg-white/10 text-white"
+                : "border-[var(--abv-azure)] bg-white/[0.06] text-white hover:bg-white/10"
+            }`}
+          >
+            <RocketLaunchIcon className="w-5 h-5 shrink-0" style={{ color: "var(--abv-azure)" }} />
+            {!collapsed && (
+              <>
+                <span className="leading-tight flex-1">Finish setup</span>
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none tabular-nums"
+                  style={{ backgroundColor: "var(--abv-azure)", color: "#0a1a2b" }}
+                >
+                  {onboardingSetup.done}/{onboardingSetup.total}
+                </span>
+              </>
+            )}
+            {collapsed && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ backgroundColor: "var(--abv-azure)" }} />
+            )}
+          </Link>
+        )}
         {(() => {
           const badges: Record<string, number> = {
             qaCallsPending,

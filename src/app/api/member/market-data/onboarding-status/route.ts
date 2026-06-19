@@ -27,7 +27,7 @@ export async function GET() {
     // waiting on validation to finish.
     prisma.marketDataUpload.findFirst({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { uploadedAt: "desc" },
       select: { status: true },
     }),
   ]);

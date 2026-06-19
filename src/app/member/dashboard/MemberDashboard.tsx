@@ -151,6 +151,11 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
   const [jarvisEnabled, setJarvisEnabled] = useState(false);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [briefingLoading, setBriefingLoading] = useState(true);
+  // Setup state drives the empty-state next-step prompt so we never tell a
+  // member who already has a validated upload to "upload market data."
+  const [marketDataState, setMarketDataState] = useState<
+    "none" | "processing" | "ready" | "failed" | null
+  >(null);
   const [openThinking, setOpenThinking] = useState<number | null>(null);
   const ideasRef = useRef<HTMLDivElement | null>(null);
 
@@ -185,6 +190,22 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
         setBriefingLoading(false);
       });
     return () => { cancelled = true; };
+  }, []);
+
+  // Setup checklist (read-only aggregator). We only need the market-data state
+  // here to make the empty-state next-step prompt accurate.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/member/onboarding/checklist")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        setMarketDataState(d.marketData ?? "none");
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const scrollToIdeas = useCallback(() => {
@@ -306,7 +327,10 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
           </div>
         </div>
       ) : (
-        // Empty state — no usable briefing yet
+        // Empty state — no usable briefing yet. The next-step prompt is
+        // state-aware: a member who already has a validated upload is never told
+        // to "upload market data" (their briefing is empty for another reason,
+        // e.g. no story leads yet — a separate, known issue).
         <div className="rounded-2xl bg-[var(--abv-dark)] text-white p-6 sm:p-8">
           <div className="flex items-start gap-4">
             <JarvisAvatar />
@@ -314,20 +338,89 @@ export default function MemberDashboard({ memberId }: { memberId: string }) {
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--abv-azure)]">
                 From Jarvis
               </p>
-              <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
-                Let&apos;s get your <span className="text-[var(--abv-azure)]">briefing</span> started.
-              </h2>
-              <p className="text-white/70 text-sm sm:text-base mt-3 max-w-lg">
-                {briefing?.reason === "no_market_config"
-                  ? "Set up your market — your avatar, neighbourhoods, and keyword kit — so Jarvis can ground every idea in your data."
-                  : "Upload your latest market data and Jarvis will turn it into grounded story ideas every month."}
-              </p>
-              <LinkButton
-                href={briefing?.reason === "no_market_config" ? "/member/market-config" : "/member/market-data"}
-                className="mt-5 !bg-white !text-[var(--abv-dark)] hover:!bg-white/90"
-              >
-                {briefing?.reason === "no_market_config" ? "Set up your market →" : "Upload market data →"}
-              </LinkButton>
+              {(() => {
+                // 1) No market config yet → set up the market.
+                if (briefing?.reason === "no_market_config") {
+                  return (
+                    <>
+                      <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
+                        Let&apos;s get your <span className="text-[var(--abv-azure)]">briefing</span> started.
+                      </h2>
+                      <p className="text-white/70 text-sm sm:text-base mt-3 max-w-lg">
+                        Set up your market — your avatar, neighbourhoods, and
+                        keyword kit — so Jarvis can ground every idea in your data.
+                      </p>
+                      <LinkButton
+                        href="/member/market-config"
+                        className="mt-5 !bg-white !text-[var(--abv-dark)] hover:!bg-white/90"
+                      >
+                        Set up your market →
+                      </LinkButton>
+                    </>
+                  );
+                }
+                // 2) Data validated → don't ask to upload. Point at the Content
+                //    Manager, where they can browse/build from their data.
+                if (marketDataState === "ready") {
+                  return (
+                    <>
+                      <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
+                        Your data&apos;s in. Your <span className="text-[var(--abv-azure)]">briefing</span> is on the way.
+                      </h2>
+                      <p className="text-white/70 text-sm sm:text-base mt-3 max-w-lg">
+                        Your market data is loaded and validated. Jarvis is turning
+                        it into story ideas — this can take a little while. In the
+                        meantime, start a conversation and Jarvis will build
+                        straight from your data.
+                      </p>
+                      <LinkButton
+                        href={jarvisEnabled ? "/member/jarvis" : "/member/content-tools"}
+                        className="mt-5 !bg-white !text-[var(--abv-dark)] hover:!bg-white/90"
+                      >
+                        Open the Content Manager →
+                      </LinkButton>
+                    </>
+                  );
+                }
+                // 3) Upload in flight → reassure, don't re-prompt to upload.
+                if (marketDataState === "processing") {
+                  return (
+                    <>
+                      <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
+                        Let&apos;s get your <span className="text-[var(--abv-azure)]">briefing</span> started.
+                      </h2>
+                      <p className="text-white/70 text-sm sm:text-base mt-3 max-w-lg">
+                        Your market data is uploading and validating now — your
+                        first briefing will appear here as soon as it&apos;s ready.
+                      </p>
+                      <LinkButton
+                        href="/member/market-data"
+                        className="mt-5 !bg-white !text-[var(--abv-dark)] hover:!bg-white/90"
+                      >
+                        View market data →
+                      </LinkButton>
+                    </>
+                  );
+                }
+                // 4) No upload yet (or failed) → the original upload prompt.
+                return (
+                  <>
+                    <h2 className="font-display text-2xl sm:text-3xl text-white mt-2">
+                      Let&apos;s get your <span className="text-[var(--abv-azure)]">briefing</span> started.
+                    </h2>
+                    <p className="text-white/70 text-sm sm:text-base mt-3 max-w-lg">
+                      Upload your latest market data and Jarvis will turn it into
+                      grounded story ideas every month.
+                    </p>
+                    <LinkButton
+                      href="/member/market-data"
+                      className="mt-5 !bg-white !text-[var(--abv-dark)] hover:!bg-white/90"
+                    >
+                      Upload market data →
+                    </LinkButton>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

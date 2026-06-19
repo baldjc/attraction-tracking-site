@@ -13,7 +13,17 @@ import OnboardingWizardClient from "@/components/onboarding/OnboardingWizardClie
  * Anyone who already finished the wizard is bounced back to the dashboard so
  * they don't accidentally redo work.
  */
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ rerun?: string }>;
+}) {
+  const { rerun } = await searchParams;
+  // Completed members can re-open the wizard from Settings ("Run Again"), which
+  // links here with ?rerun=1. Without the flag, finished members are bounced to
+  // the dashboard so they don't accidentally redo work.
+  const isRerun = rerun === "1";
+
   const sessionUser = await resolveUserFromSession();
   if (!sessionUser) {
     redirect("/login");
@@ -34,9 +44,10 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  // Already finished — don't show the wizard again. They can revisit pieces
-  // via /member/market-data/setup and /member/knowledge-base.
-  if (dbUser.onboardingCompletedAt) {
+  // Already finished — don't show the wizard again unless they explicitly asked
+  // to re-run it from Settings. They can also revisit pieces via
+  // /member/market-data/setup and /member/knowledge-base.
+  if (dbUser.onboardingCompletedAt && !isRerun) {
     redirect("/member/dashboard");
   }
 
@@ -52,7 +63,7 @@ export default async function OnboardingPage() {
       <OnboardingWizardClient
         cohort={cohort}
         voiceGuideEnabled={voiceGuideEnabled}
-        startStep={Math.max(1, (dbUser.onboardingStep ?? 0) + 1)}
+        startStep={isRerun ? 1 : Math.max(1, (dbUser.onboardingStep ?? 0) + 1)}
       />
     </main>
   );
