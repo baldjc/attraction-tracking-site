@@ -502,7 +502,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
             const sectionLabel = (link as any).section as string | undefined;
             const badgeKey = (link as any).badgeKey as string | undefined;
             const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
-            const featureColour = (link as any).featureColour as string | undefined;
 
             // Sprint 9: mono-uppercase group label with extra vertical breathing room
             const sectionHeader = !collapsed && sectionLabel && !renderedSections.has(sectionLabel) ? (() => {
@@ -574,14 +573,6 @@ export default function Sidebar({ role, userName, featureFlags }: SidebarProps) 
                     {!collapsed && (
                       <>
                         {labelNode}
-                        {/* Sprint 9: feature dot — only when item has featureColour and no badge */}
-                        {featureColour && badgeCount === 0 && (
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: featureColour }}
-                            aria-hidden
-                          />
-                        )}
                         {badgeCount > 0 && (
                           <span className="bg-amber-500 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
                             {badgeCount}
