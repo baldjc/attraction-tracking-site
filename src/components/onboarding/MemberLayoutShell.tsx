@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import OnboardingRedirect from "@/components/onboarding/OnboardingRedirect";
+import BackToSetupBanner from "@/components/onboarding/BackToSetupBanner";
 import { SidebarProvider, useSidebar } from "@/components/SidebarContext";
 import AnnouncementModal from "@/components/announcements/AnnouncementModal";
 import TeamAccessBanner from "@/components/team/TeamAccessBanner";
@@ -41,6 +42,7 @@ function MemberShellInner({
           <div className="p-6 lg:p-8">
             <div className="animate-fade-in-up">
               <OnboardingRedirect />
+              <BackToSetupBanner />
               {children}
             </div>
           </div>

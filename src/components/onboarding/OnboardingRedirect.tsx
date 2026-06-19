@@ -2,13 +2,18 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { isOnboardingAllowedPath } from "@/components/onboarding/onboarding-allowlist";
 
 export default function OnboardingRedirect() {
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (pathname === "/member/onboarding") return;
+    // While onboarding is incomplete the wizard's own steps deep-link out to a
+    // small set of helper pages (market data, knowledge base, content planner,
+    // avatar architect). Never bounce members off those — only force the wizard
+    // when they're somewhere outside the allowlist.
+    if (isOnboardingAllowedPath(pathname)) return;
 
     fetch("/api/member/onboarding")
       .then((r) => r.json())

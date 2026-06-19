@@ -112,7 +112,7 @@ export default function Step2MarketData({ onContinue, onSkip, cohort }: StepProp
               rel="noreferrer"
               className="mt-3 inline-flex items-center gap-2 rounded-full bg-gray-900 px-5 py-2 text-xs font-semibold text-white dark:bg-white dark:text-gray-900"
             >
-              Open market data setup
+              Open market data setup (new tab)
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
