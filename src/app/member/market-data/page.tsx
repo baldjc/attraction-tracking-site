@@ -43,6 +43,15 @@ export default async function MarketDataPage() {
       uploadedAt: true,
       validationError: true,
       nextAttemptAt: true,
+      // Wave 6a — two-phase readiness. On the instant-cutover path `status`
+      // flips to `validated` (numbers ready) while `storyStatus` tracks the
+      // separate AI story-leads pass. Without these on the initial server
+      // render, a row mid-generation arrives with no storyStatus, so the table
+      // mis-renders "0 facts · 0 leads" and (worse) treats the row as settled
+      // and stops polling. Flag OFF ⇒ storyStatus stays `not_started`, so the
+      // mapping below omits these keys and parity is byte-identical.
+      storyStatus: true,
+      storyError: true,
       _count: {
         select: {
           facts: true,
@@ -62,11 +71,18 @@ export default async function MarketDataPage() {
   });
   const withRawSet = new Set(withRawRows.map((r) => r.id));
 
-  const uploads = uploadsRaw.map(({ _count, ...rest }) => ({
+  const uploads = uploadsRaw.map(({ _count, storyStatus, storyError, ...rest }) => ({
     ...rest,
     factCount: _count.facts,
     storyLeadCount: _count.storyLeads,
     hasValidatorOutput: withRawSet.has(rest.id),
+    // Wave 6a — only surface the two-phase story fields once the instant-cutover
+    // path has actually engaged them. With the flag OFF storyStatus is always
+    // "not_started", so these keys are omitted entirely and the initial payload
+    // stays byte-identical to before (strict parity), matching the list endpoint.
+    ...(storyStatus && storyStatus !== "not_started"
+      ? { storyStatus, storyError }
+      : {}),
   }));
 
   const hasColumnMapping =

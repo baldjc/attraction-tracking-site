@@ -506,17 +506,28 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
                             byte-identical to before. Only the cutover path surfaces
                             the "story ideas generating/failed" sub-states. */}
                         {isStoryGenerating(r) ? (
+                          // Wave 6a — calm two-phase state. The deterministic
+                          // numbers are already in (AggregatedMetric) the moment
+                          // status flips to `validated`; the AI story pass runs
+                          // separately. We deliberately render "Numbers ready"
+                          // (never the still-zero factCount/storyLeadCount) for
+                          // the WHOLE generating window so a member never sees a
+                          // "0 facts · 0 leads" line that reads as failure.
                           <span className="inline-flex items-center gap-1.5">
-                            Numbers ready · Story ideas generating
+                            Numbers ready · story ideas generating
                             <AiThinkingDots />
                           </span>
                         ) : r.storyStatus === "failed" ? (
+                          // AI-only failure: the upload stays `validated` and the
+                          // deterministic numbers are usable, so we lead with
+                          // "Numbers ready" (never "0 facts") and keep the note
+                          // calm/amber — not a scary red error.
                           <>
-                            <span>{(r.factCount ?? 0).toLocaleString()} facts</span>
+                            <span>Numbers ready</span>
                             <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
                               {r.storyError?.trim()
                                 ? r.storyError
-                                : "Story ideas couldn’t be generated — numbers still usable"}
+                                : "Story ideas didn’t generate — numbers still usable"}
                             </span>
                           </>
                         ) : (
