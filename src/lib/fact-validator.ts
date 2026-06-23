@@ -2126,15 +2126,35 @@ export async function runValidation(uploadId: string): Promise<void> {
     });
     console.log('[runValidation] step: aggregated, groups=' + table.groups.length, uploadId);
 
-    // DEFECT 2 — aggregate persistence MOVED to the success path (just before
-    // persistResults, after the zero-output + degraded-fact guards). Aggregates
-    // are a deterministic projection that nothing in this function reads back from
-    // the DB during validation (the fact chunks AND the SoT rows are built from the
-    // in-memory `table`), so deferring the swap costs nothing — but it makes the
-    // "kept your existing data" path TRULY atomic: a re-validation that FAILS
-    // (zero usable output) or DEGRADES (suspicious fact collapse) now returns
-    // BEFORE touching either facts OR aggregates, so we never swap a healthy
-    // aggregate projection for a thin one while keeping the old facts.
+    // Wave 6a (Phase 1) — persist the deterministic aggregates NOW, BEFORE the
+    // Anthropic fact-validator runs, so the member's ground-truth numbers are
+    // ready the moment this pure-compute step completes and survive an AI outage.
+    // Previously this was deferred to the success path (after the AI calls), which
+    // meant an Anthropic 5xx made runValidation throw before aggregates ever
+    // persisted — leaving the member with no deterministic data at all. Aggregates
+    // are a deterministic projection that does NOT depend on the AI outcome, so
+    // they should not be gated behind it.
+    //
+    // Atomicity is preserved by persistAggregatedMetrics' OWN guards (a second
+    // line of defence that travels with the function): it leaves the live rows
+    // untouched on an empty re-aggregation and on a catastrophic (>80%) collapse,
+    // so a degraded old-format re-upload never swaps a healthy projection for a
+    // thin one. The fact/lead swap (persistResults) and the runValidation-level
+    // degraded-fact guard below still protect FACTS independently. Non-fatal: an
+    // aggregate persist failure must not block the AI pass or the fact write (the
+    // backfill script can recompute aggregates from the same CSV later).
+    try {
+      const written = await persistAggregatedMetrics(uploadId, userId, table);
+      console.log(
+        `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
+      );
+    } catch (err) {
+      console.error(
+        '[runValidation] persistAggregatedMetrics failed (non-fatal)',
+        uploadId,
+        err,
+      );
+    }
 
     // WS2B — grow the member's neighbourhood vocab from this upload's distinct
     // subdivisions. Sourced from the aggregation (every neighbourhood that
@@ -2507,26 +2527,11 @@ export async function runValidation(uploadId: string): Promise<void> {
       return;
     }
 
-    // Success path — swap in the deterministic aggregates FIRST (Script Builder v2
-    // reads these as ground truth), then the facts/leads. Both happen only after
-    // the zero-output + degraded guards above have passed, so a degraded/failed run
-    // never reaches here and the member's prior projection stays intact. Non-fatal:
-    // an aggregate persist failure must not block the fact write (the backfill
-    // script can recompute aggregates from the same CSV later). persistAggregatedMetrics
-    // carries its own empty + catastrophic-drop guards as a second line of defence.
-    try {
-      const written = await persistAggregatedMetrics(uploadId, userId, table);
-      console.log(
-        `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
-      );
-    } catch (err) {
-      console.error(
-        '[runValidation] persistAggregatedMetrics failed (non-fatal)',
-        uploadId,
-        err,
-      );
-    }
-
+    // Success path — the deterministic aggregates were already persisted EARLY
+    // (right after aggregation, before the AI pass — Wave 6a Phase 1), so here we
+    // only swap in the facts/leads. Aggregates are deterministic and independent
+    // of the AI outcome; persisting them up front is what keeps the member's
+    // market data available during an Anthropic outage.
     mdv("db.write.start", uploadId, t0, {
       facts: totalFacts,
       leads: storyLeads.length,

@@ -61,7 +61,9 @@ export async function GET(req: NextRequest) {
 
   const [rows, config] = await Promise.all([
     prisma.aggregatedMetric.findMany({
-      where: { userId: user.id, uploadId: upload.id },
+      // Wave 6a (Phase 1) parity: the methodology preview reflects the overall
+      // rollups only — tier subgroups are excluded until the Phase 3 cutover.
+      where: { userId: user.id, uploadId: upload.id, priceTier: null },
       select: {
         neighbourhood: true,
         propertyType: true,

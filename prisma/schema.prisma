@@ -2084,8 +2084,10 @@ model AggregatedMetric {
   canonicalAreaId String?
   /// "All" when the AggregatedGroup had propertyType=null (city-wide rollup).
   propertyType    String       @default("All")
-  /// Always null for Wave 1 — tiered subgroups are intentionally NOT persisted
-  /// because the script writer queries on (neighbourhood, propertyType) only.
+  /// Null for the (neighbourhood, propertyType) overall rollup; a tier name
+  /// (from MarketConfig.priceTiers) for a persisted price-tier subgroup. Wave 6a
+  /// (Phase 1) promotes the deterministic layer to primary and now persists tier
+  /// subgroups additively, so this is part of the uniqueness key below.
   priceTier       String?
   metricFamily    MetricFamily
   /// AggregatedGroup field name this row was sourced from, e.g. "medianPrice",
@@ -2096,13 +2098,22 @@ model AggregatedMetric {
   sampleSize      Int
   monthYear       String
 
+  /// Wave 6a (Phase 1) — usage class derived DETERMINISTICALLY from the in-code
+  /// per-family sample floors (SAMPLE_THRESHOLDS in aggregated-metrics.ts), NOT
+  /// from the LLM. `headline_safe` when the row's sample meets its family floor;
+  /// `supporting_texture_only` for below-floor price-tier subgroups that are
+  /// available as low-confidence colour. (`rejected` is unused on this model.)
+  /// Overall (priceTier=null) rollups are always headline_safe — below-floor
+  /// overalls are not persisted, preserving byte-identical parity with Wave 1.
+  usageClass           FactUsageClass @default(headline_safe)
+
   yoyDelta             Float?
   rolling90dValue      Float?
   compositionShiftFlag Boolean @default(false)
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, uploadId, neighbourhood, propertyType, metricFamily, metricKey])
+  @@unique([userId, uploadId, neighbourhood, propertyType, priceTier, metricFamily, metricKey])
   @@index([userId, neighbourhood, propertyType])
   @@index([userId, canonicalAreaId])
   @@index([uploadId])

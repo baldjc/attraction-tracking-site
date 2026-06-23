@@ -47,7 +47,9 @@ export async function GET(_req: NextRequest) {
       }),
       prisma.aggregatedMetric.groupBy({
         by: ["neighbourhood"],
-        where: { userId },
+        // Wave 6a (Phase 1) parity: count the overall rollups only so the
+        // per-neighbourhood metric counts stay identical to Wave 1.
+        where: { userId, priceTier: null },
         _count: { _all: true },
       }),
       getExcludedNeighbourhoods(userId),

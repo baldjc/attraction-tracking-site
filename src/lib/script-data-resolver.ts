@@ -435,7 +435,9 @@ export async function findDataForScriptNeed(
 
   // 2. AggregatedMetric (sampleSize >= 10, month intersects window).
   const metrics = await prisma.aggregatedMetric.findMany({
-    where: { userId: need.memberId, metricFamily: need.metricFamily },
+    // Wave 6a (Phase 1) parity: resolve facts from the overall rollups only — the
+    // newly-persisted price-tier subgroups are excluded until the Phase 3 cutover.
+    where: { userId: need.memberId, metricFamily: need.metricFamily, priceTier: null },
     select: {
       id: true,
       neighbourhood: true,

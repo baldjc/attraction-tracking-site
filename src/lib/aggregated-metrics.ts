@@ -7,10 +7,19 @@
 // "source of truth" block injected into the Claude prompt, preventing
 // the script writer from fabricating or misattributing stats.
 //
-// Persisted scope: only groups where `priceTier === null` (city-wide +
-// neighbourhood-level overall rollups). Tiered subgroups are intentionally
-// skipped because the script writer queries on (neighbourhood, propertyType)
-// without a price tier, and including them would violate the unique key.
+// Persisted scope (Wave 6a, Phase 1): the (neighbourhood, propertyType) overall
+// rollups (priceTier === null) AND, additively, the price-tier subgroups
+// (priceTier !== null). `priceTier` is part of the AggregatedMetric unique key,
+// so tier rows no longer collide with the overall row. Every read that must stay
+// byte-identical to Wave 1 (Script Builder v2 / Jarvis source-of-truth,
+// methodology preview, KB floor-clearing) filters `priceTier: null`; the tier
+// rows sit alongside for the later read-cutover (Phase 3) to consume.
+//
+// `usageClass` is derived DETERMINISTICALLY from the in-code per-family sample
+// floors (SAMPLE_THRESHOLDS), never from the LLM: a row meeting its family floor
+// is `headline_safe`; a below-floor tier subgroup is `supporting_texture_only`.
+// Overall rollups keep Wave 1 behaviour exactly — below-floor overalls are NOT
+// persisted (so they are always headline_safe and byte-identical to before).
 //
 // Field-name mapping is anchored to the real `AggregatedGroup` interface
 // in `src/lib/csv-aggregate.ts` (verified prior to writing this file —
@@ -69,6 +78,8 @@ const SAMPLE_THRESHOLDS: Record<MetricFamily, number> = {
   OTHER: 10,
 };
 
+export type AggregatedUsageClass = "headline_safe" | "supporting_texture_only";
+
 export interface MetricRow {
   neighbourhood: string;
   propertyType: string;
@@ -78,15 +89,18 @@ export interface MetricRow {
   metricValue: number;
   sampleSize: number;
   monthYear: string;
+  usageClass: AggregatedUsageClass;
   yoyDelta: number | null;
   rolling90dValue: number | null;
   compositionShiftFlag: boolean;
 }
 
 /**
- * Walk an AggregatedGroup and yield one MetricRow per supported family
- * where the value is finite and the sampleSize meets the family-specific
- * floor. Skips tiered subgroups (priceTier !== null).
+ * Walk an AggregatedGroup and yield one MetricRow per supported family where
+ * the value is finite. Overall rollups (priceTier === null) gate on the
+ * family-specific floor (below-floor rows dropped); tier subgroups (priceTier
+ * !== null) are emitted down to a single sample and classified headline vs.
+ * texture by that same floor.
  *
  * Exported for unit testing (the persistence path is otherwise DB-bound).
  */
@@ -94,8 +108,13 @@ export function rowsFromGroup(
   group: AggregatedGroup,
   monthYear: string,
 ): MetricRow[] {
-  if (group.priceTier !== null) return [];
-
+  // Wave 6a (Phase 1): tier subgroups (priceTier !== null) are now emitted
+  // additively. Overall rollups (priceTier === null) keep Wave 1 behaviour
+  // EXACTLY — below-floor rows are dropped and every emitted row is headline_safe
+  // — so existing persisted values stay byte-identical. Tier rows are classified
+  // by the same family floors: at/above floor → headline_safe, below → supporting_
+  // texture_only (low-confidence colour), persisted down to a single sample.
+  const isTier = group.priceTier !== null;
   const propertyType = group.propertyType ?? "All";
   const out: MetricRow[] = [];
 
@@ -110,16 +129,28 @@ export function rowsFromGroup(
     } = {},
   ) => {
     if (value == null || !Number.isFinite(value)) return;
-    if (sampleSize < SAMPLE_THRESHOLDS[metricFamily]) return;
+    const floor = SAMPLE_THRESHOLDS[metricFamily];
+    let usageClass: AggregatedUsageClass;
+    if (isTier) {
+      // Tier subgroup: keep it as long as it has at least one sample; the floor
+      // only decides headline vs. texture, it no longer gates persistence.
+      if (sampleSize < 1) return;
+      usageClass = sampleSize >= floor ? "headline_safe" : "supporting_texture_only";
+    } else {
+      // Overall rollup: unchanged Wave 1 gate — drop below floor, always headline.
+      if (sampleSize < floor) return;
+      usageClass = "headline_safe";
+    }
     out.push({
       neighbourhood: group.neighbourhood,
       propertyType,
-      priceTier: null,
+      priceTier: group.priceTier,
       metricFamily,
       metricKey,
       metricValue: value,
       sampleSize,
       monthYear,
+      usageClass,
       yoyDelta: extras.yoyDelta ?? null,
       rolling90dValue: extras.rolling90dValue ?? null,
       compositionShiftFlag: group.compositionShiftFlag,
@@ -302,6 +333,7 @@ export async function persistAggregatedMetrics(
           metricValue: r.metricValue,
           sampleSize: r.sampleSize,
           monthYear: r.monthYear,
+          usageClass: r.usageClass,
           yoyDelta: r.yoyDelta,
           rolling90dValue: r.rolling90dValue,
           compositionShiftFlag: r.compositionShiftFlag,
@@ -366,6 +398,11 @@ export async function getSourceOfTruthMetrics(args: {
     where: {
       userId,
       uploadId: { in: uploadIds },
+      // Wave 6a (Phase 1) parity: the SoT block fed to Script Builder v2 + Jarvis
+      // must stay byte-identical to Wave 1, so it reads ONLY the overall rollups.
+      // Newly-persisted price-tier subgroups are excluded here until the Phase 3
+      // read-cutover deliberately opts into them.
+      priceTier: null,
       ...nbhdFilter,
     },
     orderBy: [

@@ -123,7 +123,9 @@ async function estimateFloorClearing(
   if (!latest) return { before: 0, after: 0, latestUploadId: null };
 
   const rows = await prisma.aggregatedMetric.findMany({
-    where: { userId, uploadId: latest.id },
+    // Wave 6a (Phase 1) parity: floor-clearing sums the overall rollups only, so
+    // tier subgroups (which would double-count a hood's samples) are excluded.
+    where: { userId, uploadId: latest.id, priceTier: null },
     select: {
       neighbourhood: true,
       propertyType: true,
@@ -655,7 +657,9 @@ export async function previewCombinedSamples(
   if (!latest) return { combined: 0, floorSold: floor.sold, clears: false };
 
   const rows = await prisma.aggregatedMetric.findMany({
-    where: { userId, uploadId: latest.id },
+    // Wave 6a (Phase 1) parity: overall rollups only (tier subgroups would
+    // double-count a hood's samples in the combined-floor estimate).
+    where: { userId, uploadId: latest.id, priceTier: null },
     select: {
       neighbourhood: true,
       propertyType: true,
