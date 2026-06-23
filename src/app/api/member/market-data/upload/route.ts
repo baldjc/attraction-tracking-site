@@ -9,8 +9,10 @@ import {
   REQUIRED_MAPPING_FIELDS,
   FIELD_LABELS,
   validateColumnMapping,
+  toShape,
   type ColumnMapping,
 } from "@/lib/market-config";
+import { resolveStatusMapping } from "@/lib/market-status-buckets";
 import {
   parseCsvPreview,
   detectMonthYearFromFilename,
@@ -183,8 +185,14 @@ export async function POST(req: NextRequest) {
     // required-column check.
     const effectiveMapping =
       columnMapping ?? (config.columnMapping as ColumnMapping | null);
+    // Resolve the member's saved 4-bucket status mapping so any status label
+    // they've already mapped (incl. regional/custom ones the keyword/code lists
+    // don't know) counts as recognized here — otherwise a mapped status could
+    // still hard-error the upload it was mapped for.
+    const statusMapping = resolveStatusMapping(toShape(config));
     const pf = runPreflight(preview, effectiveMapping, {
       allowNumericNeighbourhood,
+      statusMapping,
     });
     console.log(
       `[mdv preflight] result=${pf.ok ? "ok" : pf.code} userId=${userId} ` +

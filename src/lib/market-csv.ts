@@ -8,6 +8,7 @@ import {
   type AnyMappedField,
 } from "@/lib/market-config";
 import { parseCsvRecords } from "@/lib/csv-parse-options";
+import { bucketStatus, type StatusMapping } from "@/lib/market-status-buckets";
 import { HAIKU_MODEL } from "@/lib/ai-models";
 import {
   detectStructuralBlock,
@@ -312,7 +313,19 @@ function isActionableStatus(v: string): boolean {
 export function runPreflight(
   preview: ParsedCsvPreview,
   columnMapping?: ColumnMapping | null,
-  opts?: { allowNumericNeighbourhood?: boolean },
+  opts?: {
+    allowNumericNeighbourhood?: boolean;
+    /**
+     * The member's resolved 4-bucket status mapping. When supplied, any raw
+     * status label that resolves under it (sold/active/pending/offMarket) is
+     * treated as RECOGNIZED here even if it isn't a stock keyword/code — so a
+     * member who mapped a regional/custom status label in the status-mapping
+     * step never gets hard-blocked at upload. Falls back to the keyword/code
+     * lists for labels the mapping doesn't resolve (un-mapped uploads still
+     * work exactly as before).
+     */
+    statusMapping?: StatusMapping | null;
+  },
 ): PreflightResult {
   const headersLower = preview.headers.map((h) => h.toLowerCase().trim());
   const headersCount = preview.headers.length;
@@ -417,13 +430,29 @@ export function runPreflight(
   // Scan the FULL status column (not just the 20-row AI sample) so a file
   // sorted with all non-actionable rows first can't be falsely classified.
   const statusRows = preview.allRows ?? preview.sampleRows;
+  // A label the member has explicitly mapped (statusMapping) is authoritative:
+  // it counts as recognized — and as actionable when it lands in
+  // sold/active/pending — even if it isn't a stock keyword/code. Only labels the
+  // mapping leaves unresolved fall back to the keyword/code heuristics. This is
+  // what stops a mapped regional/custom status from hard-erroring at upload.
+  const statusMapping = opts?.statusMapping ?? null;
+  const mappedBucketOf = (v: string) =>
+    statusMapping ? bucketStatus(v, statusMapping) : "unknown";
+  const isRecognized = (v: string) =>
+    isRecognizedStatus(v) || mappedBucketOf(v) !== "unknown";
+  const isActionable = (v: string) => {
+    const b = mappedBucketOf(v);
+    if (b === "sold" || b === "active" || b === "pending") return true;
+    if (b === "offMarket") return false; // explicitly mapped, but non-actionable
+    return isActionableStatus(v);
+  };
   let statusRecognizedRatio: number | null = null;
   if (statusIdx >= 0 && statusRows.length > 0) {
     const values = statusRows
       .map((r) => (r[statusIdx] ?? "").toString().toLowerCase().trim())
       .filter((v) => v.length > 0);
     if (values.length > 0) {
-      const recognized = values.filter(isRecognizedStatus);
+      const recognized = values.filter(isRecognized);
       statusRecognizedRatio = recognized.length / values.length;
       if (statusRecognizedRatio < 0.5) {
         const sample = Array.from(new Set(values)).slice(0, 5);
@@ -444,7 +473,7 @@ export function runPreflight(
       // Cancelled/Withdrawn/Expired/Terminated/Off-market has no Sold/Active/
       // Pending listings and can't produce inventory, pricing, or absorption
       // metrics — fail it deterministically instead of burning validator cost.
-      const actionableValues = recognized.filter(isActionableStatus);
+      const actionableValues = recognized.filter(isActionable);
       if (recognized.length > 0 && actionableValues.length === 0) {
         const sample = Array.from(new Set(values)).slice(0, 5);
         return {

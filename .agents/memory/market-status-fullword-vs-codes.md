@@ -36,6 +36,32 @@ re-validate the affected upload (admin re-validate route clears
 `rawValidatorOutput` for a genuine fresh AI pass — a populated blob triggers a
 persistence-only reuse of the STALE rejecting output and fixes nothing).
 
+# Upload preflight must consult the member's status mapping, not just keyword/code lists
+
+**Symptom:** A member maps a regional/custom status label (e.g. a non-English
+word) in the status-mapping step, then their upload still HARD-ERRORS with
+`STATUS_VALUES_UNRECOGNIZED` (or `STATUS_ONLY_NON_ACTIONABLE`).
+
+**Root cause:** `runPreflight` in `market-csv.ts` judged status recognition /
+actionability with ONLY hardcoded keyword/code lists (`isRecognizedStatus` /
+`isActionableStatus`) and never looked at the member's saved `statusMapping`. So
+a label the member already mapped was still "unknown" at the gate.
+
+**Fix shape:** `runPreflight` takes `opts.statusMapping`; recognition is
+`isRecognizedStatus(v) || bucketStatus(v, mapping) !== "unknown"`, and actionable
+honours the resolved bucket (sold/active/pending = actionable, offMarket =
+recognized-but-not, else keyword fallback). The upload route resolves it via
+`resolveStatusMapping(toShape(config))` and passes it in. Additive — un-mapped /
+default members are unaffected (they already hit the keyword/code path).
+
+**Precedence to preserve:** unrecognized-majority (<50%) still returns
+`STATUS_VALUES_UNRECOGNIZED` BEFORE the zero-actionable check, so a file that's
+mostly unmapped labels blocks on "unrecognized", not "non-actionable".
+
+**Client routing:** a `STATUS_VALUES_UNRECOGNIZED` preflight result is a
+status-VALUE problem, not a column-identity one — the UI must re-run analyze
+(guided StatusMapper) NOT open the ColumnMapper, or members dead-end.
+
 # get_facts must distinguish 4 states, not return a bare empty list
 
 A validated-but-zero-headline-safe upload used to return `{facts:[]}` —

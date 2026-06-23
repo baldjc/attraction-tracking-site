@@ -590,13 +590,27 @@ export default function UploadPanel({
             setStage("picking");
             return;
           }
+          // A status-VALUE problem is not a column-identity problem — the
+          // columns are fine, the member just hasn't told us what some status
+          // labels mean. Re-run analyze on the representative file so those
+          // labels are surfaced (named, with counts) in the StatusMapper: a
+          // guided mapping step, never a dead-end in the column mapper.
+          if (
+            j.code === "STATUS_VALUES_UNRECOGNIZED" &&
+            Array.isArray(j.headers) &&
+            j.headers.length > 0
+          ) {
+            setPreflightError(null);
+            setMapper(null);
+            setStage("picking");
+            await runAnalyze(mapping);
+            return;
+          }
           // Column-identity failures are recoverable through the mapper — open
           // it (seeded with the effective mapping) instead of dead-ending. Data
           // problems (empty file / all-unknown statuses) can't be fixed by
           // remapping, so those keep the red error card.
-          const mappable =
-            j.code === "MISSING_COLUMNS" ||
-            j.code === "STATUS_VALUES_UNRECOGNIZED";
+          const mappable = j.code === "MISSING_COLUMNS";
           if (mappable && Array.isArray(j.headers) && j.headers.length > 0) {
             setPreflightError(null);
             setMapper({
