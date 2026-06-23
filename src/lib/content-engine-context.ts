@@ -10,6 +10,7 @@ import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import type { PropertyTypeFocus } from "@/lib/property-type-focus";
 import { EXCLUDE_LEGACY_FAILURE_RATE } from "@/lib/market-status-buckets";
+import { formatValue } from "@/lib/aggregated-metrics";
 import {
   resolveMarketDefaults,
   type MoiThresholds,
@@ -61,6 +62,122 @@ export interface CompactFact {
 }
 
 /**
+ * Wave 6a cutover fallback — one preferred metric-key per family.
+ *
+ * On the `market_instant_cutover` path an upload flips to `validated` the
+ * instant the deterministic AggregatedMetric layer is persisted, BEFORE the
+ * background Anthropic story pass writes any MarketFact rows (and permanently
+ * if that AI pass fails in an outage). During that window MarketFact is empty
+ * even though AggregatedMetric is fully populated. These loaders then fall back
+ * to AggregatedMetric so theme/idea generation still has real, member-owned
+ * headline-safe numbers instead of coming up empty.
+ *
+ * We deliberately surface ONE canonical metric-key per family (never the
+ * methodology variants AggregatedMetric also persists) so the fallback can't
+ * emit contradictory rows (e.g. moiStrict AND moiInclusive, or median AND
+ * avg price) for the same scope. MOI = `moiStrict` is kept in lockstep with
+ * `CANONICAL_METRIC_KEY.MOI`. AVG/BENCHMARK/ABSORPTION are intentionally
+ * skipped — they are alternative methodology views that would double-count
+ * against MEDIAN/INVENTORY.
+ */
+const AGG_FALLBACK_METRICS = [
+  { family: "MEDIAN", key: "medianPrice", label: "Median sale price" },
+  { family: "MOI", key: "moiStrict", label: "Months of inventory" },
+  { family: "DOM", key: "domMedian", label: "Median days on market" },
+  { family: "SP_LP", key: "spLpRatio", label: "Sale-to-list price ratio" },
+  { family: "PSF", key: "psf", label: "Price per square foot" },
+  { family: "FAILURE_RATE", key: "failureRate", label: "Listing failure rate" },
+  { family: "INVENTORY", key: "activeCount", label: "Active listings" },
+] as const;
+
+/**
+ * Project the deterministic AggregatedMetric layer down to the same CompactFact
+ * shape the MarketFact loaders return. Only fires when MarketFact is empty (see
+ * the callers), so with the cutover flag OFF — where MarketFact is always
+ * populated synchronously — this never runs and parity is byte-identical.
+ *
+ * Restricted to `priceTier: null` overall rollups (neighbourhood × property
+ * type), matching the scope these surfaces cite; price-tier subgroups are not
+ * surfaced. Values are formatted by the shared `formatValue` so units exactly
+ * match every other AggregatedMetric read surface.
+ */
+async function loadAggregatedFallbackFacts(
+  uploadId: string,
+  monthYear: string,
+  usageClass: "headline_safe" | "supporting_texture_only",
+  opts: { limit: number; orderByNeighbourhoodFirst?: boolean },
+): Promise<CompactFact[]> {
+  // Strict parity gate. Only the `market_instant_cutover` path leaves an upload
+  // `validated` with an empty MarketFact: storyStatus=`generating` during the
+  // background story window, or `failed` on an AI outage. The legacy single-pass
+  // never sets storyStatus, so it stays `not_started`, and a genuinely fact-less
+  // legacy upload returns [] exactly as before — preserving byte-identical
+  // flag-OFF parity. (storyStatus=`ready` with empty MarketFact isn't a cutover
+  // window either, so it also gets no fallback.)
+  const upload = await prisma.marketDataUpload.findUnique({
+    where: { id: uploadId },
+    select: { storyStatus: true },
+  });
+  if (upload?.storyStatus !== "generating" && upload?.storyStatus !== "failed") {
+    return [];
+  }
+  const labelByKey = new Map(
+    AGG_FALLBACK_METRICS.map((m) => [`${m.family}::${m.key}`, m.label]),
+  );
+  // AggregatedMetric carries an order of magnitude more rows than MarketFact
+  // (one per neighbourhood × property type per family, ~thousands), so a plain
+  // `take: limit` ordered metricFamily-first lets the earliest enum families
+  // (MOI, PSF) fill the whole window and starve the rest. Fetch a generous
+  // neighbourhood-first superset (so families interleave) and round-robin
+  // balance across families down to `limit`, guaranteeing every family is
+  // represented — exactly what the Idea Validation caller does for MarketFact.
+  const rows = await prisma.aggregatedMetric.findMany({
+    where: {
+      uploadId,
+      usageClass,
+      // Overall rollups only (see doc-comment) — no price-tier subgroups.
+      priceTier: null,
+      OR: AGG_FALLBACK_METRICS.map((m) => ({
+        metricFamily: m.family,
+        metricKey: m.key,
+      })),
+      // FAILURE_RATE is bounded 0–100; drop any impossible >100 residue. This
+      // mirrors EXCLUDE_LEGACY_FAILURE_RATE's value clause — its other clause
+      // keys on `methodologyVersion`, a column AggregatedMetric doesn't carry.
+      NOT: [{ metricFamily: "FAILURE_RATE", metricValue: { gt: 100 } }],
+    },
+    orderBy: [{ neighbourhood: "asc" as const }, { metricFamily: "asc" as const }],
+    // Defensive upper bound so a pathologically wide market can't load
+    // unboundedly; comfortably covers 7 families × hundreds of neighbourhoods.
+    take: 5000,
+    select: {
+      id: true,
+      neighbourhood: true,
+      propertyType: true,
+      metricFamily: true,
+      metricKey: true,
+      metricValue: true,
+    },
+  });
+  const mapped: CompactFact[] = rows.map((r) => ({
+    id: r.id,
+    neighbourhood: r.neighbourhood,
+    propertyType: r.propertyType,
+    priceTier: null,
+    metricName: labelByKey.get(`${r.metricFamily}::${r.metricKey}`) ?? r.metricKey,
+    metricFamily: String(r.metricFamily),
+    value: formatValue(
+      r.metricFamily as Parameters<typeof formatValue>[0],
+      r.metricValue,
+    ),
+    marketType: null,
+    trajectory: null,
+    monthYear,
+  }));
+  return balanceFactsByFamily(mapped, opts.limit);
+}
+
+/**
  * Headline-safe facts for an upload, projected down to the compact shape we
  * send to Claude. We omit raw numerics in favour of pre-formatted strings so
  * Claude doesn't waste tokens parsing decimal/percent formatting — and we
@@ -100,6 +217,15 @@ export async function loadHeadlineSafeFacts(
       viewerCaveat: true,
     },
   });
+  // Cutover window / AI outage: MarketFact empty but AggregatedMetric populated.
+  // Fall back so generation still has headline-safe numbers (parity-safe: flag
+  // OFF always populates MarketFact synchronously, so this never fires there).
+  if (rows.length === 0) {
+    return loadAggregatedFallbackFacts(uploadId, monthYear, "headline_safe", {
+      limit,
+      orderByNeighbourhoodFirst: opts.orderByNeighbourhoodFirst,
+    });
+  }
   return rows.map((r) => ({
     id: r.id,
     neighbourhood: r.neighbourhood,
@@ -193,6 +319,16 @@ export async function loadTextureOnlyFacts(
       viewerCaveat: true,
     },
   });
+  // Cutover window / AI outage fallback (see loadHeadlineSafeFacts). Keeps
+  // Jarvis get_facts' texture-only honesty state working off AggregatedMetric.
+  if (rows.length === 0) {
+    return loadAggregatedFallbackFacts(
+      uploadId,
+      monthYear,
+      "supporting_texture_only",
+      { limit, orderByNeighbourhoodFirst: opts.orderByNeighbourhoodFirst },
+    );
+  }
   return rows.map((r) => ({
     id: r.id,
     neighbourhood: r.neighbourhood,
