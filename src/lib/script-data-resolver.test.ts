@@ -261,7 +261,10 @@ test("findDataForScriptNeed excludes legacy_v1 failure_rate facts in the query",
   const not = (capturedWhere as { NOT?: Record<string, unknown> }).NOT;
   assert.deepEqual(
     not,
-    { metricFamily: "FAILURE_RATE", methodologyVersion: "legacy_v1" },
-    "the query must exclude FAILURE_RATE rows stamped legacy_v1 while leaving v2 (and every other family) untouched",
+    [
+      { metricFamily: "FAILURE_RATE", methodologyVersion: "legacy_v1" },
+      { metricFamily: "FAILURE_RATE", metricValue: { gt: 100 } },
+    ],
+    "the query must exclude FAILURE_RATE rows stamped legacy_v1 AND any impossible >100 value, while leaving bounded v2 (and every other family) untouched",
   );
 });

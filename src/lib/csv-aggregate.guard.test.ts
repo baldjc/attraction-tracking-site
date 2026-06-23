@@ -44,33 +44,72 @@ function run(columnMapping: ColumnMapping) {
   });
 }
 
-test("throws when mapped salePrice header is absent from the CSV", async () => {
+// A CSV with NO price-like columns, so an absent mapped price header has no
+// high-confidence substitute for resolveEffectiveMapping to recover — the loud
+// guard must still fire rather than silently persisting a price-less fact set.
+const NO_PRICE_CSV = Buffer.from(
+  [
+    "Community,Status,Close Date",
+    "Bridgeland,Sold,2026-05-10",
+    "Bridgeland,Sold,2026-05-12",
+  ].join("\n"),
+  "utf8",
+);
+
+function runNoPrice(columnMapping: ColumnMapping) {
+  return aggregateUpload({
+    uploadId: "test-upload",
+    userId: "test-user",
+    monthYear: "2026-05",
+    csvFileName: "test.csv",
+    csvBuffer: NO_PRICE_CSV,
+    config: makeConfig(columnMapping),
+  });
+}
+
+test("throws when mapped salePrice header is absent and no substitute exists", async () => {
   await assert.rejects(
-    run({ salePrice: "Sale Price", date: "Close Date", status: "Status" }),
+    runNoPrice({ salePrice: "Sale Price", date: "Close Date", status: "Status" }),
     (err: Error) => {
       assert.match(err.message, /not present in the uploaded CSV/);
       assert.match(err.message, /salePrice → "Sale Price"/);
       // The available headers are surfaced so the fix is obvious.
-      assert.match(err.message, /Close Price/);
+      assert.match(err.message, /Community/);
       return true;
     },
   );
 });
 
-test("throws when mapped listPrice header is absent (salePrice ok)", async () => {
-  await assert.rejects(
-    run({
-      salePrice: "Close Price",
-      listPrice: "No Such List Col",
-      date: "Close Date",
-      status: "Status",
-    }),
-    (err: Error) => {
-      assert.match(err.message, /not present in the uploaded CSV/);
-      assert.match(err.message, /listPrice → "No Such List Col"/);
-      return true;
-    },
+test("auto-recovers when absent mapped salePrice has a high-confidence substitute (NTREIS Sale Price → Close Price)", async () => {
+  // The CSV exposes "Close Price" — a high-confidence sold-price column — so
+  // resolveEffectiveMapping substitutes it per-file for the absent "Sale Price"
+  // mapping (older/varied-header uploads) instead of dead-ending the upload.
+  const table = await run({
+    salePrice: "Sale Price",
+    listPrice: "Original List Price",
+    date: "Close Date",
+    status: "Status",
+  });
+  const city = table.groups.find(
+    (g) =>
+      g.neighbourhood === "All Neighbourhoods" &&
+      g.propertyType == null &&
+      g.priceTier == null,
   );
+  assert.ok(city, "citywide rollup present");
+  assert.equal(city?.medianPrice, 492500);
+});
+
+test("auto-recovers when absent mapped listPrice has a high-confidence substitute", async () => {
+  // listPrice maps to a non-existent header, but "Original List Price" is a
+  // high-confidence list-price column → substituted per-file, no hard failure.
+  const table = await run({
+    salePrice: "Close Price",
+    listPrice: "No Such List Col",
+    date: "Close Date",
+    status: "Status",
+  });
+  assert.ok(table.groups.length > 0, "aggregation still produces groups");
 });
 
 test("missing mapped saleToListRatio warns but does not throw", async () => {

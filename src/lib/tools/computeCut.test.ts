@@ -452,9 +452,18 @@ const HEADER_CSV =
   "Bridgeland,Sold,500000,510000\n" +
   "Bridgeland,Sold,520000,520000\n";
 
-test("runComputeCut: dimension mapped to a header missing from the upload → unavailable", async () => {
-  // neighbourhood is mapped to a header that isn't in HEADER_CSV.
-  const { deps, logged, createdFacts } = stubDeps(HEADER_CSV, {
+// CSV with NO neighbourhood-like column, so an absent neighbourhood mapping has
+// no high-confidence substitute to auto-detect — the honesty gate must fire.
+const NO_NEIGHBOURHOOD_CSV =
+  "Status,Sale Price,List Price\n" +
+  "Sold,500000,510000\n" +
+  "Sold,520000,520000\n";
+
+test("runComputeCut: dimension mapped to a missing header with no substitute → unavailable", async () => {
+  // neighbourhood is mapped to a header that isn't present, AND the CSV has no
+  // neighbourhood-like column for resolveEffectiveMapping to auto-substitute, so
+  // the dimension is genuinely uncomputable → honest "unavailable".
+  const { deps, logged, createdFacts } = stubDeps(NO_NEIGHBOURHOOD_CSV, {
     neighbourhood: "Subdivision",
     status: "Status",
     salePrice: "Sale Price",
@@ -468,6 +477,25 @@ test("runComputeCut: dimension mapped to a header missing from the upload → un
   assert.equal(res.facts.length, 0);
   assert.equal(createdFacts.length, 0, "must not persist facts on unavailable");
   assert.deepEqual(logged, ["unavailable"]);
+});
+
+test("runComputeCut: dimension mapped to a missing header BUT auto-substituted from a real column → computes (not unavailable)", async () => {
+  // neighbourhood is mapped to absent "Subdivision", but HEADER_CSV exposes
+  // "Community" — a high-confidence neighbourhood column. resolveEffectiveMapping
+  // recovers it per-file (older/varied-header uploads), so the cut computes
+  // rather than dead-ending on "unavailable" (two thin rows → sample band).
+  const { deps } = stubDeps(HEADER_CSV, {
+    neighbourhood: "Subdivision",
+    status: "Status",
+    salePrice: "Sale Price",
+    listPrice: "List Price",
+  });
+  const res = await runComputeCut(
+    { userId: "u", params: { dimension: "neighbourhood", filters: [] } },
+    deps,
+  );
+  assert.notEqual(res.classification, "unavailable");
+  assert.notEqual(res.classification, "no_upload");
 });
 
 test("runComputeCut: filter column mapped to a missing header → unavailable", async () => {

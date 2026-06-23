@@ -59,7 +59,10 @@ export async function GET() {
       prisma.marketDataUpload.findFirst({
         where: { userId: user.id },
         orderBy: { uploadedAt: "desc" },
-        select: { status: true },
+        // storyStatus: Wave 6a two-phase readiness. On the instant-cutover path
+        // the upload is `validated` (numbers ready) while the AI story pass runs
+        // separately. Parity-inert — stays `not_started` with the flag OFF.
+        select: { status: true, storyStatus: true },
       }),
       null,
     ),
@@ -106,9 +109,26 @@ export async function GET() {
     marketData = "failed";
   }
 
+  // Wave 6a — the background AI story pass, surfaced as a calm sub-note under the
+  // (already-done) "Upload your market data" step. Parity-inert: with the flag
+  // OFF storyStatus stays `not_started`, which maps to "none" → no sub-note, so
+  // the checklist reads exactly as before.
+  let marketStories: "none" | "generating" | "ready" | "failed" = "none";
+  if (latestUpload?.storyStatus === "generating") {
+    marketStories = "generating";
+  } else if (latestUpload?.storyStatus === "failed") {
+    marketStories = "failed";
+  } else if (latestUpload?.storyStatus === "ready") {
+    marketStories = "ready";
+  }
+
   return Response.json({
     profile: !!(profile?.onboardingComplete || profile?.onboardingCompletedAt),
     marketData,
+    // Wave 6a — only present once the background story pass is engaged. "none"
+    // (always the case with the flag OFF) is omitted so the payload stays
+    // byte-identical to before (strict parity).
+    ...(marketStories !== "none" ? { marketStories } : {}),
     neighbourhood: profileCount > 0 || researchUploadCount > 0,
     firstIdea: firstIdea > 0,
     scripted: scriptedPlan > 0,

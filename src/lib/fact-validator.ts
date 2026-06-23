@@ -51,6 +51,7 @@ import {
   type ParsedMetricFamily,
 } from "@/lib/fact-validator-parser";
 import { getCostCapStatus } from "@/lib/ai-tool-cost";
+import { isInstantCutoverEnabledForUser } from "@/lib/feature-flags";
 import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
 import {
   parseDataThreadStrings,
@@ -1682,6 +1683,15 @@ function reconstructFromRawValidatorOutput(raw: string): {
   return { factsBundles, storyLeads };
 }
 
+// Wave 6a (Phase 2) — which terminal state a fact-extraction pass writes when it
+// succeeds/degrades/empties out. "inline" is the legacy single-pass path: the AI
+// outcome IS the upload outcome, so it writes upload.status. "stories" is the
+// cutover background enrichment job: the deterministic numbers already flipped the
+// upload to `validated`, so the AI outcome only ever writes storyStatus and MUST
+// NOT touch upload.status (an AI outage must never turn a member's ready numbers
+// into a "Failed" upload).
+type ValidationPhase = "inline" | "stories";
+
 async function persistResults(
   uploadId: string,
   userId: string,
@@ -1693,6 +1703,7 @@ async function persistResults(
   factYieldPct: number,
   methodologyVariant: Prisma.InputJsonValue,
   moiRelabelIndex: Map<string, MoiRelabelCandidate[]>,
+  phase: ValidationPhase = "inline",
 ): Promise<void> {
   const allFactRows = factsBundles.flatMap((b) =>
     b.facts.map((f) => {
@@ -1828,16 +1839,34 @@ async function persistResults(
   // retry costUsd is 0 (no AI call was made) — skip the usage row so we don't
   // double-charge for an upload whose AI step already succeeded earlier.
   await prisma.$transaction(async (tx) => {
-    await tx.marketDataUpload.update({
-      where: { id: uploadId },
-      data: {
-        status: "validated",
-        validatedAt: new Date(),
-        validationCostUsd: costUsd.toNumber(),
-        factYieldPct,
-        validationError: null,
-      },
-    });
+    if (phase === "stories") {
+      // Cutover background path: the upload is ALREADY `validated` (the
+      // deterministic numbers flipped it the instant aggregation finished). The
+      // AI succeeding only marks the story phase ready + records cost; it must
+      // NEVER touch upload.status/validatedAt. factYieldPct is an AI metric so we
+      // set it here (the early deterministic flip left it null).
+      await tx.marketDataUpload.update({
+        where: { id: uploadId },
+        data: {
+          storyStatus: "ready",
+          storiesReadyAt: new Date(),
+          storyError: null,
+          validationCostUsd: costUsd.toNumber(),
+          factYieldPct,
+        },
+      });
+    } else {
+      await tx.marketDataUpload.update({
+        where: { id: uploadId },
+        data: {
+          status: "validated",
+          validatedAt: new Date(),
+          validationCostUsd: costUsd.toNumber(),
+          factYieldPct,
+          validationError: null,
+        },
+      });
+    }
     if (costUsd.greaterThan(0)) {
       await tx.aIToolUsage.create({
         data: {
@@ -2059,10 +2088,21 @@ export async function handleValidationFailure(
 // Main orchestrator
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function runValidation(uploadId: string): Promise<void> {
+export async function runValidation(
+  uploadId: string,
+  opts?: { phase?: ValidationPhase },
+): Promise<void> {
   const t0 = Date.now();
+  // Wave 6a (Phase 2): "stories" = the background AI enrichment pass invoked by
+  // runStoryGeneration AFTER the deterministic numbers already flipped the upload
+  // to `validated`. In this phase we SKIP the deterministic work (mark-validating,
+  // aggregate persist, vocab seed, the cutover branch) and the AI's outcome writes
+  // storyStatus only — never upload.status. "inline" (default) is the legacy
+  // single-pass path and is byte-identical to before this change.
+  const isStoriesPhase = opts?.phase === "stories";
+  const phase: ValidationPhase = isStoriesPhase ? "stories" : "inline";
   mdv("validation.start", uploadId, t0);
-  console.log('[runValidation] start', uploadId);
+  console.log('[runValidation] start', uploadId, isStoriesPhase ? "(stories phase)" : "");
   // Resolve userId first (cheap) so we can run cost-cap BEFORE any heavy work.
   const upload = await prisma.marketDataUpload.findUnique({
     where: { id: uploadId },
@@ -2070,8 +2110,11 @@ export async function runValidation(uploadId: string): Promise<void> {
   });
   if (!upload) throw new Error(`Upload ${uploadId} not found`);
 
-  // Idempotency: a validated upload should not be re-run by accident.
-  if (upload.status === "validated") return;
+  // Idempotency: a validated upload should not be re-run by accident. EXCEPT in
+  // the stories phase, where the upload is EXPECTED to already be `validated`
+  // (the deterministic flip happened first) and we're here precisely to run the
+  // AI enrichment against it.
+  if (!isStoriesPhase && upload.status === "validated") return;
 
   // Persistence-only retry: if a prior attempt already produced validator
   // output (the AI step succeeded but the save died — the P2028 bug), reuse
@@ -2100,23 +2143,50 @@ export async function runValidation(uploadId: string): Promise<void> {
     if (!reuseAiOutput) {
       const cap = await getCostCapStatus(upload.userId);
       if (cap.hardBlocked) {
-        await prisma.marketDataUpload.update({
-          where: { id: uploadId },
-          data: {
-            status: "failed",
-            validationError:
-              "Monthly AI cost cap reached. Validation paused — try again next month, or contact admin if you need a higher cap.",
-          },
-        });
+        if (isStoriesPhase) {
+          // The deterministic numbers are already validated + visible; only the AI
+          // story enrichment is capped. Mark the story phase failed (calm,
+          // retryable next month) and leave upload.status untouched.
+          await prisma.marketDataUpload.update({
+            where: { id: uploadId },
+            data: {
+              storyStatus: "failed",
+              storyError:
+                "Monthly AI cost cap reached, so story ideas weren't generated. Your market numbers are ready — story ideas can be generated next month, or contact admin for a higher cap.",
+            },
+          });
+        } else {
+          await prisma.marketDataUpload.update({
+            where: { id: uploadId },
+            data: {
+              status: "failed",
+              validationError:
+                "Monthly AI cost cap reached. Validation paused — try again next month, or contact admin if you need a higher cap.",
+            },
+          });
+        }
         return;
       }
     }
 
-    await markUploadValidating(uploadId);
-    mdv("validation.marked_validating", uploadId, t0);
-    console.log('[runValidation] step: marked validating', uploadId);
+    if (isStoriesPhase) {
+      // Stories phase: the upload is already `validated`; just (re)assert that the
+      // story phase is in-flight. Idempotent — the cutover branch already set this,
+      // but a direct/in-process invocation may arrive here fresh.
+      await prisma.marketDataUpload.update({
+        where: { id: uploadId },
+        data: { storyStatus: "generating" },
+      });
+    } else {
+      await markUploadValidating(uploadId);
+      mdv("validation.marked_validating", uploadId, t0);
+      console.log('[runValidation] step: marked validating', uploadId);
+    }
 
-    // Aggregate (pure compute, no Claude).
+    // Aggregate (pure compute, no Claude). Both phases need `table` for the AI
+    // chunk inputs; in the stories phase the deterministic aggregates were already
+    // persisted by the inline phase, so we only RECOMPUTE the table (the AI inputs)
+    // and skip the persist below.
     const { table, userId, configSnapshot } = await aggregateUploadFromDb(uploadId);
     mdv("aggregate.complete", uploadId, t0, {
       groups: table.groups.length,
@@ -2143,34 +2213,99 @@ export async function runValidation(uploadId: string): Promise<void> {
     // degraded-fact guard below still protect FACTS independently. Non-fatal: an
     // aggregate persist failure must not block the AI pass or the fact write (the
     // backfill script can recompute aggregates from the same CSV later).
-    try {
-      const written = await persistAggregatedMetrics(uploadId, userId, table);
-      console.log(
-        `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
-      );
-    } catch (err) {
-      console.error(
-        '[runValidation] persistAggregatedMetrics failed (non-fatal)',
-        uploadId,
-        err,
-      );
+    // Both deterministic side-effects below (aggregate persist + vocab seed) ran
+    // already in the inline phase that flipped this upload to `validated`; the
+    // stories phase must NOT redo them (re-persisting could trip the aggregate
+    // collapse guard on a recompute, and the vocab is already grown).
+    if (!isStoriesPhase) {
+      try {
+        const written = await persistAggregatedMetrics(uploadId, userId, table);
+        console.log(
+          `[aggregated-metric-persist] uploadId=${uploadId} count=${written}`,
+        );
+      } catch (err) {
+        console.error(
+          '[runValidation] persistAggregatedMetrics failed (non-fatal)',
+          uploadId,
+          err,
+        );
+      }
+
+      // WS2B — grow the member's neighbourhood vocab from this upload's distinct
+      // subdivisions. Sourced from the aggregation (every neighbourhood that
+      // appeared in the CSV), not from extracted facts, so the vocab captures the
+      // full market even when fact extraction is sparse. Non-fatal.
+      try {
+        const distinctHoods = Array.from(
+          new Set(table.groups.map((g) => g.neighbourhood)),
+        );
+        await seedNeighbourhoodVocabFromUpload(userId, distinctHoods);
+      } catch (err) {
+        console.error(
+          '[runValidation] seedNeighbourhoodVocabFromUpload failed (non-fatal)',
+          uploadId,
+          err,
+        );
+      }
     }
 
-    // WS2B — grow the member's neighbourhood vocab from this upload's distinct
-    // subdivisions. Sourced from the aggregation (every neighbourhood that
-    // appeared in the CSV), not from extracted facts, so the vocab captures the
-    // full market even when fact extraction is sparse. Non-fatal.
-    try {
-      const distinctHoods = Array.from(
-        new Set(table.groups.map((g) => g.neighbourhood)),
-      );
-      await seedNeighbourhoodVocabFromUpload(userId, distinctHoods);
-    } catch (err) {
-      console.error(
-        '[runValidation] seedNeighbourhoodVocabFromUpload failed (non-fatal)',
-        uploadId,
-        err,
-      );
+    // ── Wave 6a (Phase 2) CUTOVER BRANCH ────────────────────────────────────
+    // The deterministic numbers are now persisted. On the cutover path we flip
+    // the upload to `validated` IMMEDIATELY (numbers ready in seconds, surviving
+    // any Anthropic outage) and hand the AI story-leads/prose pass to a separate
+    // background job. We do NOT call Anthropic on this code path at all.
+    //
+    // Gated per-OWNER on `market_instant_cutover` (default OFF, NOT in
+    // DEFAULT_FLAGS). Flag OFF ⇒ this branch is skipped entirely and the function
+    // continues into the legacy inline AI pass below, byte-identical to before.
+    // `isStoriesPhase` guards re-entry: the dispatched story job calls
+    // runValidation(phase:"stories"), which must fall through to the AI pass, not
+    // loop back here.
+    if (!isStoriesPhase) {
+      let cutover = false;
+      try {
+        cutover = await isInstantCutoverEnabledForUser(userId);
+      } catch (err) {
+        // Fail CLOSED: a flag-read hiccup keeps the legacy inline behaviour.
+        console.error('[runValidation] instant-cutover flag read failed', uploadId, err);
+        cutover = false;
+      }
+      if (cutover) {
+        // factYieldPct is an AI-extraction metric, so it stays null until the
+        // story job completes. validatedAt marks when the numbers became ready.
+        await prisma.marketDataUpload.update({
+          where: { id: uploadId },
+          data: {
+            status: "validated",
+            validatedAt: new Date(),
+            validationError: null,
+            storyStatus: "generating",
+            storyError: null,
+          },
+        });
+        mdv("validation.instant_cutover", uploadId, t0, {
+          groups: table.groups.length,
+          totalSold: table.meta.totalSold,
+        });
+        console.log(
+          `[runValidation] INSTANT CUTOVER uploadId=${uploadId} — numbers validated, dispatching story generation`,
+        );
+        // Dynamic import avoids a static job-dispatch ↔ fact-validator import
+        // cycle (job-dispatch imports validateUploadAsync/generateStoriesAsync
+        // from here). dispatchStoryGeneration NEVER throws — it falls back to the
+        // in-process path on any queue error.
+        try {
+          const { dispatchStoryGeneration } = await import("@/lib/job-dispatch");
+          await dispatchStoryGeneration(uploadId, userId);
+        } catch (err) {
+          // Last-resort: even the dispatcher's own import failed. Mark the story
+          // phase failed (numbers stay validated) so the row never strands in
+          // `generating`. A manual regenerate can re-dispatch later.
+          console.error('[runValidation] story dispatch failed', uploadId, err);
+          await handleStoryFailure(uploadId, err);
+        }
+        return;
+      }
     }
 
     // Two paths converge on the same persist tail below. Both populate these
@@ -2447,17 +2582,36 @@ export async function runValidation(uploadId: string): Promise<void> {
             `This most commonly means the sold rows for this month didn't carry a readable sale price or status, or the column mapping points at the wrong/empty column. ` +
             `Very low sold volume for the month can also produce too few samples to cite. ` +
             `Check the column mapping (especially the sale-price and status columns) and re-validate.`;
-      await prisma.marketDataUpload.update({
-        where: { id: uploadId },
-        data: {
-          status: "failed",
-          validationCostUsd: totalCost.toNumber(),
-          factYieldPct: 0,
-          validationError:
-            `${reason}\n\n` +
-            `--- RAW VALIDATOR OUTPUT (first 8000 chars) ---\n${rawForDebug.slice(0, 8000)}`,
-        },
-      });
+      if (isStoriesPhase) {
+        // Stories phase: the deterministic numbers are already `validated` and
+        // visible. The AI just produced nothing citable, so this is a STORY
+        // failure only — never flip upload.status to failed. Calm, retryable
+        // message; numbers stay intact.
+        await prisma.marketDataUpload.update({
+          where: { id: uploadId },
+          data: {
+            storyStatus: "failed",
+            validationCostUsd: totalCost.toNumber(),
+            storyError:
+              `Your market numbers are ready, but story ideas couldn't be generated from this upload. ${reason}`.slice(
+                0,
+                4000,
+              ),
+          },
+        });
+      } else {
+        await prisma.marketDataUpload.update({
+          where: { id: uploadId },
+          data: {
+            status: "failed",
+            validationCostUsd: totalCost.toNumber(),
+            factYieldPct: 0,
+            validationError:
+              `${reason}\n\n` +
+              `--- RAW VALIDATOR OUTPUT (first 8000 chars) ---\n${rawForDebug.slice(0, 8000)}`,
+          },
+        });
+      }
       // Only bill when this attempt actually made AI calls. A persistence-only
       // reuse run has totalCost 0 and must not write a usage row.
       if (totalCost.greaterThan(0)) {
@@ -2498,19 +2652,37 @@ export async function runValidation(uploadId: string): Promise<void> {
       console.error(
         `[runValidation] DEGRADED RE-VALIDATION uploadId=${uploadId} existingFacts=${existingFactCount} newUsableFacts=${usableFacts} — KEEPING prior facts/leads/aggregates, NOT swapping (likely an old-format CSV under a newer column mapping).`,
       );
-      await prisma.marketDataUpload.update({
-        where: { id: uploadId },
-        data: {
-          status: "validated",
-          validatedAt: new Date(),
-          validationCostUsd: totalCost.toNumber(),
-          // Keep prior factYieldPct — the live data is unchanged. Carry a
-          // needs-review note the UI surfaces on the still-validated row.
-          validationError:
-            `${NEEDS_REVIEW_PREFIX} This re-validation produced only ${usableFacts} usable facts — far fewer than the ${existingFactCount} already saved for this month — so we kept your existing data and did NOT replace it. ` +
-            `This usually means the file's columns differ from your current market settings. Your previous data is unchanged and still in use.`,
-        },
-      });
+      if (isStoriesPhase) {
+        // Stories phase: keep the member's prior facts/leads (already the
+        // behaviour — we don't swap). The prior story data is intact, so the
+        // story phase is effectively READY; surface a calm needs-review note via
+        // storyError and never touch upload.status (numbers already validated).
+        await prisma.marketDataUpload.update({
+          where: { id: uploadId },
+          data: {
+            storyStatus: "ready",
+            storiesReadyAt: new Date(),
+            validationCostUsd: totalCost.toNumber(),
+            storyError:
+              `${NEEDS_REVIEW_PREFIX} This re-validation produced only ${usableFacts} usable facts — far fewer than the ${existingFactCount} already saved for this month — so we kept your existing story data and did NOT replace it. ` +
+              `This usually means the file's columns differ from your current market settings. Your previous data is unchanged and still in use.`,
+          },
+        });
+      } else {
+        await prisma.marketDataUpload.update({
+          where: { id: uploadId },
+          data: {
+            status: "validated",
+            validatedAt: new Date(),
+            validationCostUsd: totalCost.toNumber(),
+            // Keep prior factYieldPct — the live data is unchanged. Carry a
+            // needs-review note the UI surfaces on the still-validated row.
+            validationError:
+              `${NEEDS_REVIEW_PREFIX} This re-validation produced only ${usableFacts} usable facts — far fewer than the ${existingFactCount} already saved for this month — so we kept your existing data and did NOT replace it. ` +
+              `This usually means the file's columns differ from your current market settings. Your previous data is unchanged and still in use.`,
+          },
+        });
+      }
       // Bill the spend only when this attempt actually made AI calls (the $0
       // reuse path must not write a usage row).
       if (totalCost.greaterThan(0)) {
@@ -2547,6 +2719,7 @@ export async function runValidation(uploadId: string): Promise<void> {
       Number(factYieldPct.toFixed(4)),
       methodologyVariantJson(methodologySnapshot),
       buildMoiRelabelIndex(table.groups),
+      phase,
     );
     mdv("db.write.complete", uploadId, t0);
     mdv("validation.complete", uploadId, t0, {
@@ -2586,11 +2759,104 @@ export async function runValidation(uploadId: string): Promise<void> {
       );
     }
   } catch (err) {
-    console.error('[runValidation] threw for', uploadId, err);
-    // Route through the central handler instead of marking failed directly:
-    // transient AI-provider errors keep the row in `validating` and schedule a
-    // background auto-retry (no re-throw, so the queue keeps draining); only a
-    // permanent error or an exhausted backoff window ends as `failed`.
-    await handleValidationFailure(uploadId, err);
+    console.error('[runValidation] threw for', uploadId, err, isStoriesPhase ? "(stories phase)" : "");
+    if (isStoriesPhase) {
+      // Stories phase: the deterministic numbers are already `validated`. Never
+      // mark the upload failed — route to the story-specific handler that only
+      // ever writes storyStatus, so an AI outage degrades story prose without
+      // ever taking the member's ready numbers down with it.
+      await handleStoryFailure(uploadId, err);
+    } else {
+      // Route through the central handler instead of marking failed directly:
+      // transient AI-provider errors keep the row in `validating` and schedule a
+      // background auto-retry (no re-throw, so the queue keeps draining); only a
+      // permanent error or an exhausted backoff window ends as `failed`.
+      await handleValidationFailure(uploadId, err);
+    }
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wave 6a (Phase 2) — story-generation entry points + failure handling
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The background AI enrichment pass (story leads + prose), run AFTER the
+ * deterministic numbers already flipped the upload to `validated` on the cutover
+ * path. Thin wrapper over runValidation in "stories" phase: it recomputes the
+ * aggregation table (the AI inputs) but skips every deterministic side-effect and
+ * writes only storyStatus — never upload.status. Exported for the durable worker
+ * (handleGenerateStories) and the in-process fallback (generateStoriesAsync).
+ */
+export async function runStoryGeneration(uploadId: string): Promise<void> {
+  await runValidation(uploadId, { phase: "stories" });
+}
+
+/**
+ * Central story-phase failure handler — the storyStatus analogue of
+ * handleValidationFailure. CRITICAL: it NEVER touches upload.status. The member's
+ * deterministic numbers are already `validated` and visible; an AI outage must
+ * only ever degrade the story prose, surfaced as a calm, retryable storyStatus.
+ *
+ * Unlike validation (which has a DB-backed auto-retry backoff window over ~2h),
+ * the story phase relies on the durable queue's crash-retry for process death and
+ * otherwise lands on a clean `failed` terminal that a manual regenerate can
+ * re-dispatch. We distinguish transient vs permanent only for the wording, so the
+ * member sees an accurate "briefly unavailable, you can regenerate" vs a concrete
+ * error. Status-guarded so a concurrently-`ready` story phase is never clobbered.
+ */
+export async function handleStoryFailure(
+  uploadId: string,
+  err: unknown,
+): Promise<void> {
+  const message =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
+  const transient = isTransientProviderError(err);
+  const storyError = transient
+    ? `Your market numbers are ready. Story ideas couldn't be generated because the AI provider was briefly unavailable — you can regenerate them anytime, at no extra charge. (provider note: ${message.slice(0, 300)})`
+    : `Your market numbers are ready. Story ideas couldn't be generated: ${message.slice(0, 500)}`;
+  // updateMany + status guard: only move a row that is still `generating`. If a
+  // concurrent path already marked the story phase ready/failed, this is a no-op
+  // rather than clobbering it. Never writes upload.status.
+  await prisma.marketDataUpload.updateMany({
+    where: { id: uploadId, storyStatus: "generating" },
+    data: {
+      storyStatus: "failed",
+      storyError: storyError.slice(0, 4000),
+    },
+  });
+}
+
+/**
+ * In-process fallback dispatcher for story generation (durable queue OFF), the
+ * storyStatus analogue of validateUploadAsync. Per-user serial chain, fire-and-
+ * forget, swallows errors after routing them through handleStoryFailure so the
+ * chain keeps draining and the row never strands in `generating`.
+ */
+export function generateStoriesAsync(uploadId: string, userId: string): void {
+  const prev = userQueues.get(userId) ?? Promise.resolve();
+  const next = prev.then(async () => {
+    try {
+      await runStoryGeneration(uploadId);
+    } catch (err) {
+      console.error('[generateStoriesAsync] outer catch for', uploadId, err);
+      try {
+        await handleStoryFailure(uploadId, err);
+      } catch (err2) {
+        console.error(
+          '[generateStoriesAsync] handleStoryFailure also threw for',
+          uploadId,
+          ':',
+          err2,
+        );
+      }
+      // Swallow so the chain keeps draining for this user.
+    }
+  });
+  userQueues.set(userId, next);
+  next.finally(() => {
+    if (userQueues.get(userId) === next) {
+      userQueues.delete(userId);
+    }
+  });
 }

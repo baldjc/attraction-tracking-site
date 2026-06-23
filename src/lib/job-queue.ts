@@ -21,12 +21,17 @@ export const QUEUE_VALIDATE_UPLOAD = "validate-upload";
 export const QUEUE_REVIEWER_COACH_RUN = "reviewer-coach-run";
 export const QUEUE_GLANCE_TEST = "glance-test";
 export const QUEUE_KB_MERGE_APPLY = "kb-merge-apply";
+// Wave 6a (Phase 2) — the Anthropic story-leads/prose enrichment pass, split out
+// of validate-upload so the member's deterministic numbers are ready instantly
+// and an AI outage degrades story prose only. Only enqueued on the cutover path.
+export const QUEUE_GENERATE_STORIES = "generate-stories";
 
 export const ALL_QUEUES = [
   QUEUE_VALIDATE_UPLOAD,
   QUEUE_REVIEWER_COACH_RUN,
   QUEUE_GLANCE_TEST,
   QUEUE_KB_MERGE_APPLY,
+  QUEUE_GENERATE_STORIES,
 ] as const;
 
 // ── Job payload types ────────────────────────────────────────────────────────
@@ -47,6 +52,11 @@ export interface KbMergeApplyJob {
   userId: string;
   // `${from}->${into}` review-queue items opted into the merge (may be empty).
   selectedReviewKeys?: string[];
+}
+export interface GenerateStoriesJob {
+  uploadId: string;
+  // Owning member; governs the dispatch flag and per-user serialization.
+  userId: string;
 }
 
 /**
@@ -189,6 +199,27 @@ export async function enqueueGlanceTest(
     singletonKey: data.channelRef,
     retryLimit: 0,
     expireInMinutes: 60,
+  });
+}
+
+export async function enqueueGenerateStories(
+  data: GenerateStoriesJob,
+): Promise<string | null> {
+  const boss = await getEnqueueBoss();
+  return boss.send(QUEUE_GENERATE_STORIES, data, {
+    // One story-generation job in flight per upload; a duplicate dispatch (e.g.
+    // a re-validate) dedupes to a single job while one is queued/active.
+    singletonKey: data.uploadId,
+    // Business failures are caught + persisted (storyStatus=failed) by the
+    // handler, which returns normally so pg-boss marks the job complete — no
+    // auto-retry, no double AI spend. Only genuine process death (job left
+    // 'active' when the worker dies) expires + re-runs; the reuse path then
+    // rebuilds from the already-paid-for rawValidatorOutput at $0. This mirrors
+    // the validate-upload model exactly.
+    retryLimit: 2,
+    retryDelay: 30,
+    retryBackoff: true,
+    expireInMinutes: 20,
   });
 }
 

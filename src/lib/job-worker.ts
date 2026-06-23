@@ -17,7 +17,12 @@
 
 import PgBoss from "pg-boss";
 import prisma from "@/lib/prisma";
-import { runValidation, handleValidationFailure } from "@/lib/fact-validator";
+import {
+  runValidation,
+  handleValidationFailure,
+  runStoryGeneration,
+  handleStoryFailure,
+} from "@/lib/fact-validator";
 import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
 import { executeCoachRun } from "@/lib/reviewer-run";
 import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
@@ -30,10 +35,12 @@ import {
   QUEUE_REVIEWER_COACH_RUN,
   QUEUE_GLANCE_TEST,
   QUEUE_KB_MERGE_APPLY,
+  QUEUE_GENERATE_STORIES,
   type ValidateUploadJob,
   type ReviewerCoachRunJob,
   type GlanceTestJob,
   type KbMergeApplyJob,
+  type GenerateStoriesJob,
 } from "@/lib/job-queue";
 import { QUEUE_HEALTH_KEY, type QueueHealth } from "@/lib/queue-health";
 
@@ -120,6 +127,30 @@ async function handleValidate(data: ValidateUploadJob): Promise<void> {
   }
 }
 
+async function handleGenerateStories(data: GenerateStoriesJob): Promise<void> {
+  const { uploadId } = data;
+  try {
+    await runStoryGeneration(uploadId);
+    // "ok" = the job ran to completion. runStoryGeneration marks the upload's
+    // storyStatus 'failed' internally on a business failure (without throwing,
+    // and WITHOUT touching upload.status — the member's deterministic numbers are
+    // already validated), so a green outcome here means the worker did its work
+    // and the story phase reached a terminal state.
+    recordOutcome(true);
+  } catch (err) {
+    console.error("[worker] generate-stories failed for", uploadId, err);
+    // Defensive — runStoryGeneration routes its own errors through
+    // handleStoryFailure. This covers anything thrown around it; route it through
+    // the same handler so the row never strands in `generating`.
+    try {
+      await handleStoryFailure(uploadId, err);
+    } catch (err2) {
+      console.error("[worker] handleStoryFailure also threw for", uploadId, err2);
+    }
+    recordOutcome(false);
+  }
+}
+
 async function handleCoachRun(data: ReviewerCoachRunJob): Promise<void> {
   try {
     await executeCoachRun(data.runId);
@@ -198,6 +229,16 @@ export async function startWorker(): Promise<void> {
     { batchSize: validateConcurrency },
     async (jobs) => {
       await Promise.all(jobs.map((job) => handleValidate(job.data)));
+    },
+  );
+
+  // Story generation fans out to the same ~5 concurrent Anthropic calls per job
+  // as validation did, so reuse the same concurrency knob/ceiling.
+  await boss.work<GenerateStoriesJob>(
+    QUEUE_GENERATE_STORIES,
+    { batchSize: validateConcurrency },
+    async (jobs) => {
+      await Promise.all(jobs.map((job) => handleGenerateStories(job.data)));
     },
   );
 

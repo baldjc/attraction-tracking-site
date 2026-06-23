@@ -62,30 +62,32 @@ test("sotValuesWithinRounding — relative tolerance (≤ 0.5%) for large values
 /*                                                                          */
 /*  Where resolveUnambiguousSotValue refuses to pick when variants         */
 /*  disagree, the canonical resolver DELIBERATELY picks one variant for    */
-/*  families that have a canonical key (MOI → moiInclusive). This is what   */
-/*  makes Jarvis chat read the SAME 8.8 inclusive value the script cites,   */
-/*  instead of keeping the raw 6.71 strict ledger value.                   */
+/*  families that have a canonical key (MOI → moiStrict, the platform-      */
+/*  canonical STRICT Months of Inventory). This is what makes Jarvis chat  */
+/*  read the SAME strict value the script cites, instead of drifting to    */
+/*  the inclusive variant.                                                 */
 /* ────────────────────────────────────────────────────────────────────── */
 
-test("CANONICAL_METRIC_KEY pins MOI to the inclusive variant", () => {
-  assert.equal(CANONICAL_METRIC_KEY.MOI, "moiInclusive");
+test("CANONICAL_METRIC_KEY pins MOI to the strict variant", () => {
+  assert.equal(CANONICAL_METRIC_KEY.MOI, "moiStrict");
 });
 
-test("resolveCanonicalSotValue — MOI picks the inclusive variant even when variants disagree", () => {
-  // The exact repro: chat read 6.71 (strict) while the script/Sources cited 8.8
-  // (inclusive, Downtown | All). The canonical resolver must land on 8.8.
+test("resolveCanonicalSotValue — MOI picks the strict variant even when variants disagree", () => {
+  // The canonical MOI is STRICT (Active ÷ Sold). With strict, inclusive and
+  // rolling3 variants present and disagreeing, the resolver must land on the
+  // strict 'All' rollup (6.71), never the inclusive 8.8.
   const rows = [
     { metricKey: "moiStrict", propertyType: "All", metricValue: 6.71 },
     { metricKey: "moiInclusive", propertyType: "All", metricValue: 8.8 },
     { metricKey: "moiInclusiveRolling3", propertyType: "All", metricValue: 7.9 },
   ];
-  assert.equal(resolveCanonicalSotValue(rows, "MOI"), 8.8);
+  assert.equal(resolveCanonicalSotValue(rows, "MOI"), 6.71);
 });
 
 test("resolveCanonicalSotValue — MOI prefers the 'All' property-type rollup of the canonical variant", () => {
   const rows = [
-    { metricKey: "moiInclusive", propertyType: "Apartment", metricValue: 11.2 },
-    { metricKey: "moiInclusive", propertyType: "All", metricValue: 8.8 },
+    { metricKey: "moiStrict", propertyType: "Apartment", metricValue: 11.2 },
+    { metricKey: "moiStrict", propertyType: "All", metricValue: 8.8 },
   ];
   assert.equal(resolveCanonicalSotValue(rows, "MOI"), 8.8);
 });

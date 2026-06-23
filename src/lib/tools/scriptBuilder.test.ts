@@ -69,9 +69,62 @@ const MARKET_CONFIG: MarketConfigSummary = {
   },
 };
 
+// Empathy / connection-dosage beats. The generation-only dosage gate
+// (checkConnectionDosage) requires the BODY to carry connection phrases (≥4),
+// genuine values beats (≥2), and editorial/signature moments (≥6), all
+// DISTRIBUTED across the script. A bare market-read trips all three and
+// degrades, so the clean fixtures weave these in (none carry a $/% token, so
+// the stat gates are unaffected) and distribute them so the clustering check
+// never fires.
+const CONNECTION_BEATS: readonly string[] = [
+  "If you've been tracking Saddle Ridge, this pattern will feel familiar.",
+  "You might be thinking a balanced market is hard to read.",
+  "Here's what that means for you as you plan the next move.",
+  "It makes sense that you'd want a grounded read before deciding.",
+  "If you're relocating into the northeast, the same logic holds.",
+];
+const VALUES_BEATS: readonly string[] = [
+  "We believe every family deserves a clear, honest read of the numbers.",
+  "Our whole approach is built around making sure you understand what you're looking at.",
+  "You deserve to walk in knowing exactly where the market stands.",
+];
+const EDITORIAL_BEATS: readonly string[] = [
+  "Think about that for a moment.",
+  "Hold that thought.",
+  "Did you catch that?",
+  "Here's where it gets interesting.",
+  "Pause on that.",
+  "No joke.",
+  "Shockingly, the pattern held through the whole season.",
+];
+const ALL_BEATS: readonly string[] = [
+  ...CONNECTION_BEATS,
+  ...VALUES_BEATS,
+  ...EDITORIAL_BEATS,
+];
+
+/**
+ * Build a body of `repeats` grounded paragraphs, distributing the empathy beats
+ * evenly from paragraph `start` onward so they land in many word-window regions
+ * (the dosage gate's clustering check only fires when beats are confined to ≤2
+ * regions). Starting at `start` keeps every beat out of the skipped opening
+ * hook window so they all count toward the floors.
+ */
+function buildGroundedBody(paragraph: string, repeats: number): string {
+  const paras = Array.from({ length: repeats }, () => paragraph);
+  const start = 3;
+  const span = repeats - start;
+  ALL_BEATS.forEach((beat, k) => {
+    const idx = start + Math.floor((span * k) / ALL_BEATS.length);
+    if (idx < repeats) paras[idx] = `${beat} ${paras[idx]}`;
+  });
+  return paras.join("\n\n");
+}
+
 /**
  * A validation-clean script body. Every $/% token is one of the two cited
  * facts (so the stat gates pass), it stays well above the 2200-word floor,
+ * it carries distributed empathy/connection beats so the dosage gate is clean,
  * and it avoids every banned phrase (no "why", no abbreviations, no
  * avatar-pander, no announced credibility, no next-video tease).
  */
@@ -82,7 +135,7 @@ function makeCleanScript(): string {
     `That pairing of a ${PRICE} price level against a ${SALE_SHARE} absorption read is the single ` +
     `clearest signal of how balanced this corner of the market has become through the season, ` +
     `and it is the kind of grounded read that helps a household plan the next move with real confidence.`;
-  const body = Array.from({ length: 40 }, () => paragraph).join("\n\n");
+  const body = buildGroundedBody(paragraph, 40);
   return (
     `# Title: The Saddle Ridge Market Read\n\n[VISUAL: opening drone shot]\n\n${body}\n\n` +
     `## Sources\n- Median Sale Price — ${PRICE} (fact f1)\n- Sale Share — ${SALE_SHARE} (fact f2)\n`
@@ -192,7 +245,7 @@ function makeLeanScript(opts: { withPersistentError?: boolean } = {}): string {
     `That pairing of a ${PRICE} price level against a ${SALE_SHARE} absorption read is the single ` +
     `clearest signal of how balanced this corner of the market has become through the season, ` +
     `and it is the kind of grounded read that helps a household plan the next move with real confidence.`;
-  const body = Array.from({ length: 23 }, () => paragraph).join("\n\n");
+  const body = buildGroundedBody(paragraph, 23);
   // A banned avatar-pander phrase ("leverage") trips `no_avatar_pander` (error)
   // on every attempt. Unlike an invented stat, it is NOT auto-softened by the
   // builder, so it persists through every retry — while the draft stays grounded

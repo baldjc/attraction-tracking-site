@@ -278,3 +278,54 @@ export async function isMarketReaggKillSwitchActiveForUser(
     return false;
   }
 }
+
+/**
+ * Wave 6a cutover — "instant market data". When this resolves TRUE for the
+ * OWNING member, a CSV upload's validation splits into two phases: the
+ * deterministic aggregates persist and the upload flips `validated` within
+ * seconds ("facts ready"), and the Anthropic story-leads/prose pass runs as a
+ * SEPARATE background enrichment job (tracked by `MarketDataUpload.storyStatus`,
+ * "stories ready"). An Anthropic outage then degrades story prose only — the
+ * member's numbers are never blocked and the upload is never marked `failed`
+ * for an AI-only failure.
+ *
+ * INVARIANT: with this OFF (the default), runValidation runs the legacy
+ * single-pass path and every read behaves byte-identically to today. So it is
+ * deliberately NOT in DEFAULT_FLAGS, and — exactly like the kill-switch
+ * resolvers — it is read from the raw `feature_visibility` AppSetting with NO
+ * staff bypass (only `userId`). NO staff bypass matters twice here: an admin
+ * acting for a member must not accidentally force the cutover path for that
+ * member, and an admin impersonating a member must see the member's real path.
+ *
+ * Object-form semantics (staged rollout, mirrors durable_job_queue):
+ *   - `{ "enabled": true }`                          → on for EVERY member (global)
+ *   - `{ "enabled": false, "allowedUserIds": [id] }` → on for THOSE members
+ *   - absent / `{ "enabled": false, "allowedUserIds": [] }` → legacy path (default)
+ *
+ * Fail-CLOSED on a read error: the legacy single-pass path is the proven,
+ * parity-safe default, so any flag-read failure resolves to OFF.
+ */
+export const MARKET_INSTANT_CUTOVER_KEY = "market_instant_cutover";
+
+export async function isInstantCutoverEnabledForUser(
+  userId: string | null | undefined,
+): Promise<boolean> {
+  try {
+    const setting = await prisma.appSetting.findUnique({
+      where: { key: FEATURE_SETTING_KEY },
+    });
+    if (!setting) return false;
+    const parsed = JSON.parse(setting.value) as Record<string, FlagValue>;
+    const v = parsed[MARKET_INSTANT_CUTOVER_KEY];
+    if (v === undefined) return false;
+    return resolveFlag(v, userId ?? undefined);
+  } catch (err) {
+    // Fail-CLOSED: the legacy single-pass path is the parity-safe default, so a
+    // flaky flag read must NOT silently switch a member onto the cutover path.
+    console.error(
+      "[market_instant_cutover] flag read failed — defaulting to OFF (legacy path):",
+      (err as Error)?.message ?? err,
+    );
+    return false;
+  }
+}

@@ -35,6 +35,11 @@ export async function GET(
       rowCount: true,
       retryCount: true,
       nextAttemptAt: true,
+      // Wave 6a — two-phase readiness (see uploads list route). Drives the
+      // table's "Numbers ready · story ideas generating" sub-state. Parity-inert
+      // (stays not_started with the flag OFF).
+      storyStatus: true,
+      storyError: true,
     },
   });
   if (!upload) return Response.json({ error: "Upload not found" }, { status: 404 });
@@ -83,6 +88,12 @@ export async function GET(
     factCount,
     storyLeadCount,
     hasValidatorOutput,
+    // Wave 6a — see uploads list route. Omit the story fields while
+    // storyStatus is "not_started" (always true with the flag OFF) so the
+    // payload stays byte-identical to before.
+    ...(upload.storyStatus && upload.storyStatus !== "not_started"
+      ? { storyStatus: upload.storyStatus, storyError: upload.storyError }
+      : {}),
   });
 }
 

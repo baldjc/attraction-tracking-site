@@ -13,7 +13,7 @@
 
 import prisma from "@/lib/prisma";
 import { isDurableQueueEnabledForUser } from "@/lib/feature-flags";
-import { validateUploadAsync } from "@/lib/fact-validator";
+import { validateUploadAsync, generateStoriesAsync } from "@/lib/fact-validator";
 import { executeCoachRun } from "@/lib/reviewer-run";
 import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
 import { foldReviewSelectionsIntoRun } from "@/lib/kb-merge/merge-run";
@@ -22,6 +22,7 @@ import {
   enqueueReviewerCoachRun,
   enqueueGlanceTest,
   enqueueKbMergeApply,
+  enqueueGenerateStories,
   QUEUE_KB_MERGE_APPLY,
 } from "@/lib/job-queue";
 import { QUEUE_HEALTH_KEY, type QueueHealth } from "@/lib/queue-health";
@@ -46,6 +47,34 @@ export async function dispatchValidation(
     );
   }
   validateUploadAsync(uploadId, userId);
+}
+
+/**
+ * Wave 6a (Phase 2) — dispatch the Anthropic story-leads/prose enrichment pass.
+ * Called from the cutover branch of runValidation AFTER the deterministic numbers
+ * are already persisted + the upload flipped to `validated`. So a failure here
+ * NEVER costs the member their facts; the worst case is a calm "story ideas
+ * generating/failed" state. Same flag + fall-back contract as dispatchValidation:
+ * durable queue when enabled for the owner, else in-process; NEVER throws.
+ */
+export async function dispatchStoryGeneration(
+  uploadId: string,
+  userId: string,
+): Promise<void> {
+  try {
+    if (await isDurableQueueEnabledForUser(userId)) {
+      await enqueueGenerateStories({ uploadId, userId });
+      return;
+    }
+  } catch (err) {
+    console.error(
+      "[job-dispatch] durable enqueue failed for story generation",
+      uploadId,
+      "— falling back to in-process generation:",
+      err,
+    );
+  }
+  generateStoriesAsync(uploadId, userId);
 }
 
 /**

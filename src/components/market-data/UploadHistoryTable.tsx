@@ -40,6 +40,14 @@ interface Row {
   nextAttemptAt?: string | null;
   factCount?: number;
   storyLeadCount?: number;
+  /** Wave 6a two-phase readiness. On the instant-cutover path the row reaches
+   *  `status: "validated"` (numbers ready) within seconds while the AI story
+   *  pass runs separately; `storyStatus` tracks that pass
+   *  ("generating" | "ready" | "failed"). Parity-inert: stays "not_started"
+   *  (or undefined on legacy rows) with the flag OFF, so the row renders
+   *  exactly as before. `storyError` is a calm member-readable note. */
+  storyStatus?: string | null;
+  storyError?: string | null;
   /** True when a prior AI pass already stored validator output on this upload.
    *  When the upload also `failed`, a re-validate reuses that output and re-tries
    *  only the DB save — no new AI cost. Drives the Regenerate modal copy. */
@@ -63,6 +71,22 @@ const SUPPORT_EMAIL = "support@attractionbyvideo.com";
 // failure, because no member action is needed.
 function isAutoRetrying(r: Row): boolean {
   return r.status === "validating" && !!r.nextAttemptAt;
+}
+
+// Wave 6a — a row whose numbers are `validated` but whose background AI story
+// pass is still running. The numbers are ready, but we keep polling so the
+// "story ideas generating" sub-state flips to the final count without a manual
+// refresh. Parity-inert: with the flag OFF storyStatus stays "not_started", so
+// this is always false and polling behaves exactly as before.
+function isStoryGenerating(r: Row): boolean {
+  return r.status === "validated" && r.storyStatus === "generating";
+}
+
+// A row is "settled" (stop polling) once it reaches a terminal upload status AND
+// its story pass is no longer in flight. Under parity this collapses to the old
+// `TERMINAL.has(status)` check.
+function isSettled(r: Row): boolean {
+  return TERMINAL.has(r.status) && !isStoryGenerating(r);
 }
 
 function fmt(ts: string) {
@@ -200,7 +224,7 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
   }, []);
 
   useEffect(() => {
-    const nonTerminal = rows.filter((r) => !TERMINAL.has(r.status)).map((r) => r.id);
+    const nonTerminal = rows.filter((r) => !isSettled(r)).map((r) => r.id);
     if (nonTerminal.length === 0) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -212,7 +236,7 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
     if (intervalRef.current) return;
     intervalRef.current = setInterval(() => {
       setRows((current) => {
-        const stillPending = current.filter((r) => !TERMINAL.has(r.status)).map((r) => r.id);
+        const stillPending = current.filter((r) => !isSettled(r)).map((r) => r.id);
         if (stillPending.length === 0) {
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
@@ -232,7 +256,7 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    rows.map((r) => `${r.id}:${TERMINAL.has(r.status) ? "T" : "P"}`).join("|"),
+    rows.map((r) => `${r.id}:${isSettled(r) ? "T" : "P"}`).join("|"),
     pollOnce,
   ]);
 
@@ -476,10 +500,31 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
                   <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-400">
                     {r.status === "validated" ? (
                       <div className="flex flex-col gap-0.5">
-                        <span>
-                          {(r.factCount ?? 0).toLocaleString()} facts ·{" "}
-                          {(r.storyLeadCount ?? 0).toLocaleString()} leads
-                        </span>
+                        {/* Wave 6a two-phase readiness. With the instant-cutover
+                            flag OFF, storyStatus is "not_started"/undefined, so we
+                            fall straight through to the existing facts·leads line —
+                            byte-identical to before. Only the cutover path surfaces
+                            the "story ideas generating/failed" sub-states. */}
+                        {isStoryGenerating(r) ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            Numbers ready · Story ideas generating
+                            <AiThinkingDots />
+                          </span>
+                        ) : r.storyStatus === "failed" ? (
+                          <>
+                            <span>{(r.factCount ?? 0).toLocaleString()} facts</span>
+                            <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                              {r.storyError?.trim()
+                                ? r.storyError
+                                : "Story ideas couldn’t be generated — numbers still usable"}
+                            </span>
+                          </>
+                        ) : (
+                          <span>
+                            {(r.factCount ?? 0).toLocaleString()} facts ·{" "}
+                            {(r.storyLeadCount ?? 0).toLocaleString()} leads
+                          </span>
+                        )}
                         {r.validationError?.includes(NEEDS_REVIEW_PREFIX) && (
                           <button
                             type="button"

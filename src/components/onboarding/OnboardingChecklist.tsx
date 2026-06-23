@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 type MarketDataState = "none" | "processing" | "ready" | "failed";
+// Wave 6a — the separate background AI story pass. Parity-inert: defaults to
+// "none" (no sub-note), which is the only value the API returns with the
+// instant-cutover flag OFF.
+type MarketStoriesState = "none" | "generating" | "ready" | "failed";
 
 interface Checklist {
   profile: boolean;
   marketData: MarketDataState;
+  marketStories?: MarketStoriesState;
   neighbourhood: boolean;
   firstIdea: boolean;
   scripted: boolean;
@@ -87,7 +92,9 @@ export default function OnboardingChecklist() {
           ? "Validating…"
           : data.marketData === "failed"
             ? "Upload failed"
-            : undefined,
+            : data.marketStories === "generating"
+              ? "Numbers ready · story ideas crunching…"
+              : undefined,
       cta:
         data.marketData === "none" || data.marketData === "failed"
           ? {

@@ -1965,6 +1965,20 @@ enum UploadStatus {
   failed
 }
 
+// Wave 6a (Phase 2) — two-phase readiness. With the `market_instant_cutover`
+// flag ON, `UploadStatus` flips to `validated` the moment the DETERMINISTIC
+// aggregates persist (facts ready, seconds after upload), and the Anthropic
+// story-leads/prose pass runs as a SEPARATE background job tracked here. So an
+// AI outage degrades story prose only — it never blocks the member's numbers
+// and never marks the upload `failed`. With the flag OFF the legacy single-pass
+// path runs and `storyStatus` stays `not_started` (parity).
+enum StoryStatus {
+  not_started
+  generating
+  ready
+  failed
+}
+
 model MarketConfig {
   id                         String    @id @default(cuid())
   userId                     String    @unique
@@ -2055,6 +2069,17 @@ model MarketDataUpload {
   autoRetryCount     Int          @default(0)
   nextAttemptAt      DateTime?
   backfillEmailedAt  DateTime?
+
+  // Wave 6a (Phase 2) — two-phase readiness (see `enum StoryStatus`). Only the
+  // `market_instant_cutover` path writes these; the legacy single-pass path
+  // leaves them at their defaults (parity). `storyStatus` tracks the background
+  // Anthropic story-leads/prose enrichment job INDEPENDENTLY of `status`:
+  // `generating` while the AI job runs, `ready` on success, `failed` (calm,
+  // retryable — NOT the upload status) on an AI-only failure. `storyError`
+  // holds a member-readable note; `storiesReadyAt` stamps story completion.
+  storyStatus        StoryStatus  @default(not_started)
+  storyError         String?      @db.Text
+  storiesReadyAt     DateTime?
 
   facts             MarketFact[]
   storyLeads        MarketStoryLead[]
