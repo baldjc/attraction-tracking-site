@@ -61,7 +61,9 @@ import {
   persistAggregatedMetrics,
   isSuspiciouslyDegradedReplacement,
 } from "@/lib/aggregated-metrics";
-import { NEEDS_REVIEW_PREFIX } from "@/lib/upload-error-messages";
+import { NEEDS_REVIEW_PREFIX, AUTO_RETRY_PREFIX } from "@/lib/upload-error-messages";
+import { isTransientProviderError } from "@/lib/provider-errors";
+import { clearInFlight } from "@/lib/validation-inflight";
 import type { MarketConfigShape } from "@/lib/market-config";
 import { loadMemberMetricSettings } from "@/lib/member-metric-settings-server";
 import { SONNET_MODEL } from "@/lib/ai-models";
@@ -81,6 +83,44 @@ const SONNET_CACHE_WRITE_PER_TOKEN = 0.00000375; // 1.25x base for cache writes
 const SONNET_CACHE_READ_PER_TOKEN = 0.0000003; // 0.1x base for cache reads
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Outbound-call concurrency guard (Wave — provider-outage resilience).
+//
+// A single run already self-limits its FACTS fan-out (mapWithConcurrency waves),
+// and the durable worker caps jobs per VM (batchSize). But when several runs
+// overlap in ONE process — a 25-month backfill on the in-process path, or a
+// burst of background auto-retries firing together after an outage clears —
+// nothing bounded the TOTAL number of concurrent Anthropic validator streams.
+// A burst can self-inflict 429s/529s, which then schedule MORE retries: a
+// thundering herd. This module-level semaphore caps concurrent validator stream
+// calls per process. Per-process is the right granularity: the in-process path
+// and the worker each get their own ceiling, matching where the calls run.
+const MAX_CONCURRENT_VALIDATOR_CALLS = (() => {
+  const raw = process.env.QUEUE_VALIDATOR_CALL_CONCURRENCY;
+  if (raw) {
+    const n = Number(raw);
+    if (Number.isInteger(n) && n > 0) return n;
+  }
+  return 5;
+})();
+let activeValidatorCalls = 0;
+const validatorCallWaiters: Array<() => void> = [];
+
+async function acquireValidatorSlot(): Promise<void> {
+  if (activeValidatorCalls < MAX_CONCURRENT_VALIDATOR_CALLS) {
+    activeValidatorCalls += 1;
+    return;
+  }
+  await new Promise<void>((resolve) => validatorCallWaiters.push(resolve));
+  activeValidatorCalls += 1;
+}
+
+function releaseValidatorSlot(): void {
+  activeValidatorCalls -= 1;
+  const next = validatorCallWaiters.shift();
+  if (next) next();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Telemetry — structured per-phase logs with elapsed-ms markers.
@@ -138,13 +178,15 @@ export function validateUploadAsync(uploadId: string, userId: string): void {
       await runValidation(uploadId);
     } catch (err) {
       console.error('[validateUploadAsync] outer catch for', uploadId, err);
-      // Defensive — runValidation should already mark failed on its own.
-      // This catches anything thrown before the try/catch inside runValidation.
+      // Defensive — runValidation already routes its own errors through
+      // handleValidationFailure. This catches anything thrown before/around that
+      // inner try/catch; route it through the same handler so a transient error
+      // here also schedules an auto-retry rather than dead-ending as failed.
       try {
-        await markUploadFailed(uploadId, err);
+        await handleValidationFailure(uploadId, err);
       } catch (err2) {
         console.error(
-          '[validateUploadAsync] markFailed also threw for',
+          '[validateUploadAsync] handleValidationFailure also threw for',
           uploadId,
           ':',
           err2,
@@ -161,6 +203,14 @@ export function validateUploadAsync(uploadId: string, userId: string): void {
   // the queue settles. The scheduler itself swallows the single-upload
   // case and the still-in-flight case — see backfill-email.ts.
   next.finally(() => {
+    // Clear the per-process in-flight marker the instant THIS upload's run
+    // settles (success, permanent failure, OR a transient reschedule). This is
+    // what lets a due auto-retry fire on the next 60s sweep instead of being
+    // suppressed for up to 25m by the TTL backstop. Safe because a settled row
+    // is either terminal or carries a FUTURE nextAttemptAt, so it is no longer
+    // eligible for the stale watchdog. Harmless no-op for ids never marked
+    // (initial uploads / manual retries don't go through the recovery guard).
+    clearInFlight(uploadId);
     if (userQueues.get(userId) === next) {
       userQueues.delete(userId);
       try {
@@ -1221,38 +1271,11 @@ async function callValidator(
   //
   // Retry-with-backoff on transient errors. 5 concurrent chunked calls
   // routinely hit Anthropic 529 `overloaded_error`; we retry up to 4 times
-  // with exponential backoff (~1s/3s/9s/27s) before giving up.
-  const TRANSIENT_STATUSES = new Set([408, 429, 500, 502, 503, 504, 529]);
-  // Streaming errors from the SDK arrive with status=undefined and the real
-  // error shape nested: err.error.error.type for the inner Anthropic type. The
-  // SDK also stuffs the full JSON into err.message. We match on both the
-  // nested type AND a permissive regex over the message string.
-  const TRANSIENT_TYPES = new Set([
-    "overloaded_error",
-    "rate_limit_error",
-    "api_error",
-    "service_unavailable",
-    "timeout",
-  ]);
-  const isTransient = (err: unknown): boolean => {
-    const e = err as {
-      status?: number;
-      error?: { type?: string; error?: { type?: string } };
-      message?: string;
-    };
-    if (e?.status && TRANSIENT_STATUSES.has(e.status)) return true;
-    if (e?.error?.type && TRANSIENT_TYPES.has(e.error.type)) return true;
-    if (e?.error?.error?.type && TRANSIENT_TYPES.has(e.error.error.type)) return true;
-    const msg = e?.message ?? "";
-    if (
-      /overloaded|rate.?limit|temporar|ECONN|ETIMEDOUT|fetch failed|api_error|internal server error|service unavailable|stream (?:disconnect|interrupt)|\b(?:502|503|504|529)\b/i.test(
-        msg,
-      )
-    ) {
-      return true;
-    }
-    return false;
-  };
+  // with exponential backoff (~1s/3s/9s/27s) before giving up. The same
+  // transient/permanent rule is shared with the outer failure handler
+  // (handleValidationFailure) via isTransientProviderError, so the inner loop
+  // and the background auto-retry scheduler never disagree on a given error.
+  const isTransient = isTransientProviderError;
 
   // Dynamic max_tokens. A fixed 40K ceiling collided with Anthropic's 200K
   // context limit on large summary chunks (input ≈170–185K + 40K out > 200K
@@ -1321,7 +1344,14 @@ async function callValidator(
 
   let resp: Anthropic.Messages.Message | null = null;
   let lastErr: unknown = null;
+  let slotHeld = false;
   for (let attempt = 0; attempt < 5; attempt++) {
+    // Hold an outbound-call slot only for the duration of the stream itself —
+    // the inter-attempt backoff sleep happens OUTSIDE the slot so a retrying
+    // call doesn't starve other runs while it waits. `slotHeld` makes release
+    // idempotent across the break/throw/retry exits.
+    await acquireValidatorSlot();
+    slotHeld = true;
     try {
       const stream = anthropic.messages.stream(
         {
@@ -1343,7 +1373,15 @@ async function callValidator(
           (err as { message?: string })?.message ?? String(err)
         }`,
       );
+      // Free the slot before sleeping so the backoff wait doesn't occupy it.
+      releaseValidatorSlot();
+      slotHeld = false;
       await new Promise((r) => setTimeout(r, delayMs));
+    } finally {
+      if (slotHeld) {
+        releaseValidatorSlot();
+        slotHeld = false;
+      }
     }
   }
   if (!resp) throw lastErr ?? new Error("callValidator failed with no response");
@@ -1921,6 +1959,103 @@ async function markUploadValidating(uploadId: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Provider-outage resilience — central failure handler.
+//
+// Every place a validation pass can die (the in-process runValidation catch, the
+// durable worker handler, and validateUploadAsync's enqueue catch) routes its
+// error HERE instead of calling markUploadFailed directly. This is the single
+// decision point for "transient → keep retrying" vs "permanent → surface a
+// failure", so the behaviour can't drift between the in-process and worker paths.
+//
+// Transient (Anthropic 5xx/529/api_error, connection resets/timeouts):
+//   - The upload is NOT marked failed. It stays in status `validating` and we
+//     set `nextAttemptAt` to now + the next backoff step (with ±20% jitter) and
+//     bump `autoRetryCount`. The validation-recovery scheduler fires the row when
+//     it comes due. validationError holds an [auto-retry] note so the UI shows a
+//     calm "retrying automatically" state.
+//   - Reuses the same recovery machinery and stored rawValidatorOutput, so a
+//     retry that the AI step already paid for is NOT re-charged.
+//   - Once the backoff schedule is exhausted (~2h), we give up and mark the
+//     upload failed with a calm provider message (still manually retryable).
+//
+// Permanent (4xx other than 408/429 — bad payload, auth, etc.):
+//   - Marked failed immediately with the real error so the member sees an
+//     actionable message; auto-retrying would just burn budget on the same input.
+//
+// BACKOFF_SCHEDULE_MS — minutes ≈ 1, 2, 5, 10, 15, 20, 30, 30 (~113 min total).
+// autoRetryCount indexes this; when it runs off the end the window is exhausted.
+const BACKOFF_SCHEDULE_MS = [
+  60_000, // ~1m
+  120_000, // ~2m
+  300_000, // ~5m
+  600_000, // ~10m
+  900_000, // ~15m
+  1_200_000, // ~20m
+  1_800_000, // ~30m
+  1_800_000, // ~30m
+];
+
+export async function handleValidationFailure(
+  uploadId: string,
+  err: unknown,
+): Promise<void> {
+  const message =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
+
+  // Permanent failures (bad input, auth, etc.) — surface immediately. No point
+  // auto-retrying the same payload.
+  if (!isTransientProviderError(err)) {
+    await markUploadFailed(uploadId, err);
+    return;
+  }
+
+  // Transient. Read the current auto-retry count to decide whether we still have
+  // budget left in the backoff window. Guard every write with a status check so
+  // we never clobber a row that was validated/failed by a concurrent path.
+  const current = await prisma.marketDataUpload.findUnique({
+    where: { id: uploadId },
+    select: { autoRetryCount: true, status: true },
+  });
+  if (!current) return;
+  // If a concurrent path already resolved this upload, leave it alone.
+  if (current.status === "validated" || current.status === "failed") return;
+
+  const idx = current.autoRetryCount;
+  if (idx >= BACKOFF_SCHEDULE_MS.length) {
+    // Window exhausted — give up gracefully with a calm, still-retryable message.
+    // Keep the original transient signature in the text so classifyUploadError
+    // routes it to the "AI provider was temporarily unavailable" message.
+    await markUploadFailed(
+      uploadId,
+      `The AI provider stayed unavailable after multiple automatic retries, so nothing was charged. You can retry this upload anytime. (last provider error: ${message.slice(0, 500)})`,
+    );
+    return;
+  }
+
+  const base = BACKOFF_SCHEDULE_MS[idx];
+  // ±20% jitter to avoid a thundering herd when a wide outage clears and many
+  // uploads come due at once.
+  const jitter = base * (Math.random() * 0.4 - 0.2);
+  const nextAttemptAt = new Date(Date.now() + base + jitter);
+
+  const note =
+    `${AUTO_RETRY_PREFIX} The AI provider had a brief hiccup; retrying automatically — ` +
+    `no action needed. (attempt ${idx + 1}, next try ~${nextAttemptAt.toISOString()})`;
+
+  // Status-guarded: only reschedule a row that is still `validating`. updateMany
+  // (not update) so a concurrent transition to validated/failed is a no-op rather
+  // than throwing on a missing record.
+  await prisma.marketDataUpload.updateMany({
+    where: { id: uploadId, status: "validating" },
+    data: {
+      nextAttemptAt,
+      autoRetryCount: idx + 1,
+      validationError: note.slice(0, 4000),
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main orchestrator
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2447,7 +2582,10 @@ export async function runValidation(uploadId: string): Promise<void> {
     }
   } catch (err) {
     console.error('[runValidation] threw for', uploadId, err);
-    await markUploadFailed(uploadId, err);
-    throw err;
+    // Route through the central handler instead of marking failed directly:
+    // transient AI-provider errors keep the row in `validating` and schedule a
+    // background auto-retry (no re-throw, so the queue keeps draining); only a
+    // permanent error or an exhausted backoff window ends as `failed`.
+    await handleValidationFailure(uploadId, err);
   }
 }

@@ -7,16 +7,22 @@
 //   2. Status must be 'failed'. We deliberately do NOT allow retrying a
 //      pending/validating upload — the in-flight async pass owns that row,
 //      and re-queueing would let the serial queue run a duplicate pass.
-//   3. retryCount must be < 3. Past that, automated retry is almost
-//      certainly going to re-hit the same wall (oversized file, bad CSV).
-//   4. Member's monthly AI cap must still have room. Re-running a 200K-
+//   3. Member's monthly AI cap must still have room. Re-running a 200K-
 //      token validator on a hard-blocked account just burns more budget
 //      with no chance of success.
 //
-// On success: clears validationError + validationCostUsd, increments
-// retryCount, flips status -> validating, fires validateUploadAsync (which
-// the per-user serial queue in fact-validator.ts will schedule), and
-// returns 202.
+// NO RETRY-COUNT DEAD-END: manual Retry is ALWAYS available on a failed
+// upload. Provider outages are out of the member's hands, so we never disable
+// the button after N tries (that was the old `retryCount < 3` wall). Transient
+// errors now auto-retry on a backoff schedule before ever reaching `failed`;
+// when a member does click Retry on a failed row we treat it as a fresh start
+// and RESET both the manual (`retryCount`) and automatic (`autoRetryCount`)
+// counters and clear any stale `nextAttemptAt`.
+//
+// On success: clears validationError + validationCostUsd + nextAttemptAt,
+// resets retryCount/autoRetryCount to 0, flips status -> validating, fires
+// validateUploadAsync (which the per-user serial queue in fact-validator.ts
+// will schedule), and returns 202.
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
@@ -26,8 +32,6 @@ import { getCostCapStatus } from "@/lib/ai-tool-cost";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const MAX_RETRIES = 3;
 
 export async function POST(
   _req: NextRequest,
@@ -59,17 +63,6 @@ export async function POST(
     );
   }
 
-  if ((upload.retryCount ?? 0) >= MAX_RETRIES) {
-    return Response.json(
-      {
-        error: "max_retries_reached",
-        message:
-          "This upload has hit the retry limit. Contact support and reference the upload ID.",
-      },
-      { status: 429 },
-    );
-  }
-
   // Cost-cap check uses the row owner, NOT the current session user — an
   // admin retrying on behalf of a member shouldn't get past the member's
   // own monthly cap.
@@ -97,13 +90,17 @@ export async function POST(
     where: {
       id,
       status: "failed",
-      retryCount: { lt: MAX_RETRIES },
     },
     data: {
       status: "validating",
       validationError: null,
       validationCostUsd: null,
-      retryCount: { increment: 1 },
+      // Fresh start: clear any scheduled auto-retry and reset both the manual and
+      // automatic retry budgets so a member-initiated retry is never short-changed
+      // by a previous outage's exhausted counters.
+      nextAttemptAt: null,
+      retryCount: 0,
+      autoRetryCount: 0,
     },
   });
 

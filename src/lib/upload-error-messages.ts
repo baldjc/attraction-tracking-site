@@ -29,6 +29,13 @@ export type UploadErrorCategory =
 // this prefix to surface a "kept your existing data" message rather than an error.
 export const NEEDS_REVIEW_PREFIX = "[needs-review]";
 
+// Sentinel prefix written to MarketDataUpload.validationError while an upload is
+// auto-retrying after a transient AI-provider error. The upload stays in status
+// `validating` (NOT `failed`) and `nextAttemptAt` holds when the next attempt is
+// due, so the UI shows a calm "retrying automatically" state instead of a
+// failure. This note is informational; the member needs to take no action.
+export const AUTO_RETRY_PREFIX = "[auto-retry]";
+
 export interface FriendlyError {
   category: UploadErrorCategory;
   title: string;
@@ -177,12 +184,19 @@ export function classifyUploadError(
     };
   }
 
-  if (/overloaded|429|rate.?limit|529|503/i.test(err)) {
+  if (
+    /overloaded|overloaded_error|api_error|429|rate.?limit|529|50[0234]|internal server error|service unavailable|provider (?:was )?unavailable|timeout/i.test(
+      err,
+    )
+  ) {
     return {
       category: "provider_overloaded",
-      title: "AI provider is busy",
+      title: "AI provider was temporarily unavailable",
       body:
-        "Anthropic is experiencing high load. Wait 1-2 minutes and click Retry.",
+        "Anthropic had a brief hiccup while analyzing this month's data. We " +
+        "automatically retried for a while; it still didn't go through, so " +
+        "nothing was charged. This almost always clears on its own — click " +
+        "Retry to run it again now.",
       canRetry: true,
       nextAction: "retry",
     };

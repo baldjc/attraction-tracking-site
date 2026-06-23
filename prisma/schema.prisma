@@ -2044,6 +2044,16 @@ model MarketDataUpload {
   validationError    String?      @db.Text
   rawValidatorOutput String?      @db.Text
   retryCount         Int          @default(0)
+  // Resilience to transient AI-provider outages. When a validation pass dies on
+  // a transient Anthropic error (5xx/529/api_error/connection reset), it is NOT
+  // marked failed — it stays `validating` and is rescheduled: `nextAttemptAt`
+  // holds when the next background auto-retry is due, and `autoRetryCount` tracks
+  // how many transient retries have been scheduled (separate from `retryCount`,
+  // which is the process-death/manual-recovery budget). The validation-recovery
+  // watchdog fires due rows; once the ~2h backoff window is exhausted the upload
+  // is marked failed with a calm, retryable message.
+  autoRetryCount     Int          @default(0)
+  nextAttemptAt      DateTime?
   backfillEmailedAt  DateTime?
 
   facts             MarketFact[]
@@ -2051,6 +2061,7 @@ model MarketDataUpload {
   aggregatedMetrics AggregatedMetric[]
 
   @@index([userId, monthYear])
+  @@index([status, nextAttemptAt])
   @@map("market_data_uploads")
 }
 

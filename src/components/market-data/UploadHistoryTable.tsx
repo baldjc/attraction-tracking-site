@@ -4,8 +4,10 @@
 //
 // Polls the per-upload status endpoint every 3s while any row is non-
 // terminal. On failure, classifies the raw validator error to a human
-// message via classifyUploadError() and exposes a Retry button gated on
-// canRetry + retryCount < 3.
+// message via classifyUploadError() and exposes a Retry button whenever the
+// error category is retryable (no per-count cap — provider outages are out of
+// the member's hands). Transient provider errors keep the row in a calm
+// "Retrying" state (validating + nextAttemptAt) while it auto-retries.
 //
 // Optimistic update on retry: we flip the row to 'pending' locally so
 // the polling effect immediately re-arms and the member sees movement
@@ -16,6 +18,7 @@ import { AiThinkingDots } from "@/components/ai/AiThinkingDots";
 import {
   classifyUploadError,
   NEEDS_REVIEW_PREFIX,
+  AUTO_RETRY_PREFIX,
   type FriendlyError,
 } from "@/lib/upload-error-messages";
 
@@ -31,6 +34,10 @@ interface Row {
   validationCostUsd?: number | null;
   validationError?: string | null;
   retryCount?: number;
+  /** When set on a `validating` row, the upload hit a transient AI-provider
+   *  error and is auto-retrying on a backoff schedule; this is when the next
+   *  attempt is due. Drives the calm "retrying automatically" state. */
+  nextAttemptAt?: string | null;
   factCount?: number;
   storyLeadCount?: number;
   /** True when a prior AI pass already stored validator output on this upload.
@@ -48,8 +55,15 @@ interface Props {
 
 const TERMINAL = new Set(["validated", "failed"]);
 const POLL_INTERVAL_MS = 3_000;
-const MAX_RETRIES = 3;
 const SUPPORT_EMAIL = "support@attractionbyvideo.com";
+
+// A `validating` row that also carries a scheduled `nextAttemptAt` is not a
+// fresh first pass — it hit a transient AI-provider error and is auto-retrying
+// on a backoff schedule. We surface this as a calm "Retrying" state, NOT a
+// failure, because no member action is needed.
+function isAutoRetrying(r: Row): boolean {
+  return r.status === "validating" && !!r.nextAttemptAt;
+}
 
 function fmt(ts: string) {
   try {
@@ -59,14 +73,16 @@ function fmt(ts: string) {
   }
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, autoRetrying = false) {
   const base =
     "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
   switch (status) {
     case "pending":
       return <span className={`${base} bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300`}>Pending</span>;
     case "validating":
-      return <span className={`${base}`} style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}>Validating</span>;
+      // While auto-retrying after a transient provider error we say "Retrying"
+      // instead of "Validating" so the calm state reads correctly at a glance.
+      return <span className={`${base}`} style={{ background: "var(--abv-azure-tint)", color: "var(--abv-ink)" }}>{autoRetrying ? "Retrying" : "Validating"}</span>;
     case "validated":
       return <span className={`${base} bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300`}>Validated</span>;
     case "failed":
@@ -451,14 +467,9 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
                   </td>
                   <td className="px-3 py-2">
                     <span className="inline-flex flex-wrap items-center gap-2">
-                      {statusBadge(r.status)}
+                      {statusBadge(r.status, isAutoRetrying(r))}
                       {(r.status === "validating" || r.status === "pending") && (
                         <AiThinkingDots className="!text-xs" />
-                      )}
-                      {retryCount > 0 && r.status !== "validated" && (
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                          Retried {retryCount}/{MAX_RETRIES}
-                        </span>
                       )}
                     </span>
                   </td>
@@ -504,6 +515,11 @@ export default function UploadHistoryTable({ initial, isAdmin = false }: Props) 
                         }
                         onRetry={() => onRetry(r)}
                       />
+                    ) : isAutoRetrying(r) ? (
+                      <span style={{ color: "var(--abv-ink)" }}>
+                        AI provider hiccup — retrying automatically. No action
+                        needed.
+                      </span>
                     ) : (
                       <span className="text-gray-400 dark:text-gray-500">—</span>
                     )}
@@ -685,7 +701,10 @@ function FailedCell({
     rowCount: row.rowCount,
     retryCount,
   });
-  const canRetry = friendly.canRetry && retryCount < MAX_RETRIES;
+  // Manual Retry is ALWAYS offered when the error category is retryable — we no
+  // longer disable it after N attempts. A provider outage is out of the member's
+  // hands, so dead-ending the only recovery action is exactly the bug we fixed.
+  const canRetry = friendly.canRetry;
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
@@ -900,7 +919,8 @@ function ErrorModal({
 }) {
   const { row, friendly } = state;
   const retryCount = row.retryCount ?? 0;
-  const canRetry = friendly.canRetry && retryCount < MAX_RETRIES;
+  // Always offer manual Retry on a retryable category — never dead-end on count.
+  const canRetry = friendly.canRetry;
   return (
     <div
       role="dialog"
@@ -919,7 +939,7 @@ function ErrorModal({
             </h3>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {row.label} · {row.monthYear} · {row.rowCount.toLocaleString()} rows
-              {retryCount > 0 ? ` · retried ${retryCount}/${MAX_RETRIES}` : ""}
+              {retryCount > 0 ? ` · retried ${retryCount}×` : ""}
             </p>
           </div>
           <button

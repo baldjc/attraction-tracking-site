@@ -17,7 +17,7 @@
 
 import PgBoss from "pg-boss";
 import prisma from "@/lib/prisma";
-import { runValidation, markUploadFailed } from "@/lib/fact-validator";
+import { runValidation, handleValidationFailure } from "@/lib/fact-validator";
 import { scheduleBackfillCompletionEmail } from "@/lib/backfill-email";
 import { executeCoachRun } from "@/lib/reviewer-run";
 import { runGlanceTestForChannel } from "@/lib/glance-test-runner";
@@ -98,10 +98,15 @@ async function handleValidate(data: ValidateUploadJob): Promise<void> {
     recordOutcome(true);
   } catch (err) {
     console.error("[worker] validate-upload failed for", uploadId, err);
+    // Route through the central handler: a transient AI-provider error keeps the
+    // row in `validating` and schedules a background auto-retry instead of
+    // dead-ending as failed. Only a permanent error / exhausted window ends as
+    // failed. (runValidation already does this internally on its own catch; this
+    // covers anything thrown around it.)
     try {
-      await markUploadFailed(uploadId, err);
+      await handleValidationFailure(uploadId, err);
     } catch (err2) {
-      console.error("[worker] markUploadFailed also threw for", uploadId, err2);
+      console.error("[worker] handleValidationFailure also threw for", uploadId, err2);
     }
     recordOutcome(false);
   } finally {

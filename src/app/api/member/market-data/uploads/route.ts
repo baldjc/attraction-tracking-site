@@ -18,6 +18,7 @@ export async function GET() {
       uploadedAt: true,
       validatedAt: true,
       validationError: true,
+      nextAttemptAt: true,
       _count: {
         select: {
           facts: true,

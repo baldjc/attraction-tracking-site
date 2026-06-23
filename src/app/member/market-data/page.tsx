@@ -41,6 +41,8 @@ export default async function MarketDataPage() {
       rowCount: true,
       status: true,
       uploadedAt: true,
+      validationError: true,
+      nextAttemptAt: true,
       _count: {
         select: {
           facts: true,
@@ -139,6 +141,7 @@ export default async function MarketDataPage() {
           initial={uploads.map((u) => ({
             ...u,
             uploadedAt: u.uploadedAt.toISOString(),
+            nextAttemptAt: u.nextAttemptAt?.toISOString() ?? null,
           }))}
         />
       </section>
