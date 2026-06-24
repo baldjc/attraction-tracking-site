@@ -66,6 +66,14 @@ export default function SetupForm({
       return null;
     }
   }, [mounted, voiceGuide?.uploadedAt]);
+  const avatarSnappedAtLabel = useMemo(() => {
+    if (!mounted || !state.primaryAvatar?.snappedAt) return null;
+    try {
+      return new Date(state.primaryAvatar.snappedAt).toLocaleString();
+    } catch {
+      return null;
+    }
+  }, [mounted, state.primaryAvatar?.snappedAt]);
 
   async function saveVoiceGuide(formData: FormData) {
     setVoiceBusy(true);
@@ -661,9 +669,7 @@ export default function SetupForm({
                 )}
                 <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-500">
                   Snapshot taken{" "}
-                  {state.primaryAvatar.snappedAt
-                    ? new Date(state.primaryAvatar.snappedAt).toLocaleString()
-                    : "—"}
+                  {avatarSnappedAtLabel ?? "—"}
                 </p>
               </div>
               <button
