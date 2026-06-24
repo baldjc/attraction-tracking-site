@@ -20,6 +20,27 @@ interface VoiceGuideInfo {
   sourceFile: string | null;
 }
 
+/**
+ * Hydration-safe locale date label. Returns `null` until the component has
+ * mounted in the browser so the first (server) paint is deterministic — render
+ * the result as `label ?? "—"`. NEVER call `toLocaleString()` (or any other
+ * locale/timezone-sensitive formatter) inline in JSX on this page: the server
+ * and browser locales differ, which produces a hydration mismatch that has
+ * crashed `/member/market-data/setup` more than once. Route every date through
+ * this guard instead. Covered by `SetupForm.hydration.test.tsx`.
+ */
+export function localeDateLabel(
+  mounted: boolean,
+  iso: string | null | undefined,
+): string | null {
+  if (!mounted || !iso) return null;
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return null;
+  }
+}
+
 interface Props {
   initial: MarketConfigShape;
   isEdit: boolean;
@@ -58,22 +79,14 @@ export default function SetupForm({
   // text behind a post-mount flag so the first paint is deterministic.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const voiceUploadedAtLabel = useMemo(() => {
-    if (!mounted || !voiceGuide?.uploadedAt) return null;
-    try {
-      return new Date(voiceGuide.uploadedAt).toLocaleString();
-    } catch {
-      return null;
-    }
-  }, [mounted, voiceGuide?.uploadedAt]);
-  const avatarSnappedAtLabel = useMemo(() => {
-    if (!mounted || !state.primaryAvatar?.snappedAt) return null;
-    try {
-      return new Date(state.primaryAvatar.snappedAt).toLocaleString();
-    } catch {
-      return null;
-    }
-  }, [mounted, state.primaryAvatar?.snappedAt]);
+  const voiceUploadedAtLabel = useMemo(
+    () => localeDateLabel(mounted, voiceGuide?.uploadedAt),
+    [mounted, voiceGuide?.uploadedAt],
+  );
+  const avatarSnappedAtLabel = useMemo(
+    () => localeDateLabel(mounted, state.primaryAvatar?.snappedAt),
+    [mounted, state.primaryAvatar?.snappedAt],
+  );
 
   async function saveVoiceGuide(formData: FormData) {
     setVoiceBusy(true);
