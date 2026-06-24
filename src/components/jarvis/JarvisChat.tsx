@@ -127,8 +127,6 @@ export interface JarvisContext {
   voice: JarvisContextItem;
   avatar: JarvisContextItem;
   market: JarvisContextItem;
-  /** Where "Update my context" routes (the member's settings surface). */
-  updateHref: string;
 }
 
 /** "2026-05" → "May 2026". Falls back to the raw value if unparseable. */

@@ -176,7 +176,6 @@ export default async function JarvisPage({
           : "No validated market data uploaded yet."
         : "Set your market so Jarvis can ground scripts in your numbers.",
     },
-    updateHref: "/member/settings",
   };
 
   // Resolve the active thread:

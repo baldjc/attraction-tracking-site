@@ -8,7 +8,7 @@ import {
   XMarkIcon,
   ArrowUpRightIcon,
 } from "@heroicons/react/24/outline";
-import type { JarvisContext } from "@/components/jarvis/JarvisChat";
+import type { JarvisContext, JarvisContextItem } from "@/components/jarvis/JarvisChat";
 
 const ROWS = [
   { key: "voice", label: "Voice", icon: MicrophoneIcon },
@@ -17,10 +17,33 @@ const ROWS = [
 ] as const;
 
 /**
+ * Per-row deep-links so a member can reach the place each piece of context is
+ * actually edited. Voice has its own link inside the VoiceSelector; Avatar and
+ * Market each get their own action here (the old single "Update my context →
+ * Settings" button was misleading — Market data doesn't live in Settings).
+ */
+const ROW_ACTIONS: Record<
+  "avatar" | "market",
+  { href: string; label: (item: JarvisContextItem) => string }
+> = {
+  avatar: {
+    href: "/member/content-tools/avatar-architect",
+    // "Not set yet" is the server-rendered empty-state label for the avatar row.
+    label: (item) =>
+      item.label === "Not set yet" ? "Build your avatar" : "Edit avatar",
+  },
+  market: {
+    href: "/member/market-data",
+    label: () => "Manage market data",
+  },
+};
+
+/**
  * Live control for the member's ACTIVE voice. The selector switches between the
  * built-in default register and the member's uploaded guide; the change persists
  * server-side and the Script Builder reads it on the next generation. This is the
- * ONLY interactive part of the panel — everything else is read-only display.
+ * only stateful control in the panel; the other rows show read-only context plus
+ * a deep-link to where that context is edited.
  */
 export interface VoiceControl {
   mode: "default" | "custom";
@@ -32,10 +55,11 @@ export interface VoiceControl {
 
 /**
  * "What Jarvis knows about you" — popover surfacing the member's real
- * Voice / Avatar / Market context with an "Update my context" action. The Voice
- * row also carries a live Default/My-voice selector (the rest is read-only; the
- * orchestrator loads its own context server-side, so display can't drift the
- * generation loop).
+ * Voice / Avatar / Market context. Each row carries its own deep-link to where
+ * that piece is edited (voice doc upload, Avatar Architect, Market Data). The
+ * Voice row also carries a live Default/My-voice selector; everything else is
+ * read-only display, since the orchestrator loads its own context server-side and
+ * the panel can't drift the generation loop.
  */
 export default function ContextPanel({
   context,
@@ -108,20 +132,19 @@ export default function ContextPanel({
                   {key === "voice" && voiceControl ? (
                     <VoiceSelector control={voiceControl} />
                   ) : null}
+                  {key !== "voice" ? (
+                    <Link
+                      href={ROW_ACTIONS[key].href}
+                      className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-blue-500 hover:underline"
+                    >
+                      {ROW_ACTIONS[key].label(item)}
+                      <ArrowUpRightIcon className="h-3 w-3" aria-hidden />
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             );
           })}
-        </div>
-
-        <div className="shrink-0 border-t border-abv-border px-4 py-3">
-          <Link
-            href={context.updateHref}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-xs font-medium text-white transition hover:opacity-90"
-          >
-            Update my context
-            <ArrowUpRightIcon className="h-3.5 w-3.5" aria-hidden />
-          </Link>
         </div>
       </div>
     </>
