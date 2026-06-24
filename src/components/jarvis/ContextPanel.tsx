@@ -33,7 +33,7 @@ const ROW_ACTIONS: Record<
       item.label === "Not set yet" ? "Build your avatar" : "Edit avatar",
   },
   market: {
-    href: "/member/market-data",
+    href: "/member/market-data/setup",
     label: () => "Manage market data",
   },
 };
